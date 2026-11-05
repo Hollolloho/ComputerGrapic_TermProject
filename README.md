@@ -1,13 +1,16 @@
-# ComputerGrapic_TermProject
+# 내일도 와줄 거지 — 프로젝트 문서
 
-두 명이 함께 작업하는 컴퓨터 그래픽스 텀 프로젝트 저장소입니다.
+갱신일: 2026-11-05.
 
-## 문서 시작점
+**다른 로컬·AI에서 이어서 작업할 때는 [AI_HANDOFF.md](AI_HANDOFF.md)를 먼저 읽으세요.**
 
-- [현행 설계와 구현 작업 목록](Term_Project_Design/docs/game/README.md)
-- [기획 초안](Term_Project_Design/GAME_DESIGN_DRAFT.md)
-- [개발 순서](Term_Project_Design/GAME_DEVELOPMENT_PIPELINE.md)
-- [구현 체크리스트](Term_Project_Design/GAME_IMPLEMENTATION_CHECKLIST.md)
-- [과거 설계 보관본](Term_Project_Design/docs/archive/2026-10-02/README.md)
+최근 대화에서는 카일을 금지된 잔향 조각 거래의 운영자이자 과거 방화·현재 살인의 범인으로 바꾸는 방향을 논의하고 있습니다. 구매자는 귀족으로 잡았고, 그들이 원하는 장면을 어떻게 기록·확인할지는 아직 결정 중입니다.
 
-현재 작업 기준은 `Term_Project_Design/docs/game`입니다. `docs/archive`는 과거 설계 기록으로 보존합니다.
+STORY의 상세 문서는 아직 2026-10-29의 이전 역할 배치를 포함합니다. 최신 인수인계의 확정/제안/미정 구분을 함께 확인하세요.
+
+- [AI_HANDOFF](AI_HANDOFF.md): 최신 대화, 기존 문서와의 차이, 다음에 결정할 질문.
+- [STORY](STORY/README.md): 이야기·인물·사건·단서 문서.
+- [DEVELOPMENT](DEVELOPMENT/README.md): 구현 범위·카메라·패턴·작업 목록.
+- [ARCHIVE](ARCHIVE/README.md): 과거 문서 보관.
+
+OpenGL 카메라 확대·이동·자전·공전·부모 관계는 모두 필수입니다. 이번 문서 갱신은 제품 코드 구현이나 작업 완료를 의미하지 않습니다.
