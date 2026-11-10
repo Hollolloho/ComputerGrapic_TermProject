@@ -8,10 +8,24 @@
 |---|---|
 | [프로젝트 기획서](docs/프로젝트_기획서.md) | 제안서 형식에 맞춘 배경·규칙·카메라·에셋·역할·일정의 기준 문서 |
 | [TASKS](docs/TASKS.md) | 작은 구현 단계와 실제 완료 체크 |
+| [홍준호 개발 전 문서](docs/PreDevelopment_홍준호.md) | 카메라·에셋·시간 기반 개발 순서 |
+| [윤형균 개발 전 문서](docs/PreDevelopment_윤형균.md) | GitHub 협업, Visual Studio 빌드, 전투·진행 개발 순서 |
 | [Word 제안서](<docs/프로젝트_제안서(2023180036_홍준호, 2023184021_윤형균).docx>) | 편집용 문서 |
 | [PDF 제안서](<docs/프로젝트_제안서(2023180036_홍준호, 2023184021_윤형균).pdf>) | 제출용 문서 |
 
 드론과 복도 시제품은 로컬 작업 폴더의 `prototypes/drone-corridor/`에서 관리한다. 잔향 원본은 별도 겨울방학 보관 폴더에 있다.
+
+## 빌드와 실행
+
+Visual Studio에서 [AEGIS.slnx](AEGIS.slnx)를 열고 MSVC `v145`, Windows SDK `10.0` 환경에서 `Debug | x64` 또는 `Release | x64`로 빌드한다. 게임 소스는 `game/src/`에 있고, [공용 라이브러리](external/README.md)는 솔루션 옆의 `external/`에 있다. 경로는 `$(SolutionDir)`를 기준으로 찾고 GLEW·Assimp DLL은 빌드할 때 실행 파일 옆으로 복사한다.
+
+`build/x64/Debug/AEGIS.exe`를 실행하면 OpenGL 확인용 창이 열린다. 모델 데이터는 아래처럼 확인한다.
+
+```powershell
+& .\build\x64\Debug\AEGIS.exe --inspect-obj ".\prototypes\drone-corridor\obj\drone_assembled.obj"
+```
+
+Assimp가 OBJ와 `mtllib`로 연결된 MTL을 읽는다. 로더는 정점·UV·법선·삼각형 인덱스, 메시 이름과 재질 번호, 재질 색·반사·투명도·텍스처 참조를 게임 데이터로 넘긴다. 검사 명령은 메시와 삼각형의 개수, 읽은 재질을 출력한다. 이미지 로딩과 모델 렌더링은 이후 장면 작업에서 연결한다.
 
 ## 작업 원칙
 
