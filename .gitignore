@@ -1,0 +1,5 @@
+/.vs/
+/build/
+*.vcxproj.user
+/external/fmod/*
+!/external/fmod/README.md
