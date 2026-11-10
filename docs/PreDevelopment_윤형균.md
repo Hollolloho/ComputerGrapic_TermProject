@@ -24,11 +24,11 @@ cd ComputerGrapic_TermProject
 
 ### 2. 내 작업 브랜치 만들기
 
-아래 예시에서는 `Development_Docs`를 공용 기준으로 삼는다. 팀에서 구현용 공용 브랜치를 따로 정하면 명령과 PR의 기준에 그 이름을 사용한다. 기존 작업 폴더를 쓰는 경우에는 `git status`로 작업 중인 변경을 먼저 확인한다.
+아래 예시에서는 `main`을 공용 기준으로 삼는다. 기존 작업 폴더를 쓰는 경우에는 `git status`로 작업 중인 변경을 먼저 확인한다.
 
 ```powershell
 git fetch origin
-git switch --no-track -c feature/yoon-combat origin/Development_Docs
+git switch --no-track -c feature/yoon-combat origin/main
 git status -sb
 ```
 
@@ -54,17 +54,27 @@ git commit -m "feat: 탄환 첫 충돌 판정 추가"
 git push -u origin feature/yoon-combat
 ```
 
-첫 푸시가 성공하면 이후에는 같은 브랜치에서 `git push`로 커밋을 추가한다. GitHub에서 PR을 열 때 **공용 브랜치(base)는 `Development_Docs`**, **내 작업 브랜치(compare)는 `feature/yoon-combat`**으로 고른다. 작업 ID, 바뀐 동작, 직접 실행한 확인 방법을 적고 홍준호와 검토한다.
+첫 푸시가 성공하면 이후에는 같은 브랜치에서 `git push`로 커밋을 추가한다. GitHub에서 PR을 열 때 **공용 브랜치(base)는 `main`**, **내 작업 브랜치(compare)는 `feature/yoon-combat`**으로 고른다. 작업 ID, 바뀐 동작, 직접 실행한 확인 방법을 적고 홍준호와 검토한다.
 
 ### 5. 공용 브랜치의 변경 가져오기
 
-홍준호가 공용 브랜치에 변경을 합쳤다면, 내 브랜치에서 `git status -sb`로 브랜치 이름과 미커밋 변경을 확인한다. 작업 폴더가 깨끗할 때 `git fetch origin`으로 원격 정보를 받고 `git merge origin/Development_Docs`로 공용 변경을 내 브랜치에 합친다. 충돌이 표시되면 `git status`로 파일을 확인해 함께 정리한다. 합친 뒤 빌드·실행을 확인하고 다시 푸시한다.
+홍준호가 공용 브랜치에 변경을 합쳤다면, 내 브랜치에서 `git status -sb`로 브랜치 이름과 미커밋 변경을 확인한다. 작업 폴더가 깨끗할 때 `git fetch origin`으로 원격 정보를 받고 `git merge origin/main`으로 공용 변경을 내 브랜치에 합친다. 충돌이 표시되면 `git status`로 파일을 확인해 함께 정리한다. 합친 뒤 빌드·실행을 확인하고 다시 푸시한다.
 
 ## 첫 작업 전에 맞출 것
 
 1. **기존 실습 실행 확인(T002).** 두 PC에서 같은 실습 버전과 `x64` 설정을 사용한다. Visual Studio에서 `Pratice_Grapic.slnx`를 열고 빌드 구성, MSVC 도구 집합, Windows SDK, 실행 디렉터리를 확인한다. 실행이 막히면 첫 오류와 재현 순서를 홍준호에게 전달한다.
 2. **게임 창 확인.** 홍준호가 만든 게임 대상(T003)을 받아 각자 PC에서 별도로 `Debug x64`와 `Release x64`를 실행한다. 한글 문구는 UTF-8로 관리하고 한글을 표시할 수 있는 글꼴과 함께 안내 문장 한 줄, 클릭 버튼 하나부터 띄운다. 한 번 클릭했을 때 이벤트도 한 번인지 본다(T004).
-3. **복도 시험 장면 준비(T006, T008 공동).** 두 PC가 같은 시제품을 쓰는지 확인한다. 복도 한 구간, 벽 하나, 엄폐물, 플레이어 시작점, 임시 표적부터 배치한다. 복도 OBJ는 형상을 먼저 확인하고 재질별 분리와 색 지정 방식을 홍준호와 정한다. 이동 충돌을 붙일 수 있도록 벽·문·엄폐물의 위치와 크기를 전달한다.
+3. **복도 시험 장면 준비(T006, T008 공동).** 두 PC가 같은 시제품을 쓰는지 확인한다. 복도 한 구간, 벽 하나, 엄폐물, 플레이어 시작점, 임시 표적부터 배치한다. 복도 OBJ와 연결된 MTL을 게임의 Assimp 로더로 확인하고, 메시별 색을 홍준호와 맞춘다. 이동 충돌을 붙일 수 있도록 벽·문·엄폐물의 위치와 크기를 전달한다.
+
+### 공유한 Visual Studio 설정으로 빌드하기
+
+공용 브랜치의 게임 솔루션 `AEGIS.slnx`, 프로젝트 `game/AEGIS.vcxproj`, `external/` 라이브러리를 같은 커밋에서 받는다. `external/`은 **`.slnx`가 있는 폴더 바로 아래**에 둔다.
+
+1. 받은 `.slnx`를 Visual Studio에서 연다. 홍준호와 같은 MSVC 도구 집합과 Windows SDK가 설치되어 있는지 확인한다.
+2. 상단 구성에서 **`Debug | x64`**를 선택하고 솔루션을 빌드한 뒤 게임 창을 실행한다. 제출용 실행을 확인할 때는 `Release | x64`로 다시 빌드한다.
+3. 오류가 나면 첫 오류 메시지와 빌드 구성을 기록한다. 헤더나 `.lib`를 못 찾으면 `external/`의 위치와 라이브러리 버전을, 실행할 때 GLEW·Assimp DLL 오류가 나면 빌드 후 DLL이 실행 파일 옆에 복사됐는지 확인한다.
+
+프로젝트의 헤더·라이브러리 경로는 **`$(SolutionDir)external\...`** 형식을 쓴다. `$(SolutionDir)`는 Visual Studio가 현재 연 솔루션의 폴더 경로로 바꿔 준다. 예를 들어 `$(SolutionDir)external\glfw\include`는 형균이 PC에서도 받은 솔루션 옆의 `external\glfw\include`를 가리킨다. 각자 저장소를 둔 위치가 달라도 프로젝트 설정은 그대로 쓸 수 있다. `.vs/`, `.vcxproj.user`, 빌드 결과물은 각 PC에서 관리한다.
 
 ## 구현 순서와 넘길 결과
 
