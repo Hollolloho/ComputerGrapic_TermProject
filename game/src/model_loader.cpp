@@ -4,6 +4,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
+#include <iostream>
 #include <utility>
 
 using namespace std;
@@ -124,4 +125,49 @@ static ModelMaterial ReadMaterial(const aiMaterial& source)
 		material.diffuseTexture = texture.C_Str();
 	}
 	return material;
+}
+
+// ===== OBJ 데이터 확인 명령 =====
+
+static int InspectModel(const filesystem::path& path)
+{
+	ModelData model;
+	string error;
+	if (!LoadModel(path, model, error))
+	{
+		cerr << error << '\n';
+		return 1;
+	}
+
+	size_t vertices{};
+	size_t triangles{};
+	for (const ModelMesh& mesh : model.meshes)
+	{
+		vertices += mesh.vertices.size();
+		triangles += mesh.indices.size() / 3;
+	}
+	cout << "meshes=" << model.meshes.size() << " vertices=" << vertices
+		<< " triangles=" << triangles << " materials=" << model.materials.size() << '\n';
+
+	for (const ModelMaterial& material : model.materials)
+	{
+		cout << material.name << " Kd=" << material.diffuse.r << ',' << material.diffuse.g
+			<< ',' << material.diffuse.b << " opacity=" << material.opacity;
+		if (!material.diffuseTexture.empty())
+		{
+			cout << " map_Kd=" << material.diffuseTexture;
+		}
+		cout << '\n';
+	}
+	return 0;
+}
+
+int RunModelInspection(int argc, char* argv[])
+{
+	if (argc == 3 && string(argv[1]) == "--inspect-obj")
+	{
+		return InspectModel(argv[2]);
+	}
+	cerr << "Usage: AEGIS.exe [--inspect-obj <model.obj>]\n";
+	return 2;
 }

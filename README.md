@@ -33,7 +33,7 @@ Visual Studio에서 [AEGIS.slnx](AEGIS.slnx)를 열고 MSVC `v145`, Windows SDK 
 
 Assimp가 OBJ와 `mtllib`로 연결된 MTL을 읽는다. 로더는 정점·UV·법선·삼각형 인덱스, 메시 이름과 재질 번호, 재질 색·반사·투명도·텍스처 참조를 게임 데이터로 넘긴다. 검사 명령은 메시와 삼각형의 개수, 읽은 재질을 출력한다. 이미지 로딩과 모델 렌더링은 이후 장면 작업에서 연결한다.
 
-현재 코드는 실습 스타일에 맞춰 `game/src/main.cpp`의 `main` 안에서 GLFW·GLEW 초기화, 창 생성, 입력·그리기 루프, 종료를 순서대로 처리한다. 로더는 사용자 정의 namespace 없이 `ModelData`와 `LoadModel`을 직접 사용하며, Update·Render 함수 분리는 추후 프레임워크를 만드는 단계에서 진행한다.
+`game/src/main.cpp`의 `main`은 `Setup`으로 GLFW·GLEW를 초기화하고 창, 셰이더, 버퍼를 준비한다. 루프에서 `Update`로 Esc 입력을 처리하고 `Render`로 창 중앙에 큐브를 그린 뒤, 루프가 끝나면 `Shutdown`으로 창과 렌더링 리소스를 정리한다.
 
 ## 작업 원칙
 

@@ -43,3 +43,4 @@ struct ModelData
 
 // 결과는 Assimp 장면과 독립적이다. 읽기에 실패하면 기존 model을 유지한다.
 bool LoadModel(const std::filesystem::path& path, ModelData& model, std::string& error);
+int RunModelInspection(int argc, char* argv[]);
