@@ -24,11 +24,11 @@ cd ComputerGrapic_TermProject
 
 ### 2. 내 작업 브랜치 만들기
 
-아래 예시에서는 `main`을 공용 기준으로 삼는다. 기존 작업 폴더를 쓰는 경우에는 `git status`로 작업 중인 변경을 먼저 확인한다.
+기획 문서의 기준은 `main`, 솔루션·라이브러리·실행 기반은 `codex/framework`다. 기반이 `main`에 병합되기 전에는 아래처럼 `codex/framework`에서 코드 작업을 시작한다. 기반 병합 후에는 새 코드 브랜치와 PR의 공용 기준을 `main`으로 바꾼다. 기존 작업 폴더를 쓰는 경우에는 `git status`로 작업 중인 변경을 먼저 확인한다.
 
 ```powershell
 git fetch origin
-git switch --no-track -c feature/yoon-combat origin/main
+git switch --no-track -c feature/yoon-combat origin/codex/framework
 git status -sb
 ```
 
@@ -54,11 +54,11 @@ git commit -m "feat: 탄환 첫 충돌 판정 추가"
 git push -u origin feature/yoon-combat
 ```
 
-첫 푸시가 성공하면 이후에는 같은 브랜치에서 `git push`로 커밋을 추가한다. GitHub에서 PR을 열 때 **공용 브랜치(base)는 `main`**, **내 작업 브랜치(compare)는 `feature/yoon-combat`**으로 고른다. 작업 ID, 바뀐 동작, 직접 실행한 확인 방법을 적고 홍준호와 검토한다.
+첫 푸시가 성공하면 이후에는 같은 브랜치에서 `git push`로 커밋을 추가한다. 현재 GitHub에서 코드 PR을 열 때 **공용 브랜치(base)는 `codex/framework`**, **내 작업 브랜치(compare)는 `feature/yoon-combat`**으로 고른다. 기반이 `main`에 병합된 후에는 base를 `main`으로 바꾼다. 작업 ID, 바뀐 동작, 직접 실행한 확인 방법을 적고 홍준호와 검토한다.
 
 ### 5. 공용 브랜치의 변경 가져오기
 
-홍준호가 공용 브랜치에 변경을 합쳤다면, 내 브랜치에서 `git status -sb`로 브랜치 이름과 미커밋 변경을 확인한다. 작업 폴더가 깨끗할 때 `git fetch origin`으로 원격 정보를 받고 `git merge origin/main`으로 공용 변경을 내 브랜치에 합친다. 충돌이 표시되면 `git status`로 파일을 확인해 함께 정리한다. 합친 뒤 빌드·실행을 확인하고 다시 푸시한다.
+홍준호가 공용 브랜치에 변경을 합쳤다면, 내 브랜치에서 `git status -sb`로 브랜치 이름과 미커밋 변경을 확인한다. 작업 폴더가 깨끗할 때 `git fetch origin`으로 원격 정보를 받고 `git merge origin/codex/framework`로 공용 변경을 내 브랜치에 합친다. 기반 병합 후 공용 기준을 `main`으로 바꿨다면 `git merge origin/main`을 사용한다. 충돌이 표시되면 `git status`로 파일을 확인해 함께 정리한다. 합친 뒤 빌드·실행을 확인하고 다시 푸시한다.
 
 ## 첫 작업 전에 맞출 것
 
@@ -68,7 +68,7 @@ git push -u origin feature/yoon-combat
 
 ### 공유한 Visual Studio 설정으로 빌드하기
 
-공용 브랜치의 게임 솔루션 `AEGIS.slnx`, 프로젝트 `game/AEGIS.vcxproj`, `external/` 라이브러리를 같은 커밋에서 받는다. `external/`은 **`.slnx`가 있는 폴더 바로 아래**에 둔다.
+`codex/framework`의 게임 솔루션 `AEGIS.slnx`, 프로젝트 `game/AEGIS.vcxproj`, `external/` 라이브러리를 같은 커밋에서 받는다. 현재 `main`에는 이 실행 기반이 아직 없다. `external/`은 **`.slnx`가 있는 폴더 바로 아래**에 둔다.
 
 1. 받은 `.slnx`를 Visual Studio에서 연다. 홍준호와 같은 MSVC 도구 집합과 Windows SDK가 설치되어 있는지 확인한다.
 2. 상단 구성에서 **`Debug | x64`**를 선택하고 솔루션을 빌드한 뒤 게임 창을 실행한다. 제출용 실행을 확인할 때는 `Release | x64`로 다시 빌드한다.
