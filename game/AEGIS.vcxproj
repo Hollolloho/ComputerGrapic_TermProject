@@ -63,6 +63,8 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\model_loader.cpp" />
     <ClInclude Include="src\model_loader.h" />
+    <None Include="shaders\drone.vert" />
+    <None Include="shaders\drone.frag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Target Name="CopyRuntimeLibraries" AfterTargets="Build">
