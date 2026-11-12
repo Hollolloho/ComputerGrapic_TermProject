@@ -60,8 +60,14 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\drone.cpp" />
+    <ClCompile Include="src\game_framework.cpp" />
+    <ClCompile Include="src\game_scene.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\model_loader.cpp" />
+    <ClInclude Include="src\drone.h" />
+    <ClInclude Include="src\game_framework.h" />
+    <ClInclude Include="src\game_scene.h" />
     <ClInclude Include="src\model_loader.h" />
     <None Include="shaders\drone.vert" />
     <None Include="shaders\drone.frag" />
