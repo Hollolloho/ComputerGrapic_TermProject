@@ -1,10 +1,10 @@
 #include "drone.h"
-#include "model_loader.h"
 
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <fstream>
@@ -119,10 +119,17 @@ bool Drone::Init(const std::filesystem::path& projectDirectory)
 
     transformLocation = glGetUniformLocation(shaderProgramID, "uTransform");
     modelLocation = glGetUniformLocation(shaderProgramID, "uModel");
-    colorLocation = glGetUniformLocation(shaderProgramID, "uColor");
-    if (transformLocation == -1 || modelLocation == -1 || colorLocation == -1) {
-        std::cerr << "Drone shader uniforms uTransform, uModel or uColor are missing: "
-                  << shaderDirectory << '\n';
+    baseColorLocation = glGetUniformLocation(shaderProgramID, "uBaseColor");
+    metallicLocation = glGetUniformLocation(shaderProgramID, "uMetallic");
+    roughnessLocation = glGetUniformLocation(shaderProgramID, "uRoughness");
+    eyePositionLocation = glGetUniformLocation(shaderProgramID, "uEyePosition");
+    lightDirectionLocation = glGetUniformLocation(shaderProgramID, "uLightDirection");
+    lightColorLocation = glGetUniformLocation(shaderProgramID, "uLightColor");
+    lightStrengthLocation = glGetUniformLocation(shaderProgramID, "uLightStrength");
+    if (transformLocation == -1 || modelLocation == -1 || baseColorLocation == -1 ||
+        metallicLocation == -1 || roughnessLocation == -1 || eyePositionLocation == -1 ||
+        lightDirectionLocation == -1 || lightColorLocation == -1 || lightStrengthLocation == -1) {
+        std::cerr << "Required drone shader uniforms are missing: " << shaderDirectory << '\n';
         return false;
     }
 
@@ -133,15 +140,33 @@ bool Drone::Init(const std::filesystem::path& projectDirectory)
         return false;
     }
 
+    // OBJ/MTL 읽기와 캐시 처리 시간을 GPU 버퍼 업로드 호출 시간과 따로 잰다.
+    using Clock = std::chrono::steady_clock;
+    using Milliseconds = std::chrono::duration<double, std::milli>;
+    const auto cacheStart = Clock::now();
+    const ObjModelCache cache(projectDirectory / "build" / "cache" / "models", materialPath);
+    Clock::duration loadTime = Clock::now() - cacheStart;
+    Clock::duration uploadTime{};
+    int cacheHits{};
+    int assimpImports{};
+
     for (auto& part : parts) {
         for (const char* materialName : part.materials) {
             const auto path = objDirectory / (std::string("drone_") + part.name +
                                               '_' + materialName + ".obj");
             ModelData model;
             std::string error;
-            if (!LoadModel(path, model, error)) {
+            bool cacheHit{};
+            const auto loadStart = Clock::now();
+            if (!cache.Load(path, model, error, cacheHit)) {
                 std::cerr << error << '\n';
                 return false;
+            }
+            loadTime += Clock::now() - loadStart;
+            if (cacheHit) {
+                ++cacheHits;
+            } else {
+                ++assimpImports;
             }
 
             for (const auto& mesh : model.meshes) {
@@ -152,11 +177,17 @@ bool Drone::Init(const std::filesystem::path& projectDirectory)
                     return false;
                 }
                 auto& drawMesh = part.meshes.emplace_back();
-                drawMesh.color = material.diffuse;
+                drawMesh.material = material;
+                const auto uploadStart = Clock::now();
                 InitVertexBuffer(drawMesh, mesh);
+                uploadTime += Clock::now() - uploadStart;
             }
         }
     }
+    std::cout << "Drone models: cache_hits=" << cacheHits
+              << " assimp_imports=" << assimpImports
+              << " cpu_ms=" << Milliseconds(loadTime).count()
+              << " gl_upload_ms=" << Milliseconds(uploadTime).count() << '\n';
     return true;
 }
 
@@ -209,9 +240,16 @@ glm::mat4 Drone::PartTransform(const glm::mat4& world, const DronePart& part)
     return glm::rotate(position, glm::radians(part.angleDegrees), part.rotationAxis);
 }
 
-void Drone::Draw(const glm::mat4& scene) const
+void Drone::Draw(const glm::mat4& scene, const glm::vec3& eyePosition,
+                 const glm::vec3& lightDirection, const glm::vec3& lightColor,
+                 float lightStrength) const
 {
     glUseProgram(shaderProgramID);
+    glUniform3fv(eyePositionLocation, 1, glm::value_ptr(eyePosition));
+    glUniform3fv(lightDirectionLocation, 1, glm::value_ptr(lightDirection));
+    glUniform3fv(lightColorLocation, 1, glm::value_ptr(lightColor));
+    glUniform1f(lightStrengthLocation, lightStrength);
+
     const glm::mat4 world(1.0f);
     for (const auto& part : parts) {
         const glm::mat4 model = PartTransform(world, part);
@@ -219,7 +257,10 @@ void Drone::Draw(const glm::mat4& scene) const
         glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(transform));
         glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
         for (const auto& mesh : part.meshes) {
-            glUniform3fv(colorLocation, 1, glm::value_ptr(mesh.color));
+            const auto& material = mesh.material;
+            glUniform3fv(baseColorLocation, 1, glm::value_ptr(material.baseColor));
+            glUniform1f(metallicLocation, material.metallic);
+            glUniform1f(roughnessLocation, material.roughness);
             glBindVertexArray(mesh.vao);
             glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, nullptr);
         }
@@ -252,7 +293,13 @@ void Drone::Clear()
     }
     transformLocation = -1;
     modelLocation = -1;
-    colorLocation = -1;
+    baseColorLocation = -1;
+    metallicLocation = -1;
+    roughnessLocation = -1;
+    eyePositionLocation = -1;
+    lightDirectionLocation = -1;
+    lightColorLocation = -1;
+    lightStrengthLocation = -1;
     Reset();
 }
 

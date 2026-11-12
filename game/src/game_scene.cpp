@@ -8,6 +8,8 @@ namespace aegis {
 bool GameScene::Init(const std::filesystem::path& projectDirectory)
 {
     glEnable(GL_DEPTH_TEST);
+    // 드론 셰이더가 최종 색을 sRGB로 변환한다.
+    glDisable(GL_FRAMEBUFFER_SRGB);
     glClearColor(0.16f, 0.19f, 0.24f, 1.0f);
     return drone.Init(projectDirectory);
 }
@@ -29,7 +31,10 @@ void GameScene::Draw(int width, int height) const
     const glm::vec3 camTarget(0.13f, -0.025f, 0.02f);
     const glm::vec3 camUp(0.0f, 1.0f, 0.0f);
     const glm::mat4 scene = projection * glm::lookAt(camPos, camTarget, camUp);
-    drone.Draw(scene);
+    const glm::vec3 lightDirection(0.45f, 0.9f, 0.7f);
+    const glm::vec3 lightColor(1.0f);
+    const float lightStrength = 5.0f;
+    drone.Draw(scene, camPos, lightDirection, lightColor, lightStrength);
 }
 
 void GameScene::Reset()

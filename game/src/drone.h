@@ -1,5 +1,7 @@
 #pragma once
 
+#include "model_loader.h"
+
 #include <GL/glew.h>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
@@ -10,8 +12,6 @@
 
 namespace aegis {
 
-struct ModelMesh;
-
 class Drone {
 public:
     Drone();
@@ -20,7 +20,9 @@ public:
 
     bool Init(const std::filesystem::path& projectDirectory);
     void Update(double deltaTime);
-    void Draw(const glm::mat4& scene) const;
+    void Draw(const glm::mat4& scene, const glm::vec3& eyePosition,
+              const glm::vec3& lightDirection, const glm::vec3& lightColor,
+              float lightStrength) const;
     void Reset();
     void Clear();
 
@@ -30,7 +32,7 @@ private:
         GLuint vbo{};
         GLuint ebo{};
         GLsizei indexCount{};
-        glm::vec3 color{1.0f};
+        ModelMaterial material;
     };
 
     struct DronePart {
@@ -52,7 +54,13 @@ private:
     GLuint shaderProgramID{};
     GLint transformLocation{-1};
     GLint modelLocation{-1};
-    GLint colorLocation{-1};
+    GLint baseColorLocation{-1};
+    GLint metallicLocation{-1};
+    GLint roughnessLocation{-1};
+    GLint eyePositionLocation{-1};
+    GLint lightDirectionLocation{-1};
+    GLint lightColorLocation{-1};
+    GLint lightStrengthLocation{-1};
 };
 
 } // namespace aegis

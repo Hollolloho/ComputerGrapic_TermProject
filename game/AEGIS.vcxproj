@@ -47,7 +47,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)external\glew-2.3.1\lib\Release\x64;$(SolutionDir)external\glfw\lib;$(SolutionDir)external\assimp\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glew32.lib;glfw3.lib;opengl32.lib;assimp-vc145-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glew32.lib;glfw3.lib;opengl32.lib;assimp-vc145-mt.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
@@ -64,10 +64,12 @@
     <ClCompile Include="src\game_framework.cpp" />
     <ClCompile Include="src\game_scene.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\model_binary.cpp" />
     <ClCompile Include="src\model_loader.cpp" />
     <ClInclude Include="src\drone.h" />
     <ClInclude Include="src\game_framework.h" />
     <ClInclude Include="src\game_scene.h" />
+    <ClInclude Include="src\model_binary.h" />
     <ClInclude Include="src\model_loader.h" />
     <None Include="shaders\drone.vert" />
     <None Include="shaders\drone.frag" />
