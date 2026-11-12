@@ -62,6 +62,8 @@
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\model_loader.cpp" />
+    <ClCompile Include="src\combat.cpp" />
+    <ClInclude Include="src\combat.h" />
     <ClInclude Include="src\model_loader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
