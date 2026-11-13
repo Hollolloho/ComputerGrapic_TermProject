@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drone.h"
+#include "player_camera.h"
 
 #include <filesystem>
 
@@ -16,6 +17,7 @@ public:
 
 private:
     Drone drone;
+    PlayerCamera camera;
 };
 
 } // namespace aegis
