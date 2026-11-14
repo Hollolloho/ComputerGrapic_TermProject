@@ -1,0 +1,81 @@
+{
+  "status": "pass",
+  "models": [
+    {
+      "asset": "corridor",
+      "triangles": 14112,
+      "vertices": 7696,
+      "materials": [
+        "dark",
+        "floor",
+        "light",
+        "recess",
+        "red",
+        "rubber",
+        "shell",
+        "steel",
+        "wall",
+        "white"
+      ],
+      "status": "pass"
+    },
+    {
+      "asset": "door_frame",
+      "triangles": 264,
+      "vertices": 144,
+      "materials": [
+        "red",
+        "rubber",
+        "steel",
+        "wall"
+      ],
+      "status": "pass"
+    },
+    {
+      "asset": "door_left",
+      "triangles": 132,
+      "vertices": 72,
+      "materials": [
+        "dark",
+        "red",
+        "shell"
+      ],
+      "status": "pass"
+    },
+    {
+      "asset": "door_right",
+      "triangles": 132,
+      "vertices": 72,
+      "materials": [
+        "dark",
+        "red",
+        "shell"
+      ],
+      "status": "pass"
+    },
+    {
+      "asset": "cover",
+      "triangles": 308,
+      "vertices": 168,
+      "materials": [
+        "dark",
+        "red",
+        "shell",
+        "steel"
+      ],
+      "status": "pass"
+    }
+  ],
+  "tests": [
+    "original SHA256 unchanged",
+    "triangles/indices/normals/winding/MTL/bounds",
+    "synthetic centre route clear with open doors",
+    "synthetic centre route blocked with closed doors"
+  ],
+  "not_tested": [
+    "rendered appearance",
+    "actual game player collision",
+    "game animation",
+    "game material display"
+  ]
+}
