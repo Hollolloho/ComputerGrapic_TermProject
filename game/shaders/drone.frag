@@ -7,6 +7,8 @@ out vec4 aFrag;
 uniform vec3 uBaseColor;
 uniform float uMetallic;
 uniform float uRoughness;
+uniform vec3 uDielectricF0;
+uniform float uAmbientStrength;
 uniform vec3 uEyePosition;
 uniform vec3 uLightDirection;
 uniform vec3 uLightColor;
@@ -59,10 +61,10 @@ void main()
     float roughness = clamp(uRoughness, 0.04, 1.0);
     float alpha = roughness * roughness;
     float alphaSquared = alpha * alpha;
-    vec3 f0 = mix(vec3(0.04), uBaseColor, metallic);
+    vec3 f0 = mix(uDielectricF0, uBaseColor, metallic);
 
     // 직접광이 닿지 않는 부분의 색이 보이도록 약한 주변광을 더한다.
-    vec3 color = 0.16 * mix(uBaseColor, f0, metallic);
+    vec3 color = uAmbientStrength * mix(uBaseColor, f0, metallic);
     if (nDotL > 0.0 && nDotV > 0.0) {
         vec3 H = NormalizeDirection(L + V);
         float nDotH = clamp(dot(N, H), 0.0, 1.0);

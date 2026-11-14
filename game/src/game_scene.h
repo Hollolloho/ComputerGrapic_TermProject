@@ -3,6 +3,7 @@
 #include "drone.h"
 #include "player_camera.h"
 
+#include <array>
 #include <filesystem>
 
 namespace aegis {
@@ -16,6 +17,15 @@ public:
     void Clear();
 
 private:
+    struct CorridorObject {
+        glm::mat4 model{1.0f};
+        std::vector<DrawMesh> meshes;
+    };
+
+    bool InitCorridor(const std::filesystem::path& projectDirectory);
+
+    MeshRenderer renderer;
+    std::array<CorridorObject, 5> corridor;
     Drone drone;
     PlayerCamera camera;
 };

@@ -13,13 +13,8 @@ PlayerCamera::PlayerCamera()
 
 void PlayerCamera::Reset()
 {
-    // 기존 시선 방향은 유지하고 거리를 1.5배 늘려 드론을 멀리서 본다.
-    const glm::vec3 target(0.13f, -0.025f, 0.02f);
-    const glm::vec3 eye = target + (glm::vec3(1.5f, 1.85f, 3.4f) - target) * 1.5f;
-    const glm::vec3 direction = glm::normalize(target - eye);
-    SetPose(eye - glm::vec3(0.0f, eyeHeight, 0.0f),
-            glm::degrees(std::atan2(-direction.x, -direction.z)),
-            glm::degrees(std::asin(direction.y)));
+    // 시험 복도의 입구 바닥 중심에서 -Z 방향을 바라본다.
+    SetPose(glm::vec3(0.0f), 0.0f, 0.0f);
 }
 
 void PlayerCamera::SetPose(const glm::vec3& position, float yawDegrees, float pitchDegrees)
