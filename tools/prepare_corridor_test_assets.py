@@ -76,6 +76,7 @@ manifest={
   {'id':'door_left','asset_bounds':'door_left','parent':'door_frame','translation_closed':[-.72,0,0],'translation_open':[-2.17,0,0]},
   {'id':'door_right','asset_bounds':'door_right','parent':'door_frame','translation_closed':[.72,0,0],'translation_open':[2.17,0,0]}],
  'door_opening':{'clear_width':2.75,'clear_height':3.002,'note':'doors slide horizontally; no yaw hinge. Open leaves tuck behind fixed side panels. Collision follows leaf translation.'},
- 'validation':{'source_mesh_inspected':True,'derived_obj_structural_check':False,'game_loader_inspection':False,'game_rendering':False,'player_collision_walkthrough':False}}
+ 'verification_files':['validation_report.json','loader_inspection.txt'], 'runtime_status':'not integrated or tested in game'}
 (OUT/'scene_manifest.json').write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')
 print('Generated',len(assets),'OBJ files; original source unchanged')
+

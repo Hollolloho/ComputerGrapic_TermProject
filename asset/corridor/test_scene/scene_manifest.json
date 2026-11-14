@@ -724,11 +724,9 @@
     "clear_height": 3.002,
     "note": "doors slide horizontally; no yaw hinge. Open leaves tuck behind fixed side panels. Collision follows leaf translation."
   },
-  "validation": {
-    "source_mesh_inspected": true,
-    "derived_obj_structural_check": false,
-    "game_loader_inspection": false,
-    "game_rendering": false,
-    "player_collision_walkthrough": false
-  }
+  "verification_files": [
+    "validation_report.json",
+    "loader_inspection.txt"
+  ],
+  "runtime_status": "not integrated or tested in game"
 }
