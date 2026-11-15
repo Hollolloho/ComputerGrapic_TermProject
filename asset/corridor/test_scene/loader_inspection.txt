@@ -1,0 +1,76 @@
+Loader inspection on 2026-11-14; existing Debug executable, no game rendering test.
+corridor_static.obj
+meshes=320 vertices=30744 triangles=14112 materials=13
+DefaultMaterial Kd=0.6,0.6,0.6 opacity=1
+shell Kd=0.8745,0.902,0.9098 opacity=1
+white Kd=0.9451,0.9529,0.9373 opacity=1
+dark Kd=0.0902,0.1216,0.1529 opacity=1
+rubber Kd=0.0314,0.0588,0.0824 opacity=1
+steel Kd=0.3373,0.4,0.451 opacity=1
+wall Kd=0.7961,0.8353,0.851 opacity=1
+floor Kd=0.5176,0.5765,0.6196 opacity=1
+recess Kd=0.2235,0.2863,0.3255 opacity=1
+red Kd=0.8471,0.1725,0.1961 opacity=1
+lens Kd=0.2549,0.051,0.0784 opacity=1
+light Kd=0.8784,0.9569,1 opacity=1
+amber Kd=0.7843,0.5608,0.2078 opacity=1
+cover_cabinet.obj
+meshes=7 vertices=672 triangles=308 materials=13
+DefaultMaterial Kd=0.6,0.6,0.6 opacity=1
+shell Kd=0.8745,0.902,0.9098 opacity=1
+white Kd=0.9451,0.9529,0.9373 opacity=1
+dark Kd=0.0902,0.1216,0.1529 opacity=1
+rubber Kd=0.0314,0.0588,0.0824 opacity=1
+steel Kd=0.3373,0.4,0.451 opacity=1
+wall Kd=0.7961,0.8353,0.851 opacity=1
+floor Kd=0.5176,0.5765,0.6196 opacity=1
+recess Kd=0.2235,0.2863,0.3255 opacity=1
+red Kd=0.8471,0.1725,0.1961 opacity=1
+lens Kd=0.2549,0.051,0.0784 opacity=1
+light Kd=0.8784,0.9569,1 opacity=1
+amber Kd=0.7843,0.5608,0.2078 opacity=1
+door_frame.obj
+meshes=6 vertices=576 triangles=264 materials=13
+DefaultMaterial Kd=0.6,0.6,0.6 opacity=1
+shell Kd=0.8745,0.902,0.9098 opacity=1
+white Kd=0.9451,0.9529,0.9373 opacity=1
+dark Kd=0.0902,0.1216,0.1529 opacity=1
+rubber Kd=0.0314,0.0588,0.0824 opacity=1
+steel Kd=0.3373,0.4,0.451 opacity=1
+wall Kd=0.7961,0.8353,0.851 opacity=1
+floor Kd=0.5176,0.5765,0.6196 opacity=1
+recess Kd=0.2235,0.2863,0.3255 opacity=1
+red Kd=0.8471,0.1725,0.1961 opacity=1
+lens Kd=0.2549,0.051,0.0784 opacity=1
+light Kd=0.8784,0.9569,1 opacity=1
+amber Kd=0.7843,0.5608,0.2078 opacity=1
+door_left.obj
+meshes=3 vertices=288 triangles=132 materials=13
+DefaultMaterial Kd=0.6,0.6,0.6 opacity=1
+shell Kd=0.8745,0.902,0.9098 opacity=1
+white Kd=0.9451,0.9529,0.9373 opacity=1
+dark Kd=0.0902,0.1216,0.1529 opacity=1
+rubber Kd=0.0314,0.0588,0.0824 opacity=1
+steel Kd=0.3373,0.4,0.451 opacity=1
+wall Kd=0.7961,0.8353,0.851 opacity=1
+floor Kd=0.5176,0.5765,0.6196 opacity=1
+recess Kd=0.2235,0.2863,0.3255 opacity=1
+red Kd=0.8471,0.1725,0.1961 opacity=1
+lens Kd=0.2549,0.051,0.0784 opacity=1
+light Kd=0.8784,0.9569,1 opacity=1
+amber Kd=0.7843,0.5608,0.2078 opacity=1
+door_right.obj
+meshes=3 vertices=288 triangles=132 materials=13
+DefaultMaterial Kd=0.6,0.6,0.6 opacity=1
+shell Kd=0.8745,0.902,0.9098 opacity=1
+white Kd=0.9451,0.9529,0.9373 opacity=1
+dark Kd=0.0902,0.1216,0.1529 opacity=1
+rubber Kd=0.0314,0.0588,0.0824 opacity=1
+steel Kd=0.3373,0.4,0.451 opacity=1
+wall Kd=0.7961,0.8353,0.851 opacity=1
+floor Kd=0.5176,0.5765,0.6196 opacity=1
+recess Kd=0.2235,0.2863,0.3255 opacity=1
+red Kd=0.8471,0.1725,0.1961 opacity=1
+lens Kd=0.2549,0.051,0.0784 opacity=1
+light Kd=0.8784,0.9569,1 opacity=1
+amber Kd=0.7843,0.5608,0.2078 opacity=1
