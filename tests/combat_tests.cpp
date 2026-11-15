@@ -1,4 +1,5 @@
 #include "combat.h"
+#include "combat_range.h"
 
 #include <algorithm>
 #include <array>
@@ -71,6 +72,34 @@ int main()
     AdvanceProjectile(bullet, 0.1f, empty);
     for (int i = 0; i < 10; ++i) AdvanceProjectile(splitBullet, 0.01f, empty);
     check(close(bullet.position.z, splitBullet.position.z), "movement consistent across frame subdivisions");
+    CombatRange range;
+    const glm::vec3 eye{0,1.65f,0};
+    check(range.Fire(eye,{0,0,-1}), "range accepts first shot");
+    check(!range.Fire(eye,{0,0,-1}), "range prevents free rapid fire during cooldown");
+    for (int i=0;i<60;++i) range.Update(1.0f/60,1.0f/60);
+    check(range.RemainingTargets()==3 && range.BlockedShots()==1 && range.Flights().empty(),
+        "range cover blocks centre target and removes projectile");
+    range.ToggleCover();
+    range.Fire(eye,{0,0,-1});
+    for (int i=0;i<60;++i) range.Update(1.0f/60,1.0f/60);
+    check(range.RemainingTargets()==2, "range centre target disappears after cover removed");
+    range.Fire(eye,glm::vec3(-2.1f,1.6f,-9.8f)-eye);
+    for (int i=0;i<60;++i) range.Update(1.0f/60,1.0f/60);
+    range.Fire(eye,glm::vec3(2.1f,1.6f,-9.8f)-eye);
+    for (int i=0;i<60;++i) range.Update(1.0f/60,1.0f/60);
+    check(range.RemainingTargets()==0 && range.Shots()==4, "range can complete all three targets");
+    range.Reset();
+    check(range.RemainingTargets()==3 && range.Shots()==0 && range.BlockedShots()==0
+        && range.CoverEnabled() && range.Flights().empty() && !range.LastHit(),
+        "range restart restores all combat state");
+    range.Fire(eye,{0,0,-1});
+    range.Update(0,0);
+    check(range.Flights().size()==1 && range.Flights()[0].projectile.position==eye,
+        "paused range does not advance bullet");
+    range.Reset();
+    range.Fire(eye,{0,1,0});
+    for (int i=0;i<300;++i) range.Update(1.0f/60,1.0f/60);
+    check(range.Flights().empty(), "missed bullets expire");
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

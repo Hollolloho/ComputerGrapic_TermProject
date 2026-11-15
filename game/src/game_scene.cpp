@@ -5,23 +5,27 @@
 
 namespace aegis {
 
-bool GameScene::Init(const std::filesystem::path& projectDirectory)
+bool GameScene::Init(const std::filesystem::path& projectDirectory, bool useCombatTest)
 {
+    combatTest = useCombatTest;
     glEnable(GL_DEPTH_TEST);
     // 드론 셰이더가 최종 색을 sRGB로 변환한다.
     glDisable(GL_FRAMEBUFFER_SRGB);
     glClearColor(0.16f, 0.19f, 0.24f, 1.0f);
-    return drone.Init(projectDirectory);
+    return drone.Init(projectDirectory) && testScene.Init();
 }
 
 void GameScene::Update(double deltaTime)
 {
-    drone.Update(deltaTime);
+    if (combatTest) testScene.Update(deltaTime, deltaTime);
+    else drone.Update(deltaTime);
 }
 
 void GameScene::Draw(int width, int height) const
 {
+    if (combatTest) { testScene.Draw(width, height); return; }
     glViewport(0, 0, width, height);
+    glClearColor(0.16f, 0.19f, 0.24f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // 투영은 유지하고 부모에 연결된 눈 카메라의 월드 시점을 사용한다.
@@ -39,11 +43,24 @@ void GameScene::Reset()
 {
     drone.Reset();
     camera.Reset();
+    testScene.Reset();
 }
 
 void GameScene::Clear()
 {
     drone.Clear();
+    testScene.Clear();
+}
+
+void GameScene::ToggleMode()
+{
+    combatTest = !combatTest;
+    Reset();
+}
+
+void GameScene::SampleInput(GLFWwindow* window, bool active)
+{
+    testScene.SampleInput(window, active && combatTest);
 }
 
 } // namespace aegis

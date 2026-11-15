@@ -68,7 +68,11 @@
     <ClCompile Include="src\model_binary.cpp" />
     <ClCompile Include="src\model_loader.cpp" />
     <ClCompile Include="src\combat.cpp" />
+    <ClCompile Include="src\combat_range.cpp" />
+    <ClCompile Include="src\combat_test_scene.cpp" />
     <ClInclude Include="src\combat.h" />
+    <ClInclude Include="src\combat_range.h" />
+    <ClInclude Include="src\combat_test_scene.h" />
     <ClInclude Include="src\drone.h" />
     <ClInclude Include="src\player_camera.h" />
     <ClInclude Include="src\game_framework.h" />

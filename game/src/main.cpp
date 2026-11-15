@@ -43,9 +43,17 @@ int wmain(int argc, wchar_t* argv[])
         aegis::GameFramework game;
         return game.Run();
     }
+    if (argc >= 2 && std::wstring_view(argv[1]) == L"--combat-test") {
+        if (argc > 3 || (argc == 3 && std::wstring_view(argv[2]) != L"--smoke-test")) {
+            std::cerr << "Usage: AEGIS.exe --combat-test [--smoke-test]\n";
+            return 2;
+        }
+        aegis::GameFramework game;
+        return game.Run(true, argc == 3);
+    }
     if (argc == 3 && std::wstring_view(argv[1]) == L"--inspect-obj") {
         return InspectModel(argv[2]);
     }
-    std::cerr << "Usage: AEGIS.exe [--inspect-obj <model.obj>]\n";
+    std::cerr << "Usage: AEGIS.exe [--inspect-obj <model.obj> | --combat-test [--smoke-test]]\n";
     return 2;
 }

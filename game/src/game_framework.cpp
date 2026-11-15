@@ -21,6 +21,7 @@ struct FrameInput {
     bool paused{};
     bool resetRequested{};
     bool restartFrameTime{};
+    bool toggleModeRequested{};
 };
 
 std::filesystem::path ProjectDirectory()
@@ -55,6 +56,9 @@ void keyCallback(GLFWwindow* window, int key, int, int action, int)
     } else if (key == GLFW_KEY_R) {
         input.resetRequested = true;
         input.restartFrameTime = true;
+    } else if (key == GLFW_KEY_F2) {
+        input.toggleModeRequested = true;
+        input.restartFrameTime = true;
     }
 }
 
@@ -66,7 +70,7 @@ void restartFrameTimeCallback(GLFWwindow* window, int)
 
 } // namespace
 
-int GameFramework::Run()
+int GameFramework::Run(bool combatTest, bool smokeTest)
 {
     const auto projectDirectory = ProjectDirectory();
     if (projectDirectory.empty()) {
@@ -80,6 +84,7 @@ int GameFramework::Run()
         return 1;
     }
 
+    glfwWindowHint(GLFW_VISIBLE, smokeTest ? GLFW_FALSE : GLFW_TRUE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -102,19 +107,22 @@ int GameFramework::Run()
 
     FrameInput input;
     GameScene scene;
-    const bool ready = scene.Init(projectDirectory);
+    const bool ready = scene.Init(projectDirectory, combatTest);
+    bool smokePassed = !smokeTest;
     if (ready) {
         glfwSetWindowUserPointer(window, &input);
         glfwSetKeyCallback(window, keyCallback);
         glfwSetWindowFocusCallback(window, restartFrameTimeCallback);
         glfwSetWindowIconifyCallback(window, restartFrameTimeCallback);
         std::cout << "OpenGL " << glGetString(GL_VERSION) << '\n'
-                  << "Space: pause/resume, R: reset pose, Esc: exit" << std::endl;
-        glfwSwapInterval(1);
+                  << "F2: drone/range | LMB: fire | RMB drag: aim | B: cover | Space: pause | R: reset | Esc: exit\n"
+                  << "Range is an isolated shooting test; movement/time-slowing/enemy AI are not connected yet." << std::endl;
+        glfwSwapInterval(smokeTest ? 0 : 1);
 
         constexpr double maxDeltaTime = 0.05;
         double previousTime = glfwGetTime();
         bool wasActive = false;
+        int smokeFrame = 0;
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
             if (glfwWindowShouldClose(window)) {
@@ -126,15 +134,27 @@ int GameFramework::Run()
             glfwGetFramebufferSize(window, &width, &height);
             const bool drawable = width > 0 && height > 0 &&
                                   !glfwGetWindowAttrib(window, GLFW_ICONIFIED);
-            const bool active = drawable && !input.paused &&
+            bool active = drawable && !input.paused &&
                                 glfwGetWindowAttrib(window, GLFW_FOCUSED);
+            if (input.toggleModeRequested) {
+                scene.ToggleMode();
+                input.toggleModeRequested = false;
+                input.paused = false;
+            }
             if (input.resetRequested) {
                 scene.Reset();
                 input.resetRequested = false;
             }
 
+            scene.SampleInput(window, active && wasActive && !input.restartFrameTime && !smokeTest);
+            if (smokeTest) {
+                active = true;
+                scene.SmokeFrame(++smokeFrame);
+                scene.Update(1.0 / 60.0);
+            }
+
             // 복귀한 첫 프레임에는 중단 중에 흐른 시간을 회전에 더하지 않는다.
-            if (active && wasActive && !input.restartFrameTime) {
+            if (!smokeTest && active && wasActive && !input.restartFrameTime) {
                 const double deltaTime = std::clamp(currentTime - previousTime, 0.0, maxDeltaTime);
                 scene.Update(deltaTime);
             }
@@ -144,9 +164,31 @@ int GameFramework::Run()
 
             if (drawable) {
                 scene.Draw(width, height);
+                if (smokeTest && smokeFrame == 40) {
+                    if (!scene.TestScene().SaveFrame(projectDirectory / "build/combat-range-smoke.ppm", width, height)) {
+                        std::cerr << "Could not save range smoke frame\n";
+                    }
+                }
                 glfwSwapBuffers(window);
             } else {
                 glfwWaitEventsTimeout(0.1);
+            }
+            if (scene.IsCombatTest()) {
+                const auto& range = scene.TestScene().Range();
+                const std::string title = std::string("AEGIS RANGE | ")
+                    + (input.paused ? "PAUSED | " : "")
+                    + "Targets: " + std::to_string(range.RemainingTargets()) + "/3 | Shots: "
+                    + std::to_string(range.Shots()) + " | Blocked: " + std::to_string(range.BlockedShots())
+                    + " | Cover: " + (range.CoverEnabled() ? "ON" : "OFF")
+                    + " | LMB fire / RMB drag aim / B cover / R reset / F2 drone";
+                glfwSetWindowTitle(window, title.c_str());
+            } else {
+                glfwSetWindowTitle(window, "AEGIS - Drone | F2: shooting range | Space: pause | R: reset");
+            }
+            if (smokeTest && smokeFrame >= 300) {
+                smokePassed = scene.TestScene().SmokePassed();
+                std::cout << "Combat render smoke: " << (smokePassed ? "PASS" : "FAIL") << '\n';
+                glfwSetWindowShouldClose(window, GLFW_TRUE);
             }
         }
     }
@@ -155,7 +197,7 @@ int GameFramework::Run()
     scene.Clear();
     glfwDestroyWindow(window);
     glfwTerminate();
-    return ready ? 0 : 1;
+    return ready && smokePassed ? 0 : 1;
 }
 
 } // namespace aegis

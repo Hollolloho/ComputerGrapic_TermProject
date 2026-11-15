@@ -36,6 +36,7 @@
   <ItemGroup>
     <ClCompile Include="combat_tests.cpp" />
     <ClCompile Include="..\game\src\combat.cpp" />
+    <ClCompile Include="..\game\src\combat_range.cpp" />
     <ClInclude Include="..\game\src\combat.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
