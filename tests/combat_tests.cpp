@@ -1,5 +1,6 @@
 #include "combat.h"
 #include "combat_range.h"
+#include "turret_encounter.h"
 
 #include <algorithm>
 #include <array>
@@ -100,6 +101,66 @@ int main()
     range.Fire(eye,{0,1,0});
     for (int i=0;i<300;++i) range.Update(1.0f/60,1.0f/60);
     check(range.Flights().empty(), "missed bullets expire");
+    TurretEncounter battle;
+    const auto tick=[&](int frames) {
+        for(int frame=0;frame<frames;++frame) battle.Update(0.01f,0.01f,eye);
+    };
+    battle.Update(0.01f,0.01f,eye);
+    check(battle.Phase()==TurretPhase::Warning && battle.EnemyShots()==0,
+        "turret warns before first shot");
+    tick(50);
+    check(battle.EnemyShots()==0 && battle.Health()==100,"warning cannot damage player");
+    tick(60);
+    check(battle.EnemyShots()==1 && battle.Health()==100 && battle.EnemyFlights().size()==1,
+        "turret launches visible bullet after warning, not instant damage");
+    tick(150);
+    check(battle.Health()==75 && battle.HitsTaken()==1,"enemy bullet applies one 25-point hit");
+    const auto healthAfterHit=battle.Health();
+    const auto shotsAfterHit=battle.EnemyShots();
+    battle.Update(0,0,eye);
+    check(battle.Health()==healthAfterHit && battle.EnemyShots()==shotsAfterHit,
+        "paused encounter does not deal damage or advance turret");
+    battle.Reset(); battle.ToggleCover(); tick(500);
+    check(battle.EnemyShots()==0 && battle.Health()==100 && battle.Phase()==TurretPhase::Idle,
+        "occluding wall prevents turret fire");
+    battle.Reset(); tick(50); battle.ToggleCover(); tick(200);
+    check(battle.EnemyShots()==0,"closing cover cancels warning");
+    battle.ToggleCover(); tick(50);
+    check(battle.EnemyShots()==0 && battle.Phase()==TurretPhase::Warning,
+        "reacquiring player requires fresh warning");
+    battle.Reset(); tick(110); battle.ToggleCover(); tick(200);
+    check(battle.BlockedEnemyShots()==1 && battle.Health()==100 && battle.EnemyFlights().empty(),
+        "cover stops in-flight enemy bullet without player damage");
+    battle.Reset(); tick(1200);
+    check(battle.Result()==EncounterResult::Failed && battle.Health()==0 && battle.HitsTaken()==4,
+        "four hits cause failure without negative health");
+    check(battle.PlayerFlights().empty() && battle.EnemyFlights().empty(),
+        "failure removes all active projectiles");
+    const int failedShots=battle.EnemyShots();
+    check(!battle.Fire(eye,{0,0,-1}),"failed player cannot fire");
+    battle.ToggleCover(); tick(300);
+    check(battle.EnemyShots()==failedShots && battle.Health()==0 && !battle.CoverEnabled(),
+        "failure freezes AI and gameplay until restart");
+    battle.Reset();
+    check(battle.Health()==100 && battle.Result()==EncounterResult::Running && battle.Phase()==TurretPhase::Idle
+        && battle.EnemyShots()==0 && battle.PlayerShots()==0 && battle.HitsTaken()==0
+        && battle.BlockedEnemyShots()==0 && !battle.CoverEnabled() && battle.Colliders()[0].enabled,
+        "restart restores player, turret, cover, counters and phase");
+    battle.Fire(eye,{0,0,-1}); tick(100);
+    check(battle.Result()==EncounterResult::Cleared && battle.Health()==100 && !battle.Colliders()[0].enabled,
+        "player bullet destroys turret and clears encounter");
+    check(battle.PlayerFlights().empty() && battle.EnemyFlights().empty() && !battle.Fire(eye,{0,0,-1}),
+        "clear stops projectiles and blocks new shots");
+    battle.Reset();
+    for(int i=0;i<500;++i) battle.Update(0.01f,0.001f,eye);
+    check(battle.EnemyShots()==0 && battle.Phase()==TurretPhase::Warning,
+        "turret warning uses game time instead of real time");
+    battle.Update(-1,0.1f,eye);
+    battle.Update(0.1f,std::numeric_limits<float>::infinity(),eye);
+    check(battle.EnemyShots()==0 && battle.Health()==100,"invalid encounter delta is ignored");
+    battle.Reset(); battle.ToggleCover(); battle.Fire(eye,{0,0,-1}); tick(150);
+    check(battle.Result()==EncounterResult::Running && battle.Colliders()[0].enabled,
+        "player shot cannot damage turret through cover");
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

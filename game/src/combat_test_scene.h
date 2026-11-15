@@ -2,8 +2,10 @@
 
 #include "combat_range.h"
 #include "player_camera.h"
+#include "turret_encounter.h"
 #include <GL/glew.h>
 #include <filesystem>
+#include <string>
 
 struct GLFWwindow;
 
@@ -21,11 +23,17 @@ public:
     bool SmokePassed() const;
     bool SaveFrame(const std::filesystem::path& path, int width, int height) const;
     const combat::CombatRange& Range() const { return range; }
+    void SetTurretMode(bool enabled);
+    bool IsTurretMode() const { return turretMode; }
+    int SmokeFrameCount() const { return turretMode ? 780 : 300; }
+    std::string StatusTitle(bool paused) const;
 
 private:
+    void DrawHud(int width,int height) const;
     void DrawBox(const glm::mat4& viewProjection, const glm::vec3& minimum,
         const glm::vec3& maximum, const glm::vec3& color) const;
     combat::CombatRange range;
+    combat::TurretEncounter encounter;
     PlayerCamera camera;
     GLuint program{};
     GLuint vao{};
@@ -35,6 +43,9 @@ private:
     bool mouseHeld{};
     bool coverHeld{};
     bool lookHeld{};
+    bool turretHeld{};
+    bool turretMode{};
+    bool smokeFailureSeen{};
     double lastX{};
     double lastY{};
     float yaw{};

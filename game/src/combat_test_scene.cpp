@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <array>
 
 namespace aegis {
 namespace {
@@ -73,10 +74,16 @@ void main() {
 
 void CombatTestScene::Reset()
 {
-    range.Reset(); yaw = pitch = 0;
+    range.Reset(); encounter.Reset(); yaw = pitch = 0;
     camera.SetPose({0,0,0}, yaw, pitch);
     // Held input remains latched until release (R must not create a fresh shot).
     lookHeld = false;
+}
+
+void CombatTestScene::SetTurretMode(bool enabled)
+{
+    turretMode=enabled;
+    Reset(); smokeFailureSeen=false;
 }
 
 void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
@@ -84,23 +91,33 @@ void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
     const bool left = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
     const bool right = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
     const bool cover = glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS;
+    const bool turret = glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS;
     double x{}, y{}; glfwGetCursorPos(window, &x, &y);
     if (active) {
-        if (right && lookHeld) {
+        if (turret && !turretHeld) SetTurretMode(!turretMode);
+        const bool playing=!turretMode || encounter.Result()==combat::EncounterResult::Running;
+        if (playing && right && lookHeld) {
             yaw -= static_cast<float>(x-lastX)*0.14f;
             pitch = std::clamp(pitch-static_cast<float>(y-lastY)*0.14f, -65.0f,65.0f);
             camera.SetPose({0,0,0}, yaw,pitch);
         }
-        if (cover && !coverHeld) range.ToggleCover();
-        if (left && !mouseHeld) range.Fire(camera.EyePosition(), camera.ViewDirection());
+        if (playing && cover && !coverHeld) {
+            if (turretMode) encounter.ToggleCover(); else range.ToggleCover();
+        }
+        if (playing && left && !mouseHeld) {
+            if (turretMode) encounter.Fire(camera.EyePosition(),camera.ViewDirection());
+            else range.Fire(camera.EyePosition(), camera.ViewDirection());
+        }
     }
     mouseHeld = left; coverHeld = cover; lookHeld = active && right;
+    turretHeld=turret;
     lastX=x; lastY=y;
 }
 
 void CombatTestScene::Update(double realDt, double gameDt)
 {
-    range.Update(static_cast<float>(realDt), static_cast<float>(gameDt));
+    if (turretMode) encounter.Update(static_cast<float>(realDt),static_cast<float>(gameDt),camera.EyePosition());
+    else range.Update(static_cast<float>(realDt), static_cast<float>(gameDt));
 }
 
 void CombatTestScene::DrawBox(const glm::mat4& vp, const glm::vec3& minimum,
@@ -122,20 +139,36 @@ void CombatTestScene::Draw(int width, int height) const
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     const auto vp=glm::perspective(glm::radians(60.0f),static_cast<float>(width)/height,0.05f,80.0f)*camera.ViewMatrix();
     glUseProgram(program); glBindVertexArray(vao);
-    for (const auto& box : range.Colliders()) {
+    const std::span<const combat::Collider> boxes=turretMode
+        ? std::span<const combat::Collider>(encounter.Colliders())
+        : std::span<const combat::Collider>(range.Colliders());
+    for (const auto& box : boxes) {
         if (!box.enabled) continue;
-        const glm::vec3 color = box.kind == combat::HitKind::Body ? glm::vec3(0.05f,0.9f,0.7f)
+        const glm::vec3 color = box.id==500 ? glm::vec3(0.28f,0.34f,0.43f)
+            : box.kind == combat::HitKind::Body ? glm::vec3(0.05f,0.9f,0.7f)
             : box.id == 200 ? glm::vec3(0.95f,0.35f,0.12f) : glm::vec3(0.15f,0.22f,0.31f);
         DrawBox(vp,box.minimum,box.maximum,color);
+    }
+    if (turretMode && encounter.Result()!=combat::EncounterResult::Cleared) {
+        DrawBox(vp,{-0.9f,0,-10.6f},{0.9f,0.35f,-9.3f},{0.25f,0.3f,0.4f});
+        DrawBox(vp,{-0.16f,1.49f,-9.5f},{0.16f,1.81f,-9.25f},{0.12f,0.16f,0.22f});
+        const auto sensor=encounter.Phase()==combat::TurretPhase::Warning
+            ? glm::vec3(1,0.15f,0.1f) : glm::vec3(0.2f,0.7f,1);
+        DrawBox(vp,{-0.28f,1.94f,-9.52f},{0.28f,2.12f,-9.46f},sensor);
     }
     // Floor strips make depth and aiming changes visible without extra assets.
     for (int z=0;z>=-12;--z) DrawBox(vp,{-5,0.005f,static_cast<float>(z)-0.015f},
         {5,0.012f,static_cast<float>(z)+0.015f},{0.23f,0.35f,0.44f});
-    for (const auto& flight : range.Flights()) {
+    const auto& shots=turretMode ? encounter.PlayerFlights() : range.Flights();
+    for (const auto& flight : shots) {
         const auto p=flight.projectile.position;
         DrawBox(vp,p-glm::vec3(0.055f),p+glm::vec3(0.055f),{1,0.85f,0.15f});
     }
-    if (range.LastHit() && range.ImpactTime()>0) {
+    if (turretMode) for (const auto& flight:encounter.EnemyFlights()) {
+        const auto p=flight.projectile.position;
+        DrawBox(vp,p-glm::vec3(0.08f),p+glm::vec3(0.08f),{1,0.15f,0.08f});
+    }
+    if (!turretMode && range.LastHit() && range.ImpactTime()>0) {
         const auto p=range.LastHit()->position;
         DrawBox(vp,p-glm::vec3(0.07f),p+glm::vec3(0.07f),{1,1,1});
     }
@@ -145,6 +178,7 @@ void CombatTestScene::Draw(int width, int height) const
     glClearColor(range.RemainingTargets()==0 ? 0.15f : 0.95f,1,0.7f,1);
     glScissor(width/2-8,height/2-1,17,3); glClear(GL_COLOR_BUFFER_BIT);
     glScissor(width/2-1,height/2-8,3,17); glClear(GL_COLOR_BUFFER_BIT);
+    DrawHud(width,height);
     glDisable(GL_SCISSOR_TEST);
 }
 
@@ -158,6 +192,14 @@ void CombatTestScene::Clear()
 
 void CombatTestScene::SetSmokeFrame(int frame)
 {
+    if (turretMode) {
+        if (frame==660) {
+            smokeFailureSeen=encounter.Result()==combat::EncounterResult::Failed;
+            Reset();
+        }
+        if (frame==661) encounter.Fire(camera.EyePosition(),camera.ViewDirection());
+        return;
+    }
     if (frame==1) range.Fire(camera.EyePosition(),{0,0,-1});
     if (frame==70) { range.ToggleCover(); range.Fire(camera.EyePosition(),{0,0,-1}); }
     if (frame==140) range.Fire(camera.EyePosition(),glm::vec3(-2.1f,1.6f,-9.8f)-camera.EyePosition());
@@ -166,7 +208,25 @@ void CombatTestScene::SetSmokeFrame(int frame)
 
 bool CombatTestScene::SmokePassed() const
 {
+    if (turretMode) return smokeFailureSeen && encounter.Result()==combat::EncounterResult::Cleared
+        && encounter.Health()==100 && encounter.PlayerFlights().empty() && encounter.EnemyFlights().empty();
     return range.RemainingTargets()==0 && range.Shots()==4 && range.BlockedShots()==1 && range.Flights().empty();
+}
+
+std::string CombatTestScene::StatusTitle(bool paused) const
+{
+    if (!turretMode) return std::string("AEGIS RANGE | ")+(paused ? "PAUSED | " : "")
+        +"Targets: "+std::to_string(range.RemainingTargets())+"/3 | Shots: "+std::to_string(range.Shots())
+        +" | Blocked: "+std::to_string(range.BlockedShots())+" | Cover: "+(range.CoverEnabled()?"ON":"OFF")
+        +" | T turret / LMB fire / RMB aim / B cover / R reset / F2 drone";
+    const char* state=encounter.Result()==combat::EncounterResult::Failed ? "FAILED"
+        : encounter.Result()==combat::EncounterResult::Cleared ? "CLEARED"
+        : encounter.Phase()==combat::TurretPhase::Warning ? "WARNING"
+        : encounter.Phase()==combat::TurretPhase::Cooldown ? "COOLDOWN" : "READY";
+    return std::string("AEGIS TURRET | ")+(paused ? "PAUSED | " : "")+state
+        +" | HP: "+std::to_string(encounter.Health())+" | Hits: "+std::to_string(encounter.HitsTaken())
+        +" | EnemyShots: "+std::to_string(encounter.EnemyShots())+" | PlayerShots: "+std::to_string(encounter.PlayerShots())
+        +" | Cover: "+(encounter.CoverEnabled()?"ON":"OFF")+" | B cover / R retry / T range / F2 drone";
 }
 
 bool CombatTestScene::SaveFrame(const std::filesystem::path& path, int width, int height) const

@@ -10,7 +10,7 @@ namespace aegis {
 
 class GameScene {
 public:
-    bool Init(const std::filesystem::path& projectDirectory, bool combatTest = false);
+    bool Init(const std::filesystem::path& projectDirectory, bool combatTest = false, bool turretTest = false);
     void Update(double deltaTime);
     void Draw(int width, int height) const;
     void Reset();

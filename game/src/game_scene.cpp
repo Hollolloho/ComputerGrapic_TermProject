@@ -5,14 +5,16 @@
 
 namespace aegis {
 
-bool GameScene::Init(const std::filesystem::path& projectDirectory, bool useCombatTest)
+bool GameScene::Init(const std::filesystem::path& projectDirectory, bool useCombatTest, bool turretTest)
 {
     combatTest = useCombatTest;
     glEnable(GL_DEPTH_TEST);
     // 드론 셰이더가 최종 색을 sRGB로 변환한다.
     glDisable(GL_FRAMEBUFFER_SRGB);
     glClearColor(0.16f, 0.19f, 0.24f, 1.0f);
-    return drone.Init(projectDirectory) && testScene.Init();
+    if (!drone.Init(projectDirectory) || !testScene.Init()) return false;
+    testScene.SetTurretMode(turretTest);
+    return true;
 }
 
 void GameScene::Update(double deltaTime)

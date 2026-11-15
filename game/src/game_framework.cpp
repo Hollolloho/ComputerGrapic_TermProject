@@ -70,7 +70,7 @@ void restartFrameTimeCallback(GLFWwindow* window, int)
 
 } // namespace
 
-int GameFramework::Run(bool combatTest, bool smokeTest)
+int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest)
 {
     const auto projectDirectory = ProjectDirectory();
     if (projectDirectory.empty()) {
@@ -107,7 +107,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest)
 
     FrameInput input;
     GameScene scene;
-    const bool ready = scene.Init(projectDirectory, combatTest);
+    const bool ready = scene.Init(projectDirectory, combatTest, turretTest);
     bool smokePassed = !smokeTest;
     if (ready) {
         glfwSetWindowUserPointer(window, &input);
@@ -115,8 +115,8 @@ int GameFramework::Run(bool combatTest, bool smokeTest)
         glfwSetWindowFocusCallback(window, restartFrameTimeCallback);
         glfwSetWindowIconifyCallback(window, restartFrameTimeCallback);
         std::cout << "OpenGL " << glGetString(GL_VERSION) << '\n'
-                  << "F2: drone/range | LMB: fire | RMB drag: aim | B: cover | Space: pause | R: reset | Esc: exit\n"
-                  << "Range is an isolated shooting test; movement/time-slowing/enemy AI are not connected yet." << std::endl;
+                  << "F2: drone/range | T: range/turret | LMB: fire | RMB drag: aim | B: cover | Space: pause | R: reset | Esc: exit\n"
+                  << "Test scenes: fixed camera position; movement/time-slowing/drone combat are not connected yet." << std::endl;
         glfwSwapInterval(smokeTest ? 0 : 1);
 
         constexpr double maxDeltaTime = 0.05;
@@ -165,29 +165,30 @@ int GameFramework::Run(bool combatTest, bool smokeTest)
             if (drawable) {
                 scene.Draw(width, height);
                 if (smokeTest && smokeFrame == 40) {
-                    if (!scene.TestScene().SaveFrame(projectDirectory / "build/combat-range-smoke.ppm", width, height)) {
+                    const auto capture=scene.TestScene().IsTurretMode() ? "build/turret-warning-smoke.ppm" : "build/combat-range-smoke.ppm";
+                    if (!scene.TestScene().SaveFrame(projectDirectory / capture, width, height)) {
                         std::cerr << "Could not save range smoke frame\n";
                     }
+                }
+                if (smokeTest && scene.TestScene().IsTurretMode() && (smokeFrame==600 || smokeFrame==770)) {
+                    const auto capture=smokeFrame==600 ? "build/turret-failed-smoke.ppm" : "build/turret-cleared-smoke.ppm";
+                    if (!scene.TestScene().SaveFrame(projectDirectory / capture,width,height))
+                        std::cerr << "Could not save turret result frame\n";
                 }
                 glfwSwapBuffers(window);
             } else {
                 glfwWaitEventsTimeout(0.1);
             }
             if (scene.IsCombatTest()) {
-                const auto& range = scene.TestScene().Range();
-                const std::string title = std::string("AEGIS RANGE | ")
-                    + (input.paused ? "PAUSED | " : "")
-                    + "Targets: " + std::to_string(range.RemainingTargets()) + "/3 | Shots: "
-                    + std::to_string(range.Shots()) + " | Blocked: " + std::to_string(range.BlockedShots())
-                    + " | Cover: " + (range.CoverEnabled() ? "ON" : "OFF")
-                    + " | LMB fire / RMB drag aim / B cover / R reset / F2 drone";
+                const std::string title=scene.TestScene().StatusTitle(input.paused);
                 glfwSetWindowTitle(window, title.c_str());
             } else {
                 glfwSetWindowTitle(window, "AEGIS - Drone | F2: shooting range | Space: pause | R: reset");
             }
-            if (smokeTest && smokeFrame >= 300) {
+            if (smokeTest && smokeFrame >= scene.TestScene().SmokeFrameCount()) {
                 smokePassed = scene.TestScene().SmokePassed();
-                std::cout << "Combat render smoke: " << (smokePassed ? "PASS" : "FAIL") << '\n';
+                std::cout << (scene.TestScene().IsTurretMode() ? "Turret encounter smoke: " : "Combat render smoke: ")
+                    << (smokePassed ? "PASS" : "FAIL") << '\n';
                 glfwSetWindowShouldClose(window, GLFW_TRUE);
             }
         }
