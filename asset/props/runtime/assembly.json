@@ -1,0 +1,172 @@
+{
+  "version": 1,
+  "asset": "aegis_props",
+  "units": "metres",
+  "up": "+Y",
+  "front": "+Z",
+  "material_library": "obj/materials.mtl",
+  "display_and_crystal_highlights": "cyan, crystal_light, and red can drive emissive effects in the game shader",
+  "assets": {
+    "analysis_terminal": {
+      "mesh": "obj/analysis_terminal.obj",
+      "triangles": 3564,
+      "bounds_xyz_m": [
+        [
+          -0.35,
+          0.35
+        ],
+        [
+          0.0,
+          1.2472763
+        ],
+        [
+          -0.27,
+          0.27
+        ]
+      ],
+      "origin": "floor centre",
+      "interaction_point_m": [
+        0,
+        1.03,
+        0.24
+      ],
+      "screen_center_m": [
+        0,
+        1.032,
+        0.101
+      ],
+      "collision_hint": "footprint AABB"
+    },
+    "cw01c_supply_station": {
+      "mesh": "obj/cw01c_supply_station.obj",
+      "triangles": 2792,
+      "bounds_xyz_m": [
+        [
+          -0.7,
+          0.7
+        ],
+        [
+          0.0,
+          0.9
+        ],
+        [
+          -0.37,
+          0.3725
+        ]
+      ],
+      "origin": "floor centre",
+      "shelf_height_m": 0.9,
+      "interaction_point_m": [
+        0,
+        0.831,
+        0.4
+      ],
+      "collision_hint": "footprint AABB",
+      "weapon_anchor": {
+        "asset": "cw01c",
+        "root_translation_m": [
+          0,
+          0.99903,
+          0.02
+        ],
+        "rotation_deg_xyz": [
+          0,
+          0,
+          0
+        ],
+        "surface_contact_m": [
+          0,
+          0.9,
+          0.02
+        ],
+        "forward": "+Z"
+      }
+    },
+    "crystal_projectile": {
+      "mesh": "obj/crystal_projectile.obj",
+      "triangles": 36,
+      "bounds_xyz_m": [
+        [
+          -0.033,
+          0.033
+        ],
+        [
+          -0.0259808,
+          0.0259808
+        ],
+        [
+          -0.086,
+          0.115
+        ]
+      ],
+      "origin": "projectile centre",
+      "tip_m": [
+        0,
+        0,
+        0.115
+      ],
+      "trail_origin_m": [
+        0,
+        0,
+        -0.086
+      ]
+    },
+    "crystal_shard_long": {
+      "mesh": "obj/crystal_shard_long.obj",
+      "triangles": 20,
+      "bounds_xyz_m": [
+        [
+          -0.0152974,
+          0.0135327
+        ],
+        [
+          -0.0072862,
+          0.0109942
+        ],
+        [
+          -0.037,
+          0.048
+        ]
+      ],
+      "origin": "shard centre"
+    },
+    "crystal_shard_wide": {
+      "mesh": "obj/crystal_shard_wide.obj",
+      "triangles": 20,
+      "bounds_xyz_m": [
+        [
+          -0.0171714,
+          0.0199191
+        ],
+        [
+          -0.0145126,
+          0.0129854
+        ],
+        [
+          -0.029,
+          0.032
+        ]
+      ],
+      "origin": "shard centre"
+    },
+    "crystal_shard_chip": {
+      "mesh": "obj/crystal_shard_chip.obj",
+      "triangles": 16,
+      "bounds_xyz_m": [
+        [
+          -0.016,
+          0.0121317
+        ],
+        [
+          -0.014,
+          0.014
+        ],
+        [
+          -0.023,
+          0.027
+        ]
+      ],
+      "origin": "shard centre"
+    }
+  }
+}
