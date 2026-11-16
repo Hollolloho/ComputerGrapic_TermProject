@@ -29,7 +29,7 @@ GLuint Compile(GLenum kind, const char* source)
 }
 }
 
-bool CombatTestScene::Init()
+bool CombatTestScene::Init(const std::filesystem::path& projectDirectory)
 {
     const char* vertex = R"(#version 330 core
 layout(location=0) in vec3 position;
@@ -69,12 +69,13 @@ void main() {
     glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(glm::vec3),nullptr);
     glEnableVertexAttribArray(0); glBindVertexArray(0);
     Reset();
+    if (!weapon.Init(projectDirectory)) { Clear(); return false; }
     return true;
 }
 
 void CombatTestScene::Reset()
 {
-    range.Reset(); encounter.Reset(); yaw = pitch = 0;
+    range.Reset(); encounter.Reset(); weapon.Reset(); yaw = pitch = 0;
     camera.SetPose({0,0,0}, yaw, pitch);
     // Held input remains latched until release (R must not create a fresh shot).
     lookHeld = false;
@@ -84,6 +85,14 @@ void CombatTestScene::SetTurretMode(bool enabled)
 {
     turretMode=enabled;
     Reset(); smokeFailureSeen=false;
+}
+
+bool CombatTestScene::Fire(const glm::vec3& direction)
+{
+    const bool fired=turretMode ? encounter.Fire(camera.EyePosition(),direction)
+        : range.Fire(camera.EyePosition(),direction);
+    if (fired) weapon.OnShot();
+    return fired;
 }
 
 void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
@@ -105,8 +114,7 @@ void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
             if (turretMode) encounter.ToggleCover(); else range.ToggleCover();
         }
         if (playing && left && !mouseHeld) {
-            if (turretMode) encounter.Fire(camera.EyePosition(),camera.ViewDirection());
-            else range.Fire(camera.EyePosition(), camera.ViewDirection());
+            Fire(camera.ViewDirection());
         }
     }
     mouseHeld = left; coverHeld = cover; lookHeld = active && right;
@@ -118,6 +126,7 @@ void CombatTestScene::Update(double realDt, double gameDt)
 {
     if (turretMode) encounter.Update(static_cast<float>(realDt),static_cast<float>(gameDt),camera.EyePosition());
     else range.Update(static_cast<float>(realDt), static_cast<float>(gameDt));
+    weapon.Update(realDt);
 }
 
 void CombatTestScene::DrawBox(const glm::mat4& vp, const glm::vec3& minimum,
@@ -173,6 +182,7 @@ void CombatTestScene::Draw(int width, int height) const
         DrawBox(vp,p-glm::vec3(0.07f),p+glm::vec3(0.07f),{1,1,1});
     }
     glBindVertexArray(0); glUseProgram(0);
+    weapon.Draw(static_cast<float>(width)/height);
     // Crisp centre crosshair drawn in framebuffer pixels.
     glEnable(GL_SCISSOR_TEST);
     glClearColor(range.RemainingTargets()==0 ? 0.15f : 0.95f,1,0.7f,1);
@@ -184,6 +194,7 @@ void CombatTestScene::Draw(int width, int height) const
 
 void CombatTestScene::Clear()
 {
+    weapon.Clear();
     if (vbo) glDeleteBuffers(1,&vbo);
     if (vao) glDeleteVertexArrays(1,&vao);
     if (program) glDeleteProgram(program);
@@ -197,20 +208,22 @@ void CombatTestScene::SetSmokeFrame(int frame)
             smokeFailureSeen=encounter.Result()==combat::EncounterResult::Failed;
             Reset();
         }
-        if (frame==661) encounter.Fire(camera.EyePosition(),camera.ViewDirection());
+        if (frame==661) Fire(camera.ViewDirection());
         return;
     }
-    if (frame==1) range.Fire(camera.EyePosition(),{0,0,-1});
-    if (frame==70) { range.ToggleCover(); range.Fire(camera.EyePosition(),{0,0,-1}); }
-    if (frame==140) range.Fire(camera.EyePosition(),glm::vec3(-2.1f,1.6f,-9.8f)-camera.EyePosition());
-    if (frame==210) range.Fire(camera.EyePosition(),glm::vec3(2.1f,1.6f,-9.8f)-camera.EyePosition());
+    if (frame==1) Fire({0,0,-1});
+    if (frame==70) { range.ToggleCover(); Fire({0,0,-1}); }
+    if (frame==140) Fire(glm::vec3(-2.1f,1.6f,-9.8f)-camera.EyePosition());
+    if (frame==210) Fire(glm::vec3(2.1f,1.6f,-9.8f)-camera.EyePosition());
 }
 
 bool CombatTestScene::SmokePassed() const
 {
     if (turretMode) return smokeFailureSeen && encounter.Result()==combat::EncounterResult::Cleared
-        && encounter.Health()==100 && encounter.PlayerFlights().empty() && encounter.EnemyFlights().empty();
-    return range.RemainingTargets()==0 && range.Shots()==4 && range.BlockedShots()==1 && range.Flights().empty();
+        && encounter.Health()==100 && encounter.PlayerFlights().empty() && encounter.EnemyFlights().empty()
+        && weapon.ShotCount()==encounter.PlayerShots();
+    return range.RemainingTargets()==0 && range.Shots()==4 && range.BlockedShots()==1 && range.Flights().empty()
+        && weapon.ShotCount()==range.Shots();
 }
 
 std::string CombatTestScene::StatusTitle(bool paused) const

@@ -47,7 +47,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)external\glew-2.3.1\lib\Release\x64;$(SolutionDir)external\glfw\lib;$(SolutionDir)external\assimp\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glew32.lib;glfw3.lib;opengl32.lib;assimp-vc145-mt.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glew32.lib;glfw3.lib;opengl32.lib;assimp-vc145-mt.lib;bcrypt.lib;windowscodecs.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
@@ -69,11 +69,14 @@
     <ClCompile Include="src\model_loader.cpp" />
     <ClCompile Include="src\combat.cpp" />
     <ClCompile Include="src\combat_range.cpp" />
+    <ClCompile Include="src\weapon_view.cpp" />
     <ClCompile Include="src\turret_encounter.cpp" />
     <ClCompile Include="src\combat_test_hud.cpp" />
     <ClCompile Include="src\combat_test_scene.cpp" />
     <ClInclude Include="src\combat.h" />
     <ClInclude Include="src\combat_range.h" />
+    <ClInclude Include="src\weapon_view.h" />
+    <ClInclude Include="src\cw01c_layout.generated.h" />
     <ClInclude Include="src\turret_encounter.h" />
     <ClInclude Include="src\combat_test_scene.h" />
     <ClInclude Include="src\drone.h" />
@@ -84,6 +87,8 @@
     <ClInclude Include="src\model_loader.h" />
     <None Include="shaders\drone.vert" />
     <None Include="shaders\drone.frag" />
+    <None Include="shaders\weapon.vert" />
+    <None Include="shaders\weapon.frag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Target Name="CopyRuntimeLibraries" AfterTargets="Build">

@@ -3,6 +3,7 @@
 #include "combat_range.h"
 #include "player_camera.h"
 #include "turret_encounter.h"
+#include "weapon_view.h"
 #include <GL/glew.h>
 #include <filesystem>
 #include <string>
@@ -13,7 +14,7 @@ namespace aegis {
 
 class CombatTestScene {
 public:
-    bool Init();
+    bool Init(const std::filesystem::path& projectDirectory);
     void Reset();
     void SampleInput(GLFWwindow* window, bool active);
     void Update(double realDt, double gameDt);
@@ -29,12 +30,14 @@ public:
     std::string StatusTitle(bool paused) const;
 
 private:
+    bool Fire(const glm::vec3& direction);
     void DrawHud(int width,int height) const;
     void DrawBox(const glm::mat4& viewProjection, const glm::vec3& minimum,
         const glm::vec3& maximum, const glm::vec3& color) const;
     combat::CombatRange range;
     combat::TurretEncounter encounter;
     PlayerCamera camera;
+    WeaponView weapon;
     GLuint program{};
     GLuint vao{};
     GLuint vbo{};

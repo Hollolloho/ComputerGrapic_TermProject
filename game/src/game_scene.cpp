@@ -12,7 +12,7 @@ bool GameScene::Init(const std::filesystem::path& projectDirectory, bool useComb
     // 드론 셰이더가 최종 색을 sRGB로 변환한다.
     glDisable(GL_FRAMEBUFFER_SRGB);
     glClearColor(0.16f, 0.19f, 0.24f, 1.0f);
-    if (!drone.Init(projectDirectory) || !testScene.Init()) return false;
+    if (!drone.Init(projectDirectory) || !testScene.Init(projectDirectory)) return false;
     testScene.SetTurretMode(turretTest);
     return true;
 }
