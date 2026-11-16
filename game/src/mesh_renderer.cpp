@@ -162,13 +162,13 @@ void MeshRenderer::Begin(const glm::vec3& eyePosition, const glm::vec3& lightDir
 }
 
 void MeshRenderer::Draw(const std::vector<DrawMesh>& meshes, const glm::mat4& scene,
-                        const glm::mat4& model) const
+                        const glm::mat4& model, const glm::vec3* overrideColor) const
 {
     const glm::mat4 transform = scene * model;
     glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(transform));
     glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
     for (const auto& mesh : meshes) {
-        glUniform3fv(baseColorLocation, 1, glm::value_ptr(mesh.baseColor));
+        glUniform3fv(baseColorLocation, 1, glm::value_ptr(overrideColor ? *overrideColor : mesh.baseColor));
         glUniform3fv(specularLocation, 1, glm::value_ptr(mesh.dielectricF0));
         glUniform1f(metallicLocation, mesh.metallic);
         glUniform1f(roughnessLocation, mesh.roughness);

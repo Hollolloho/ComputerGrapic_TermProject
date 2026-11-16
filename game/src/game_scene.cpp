@@ -17,7 +17,7 @@ const glm::vec3 Up(0.0f, 1.0f, 0.0f);
 
 } // namespace
 
-bool GameScene::Init(const std::filesystem::path& projectDirectory, bool useCombatTest, bool turretTest)
+bool GameScene::Init(const std::filesystem::path& projectDirectory, bool useCombatTest, bool turretTest, bool droneTest)
 {
     Clear();
     legacyTest=useCombatTest;
@@ -29,6 +29,7 @@ bool GameScene::Init(const std::filesystem::path& projectDirectory, bool useComb
         || !testScene.Init(projectDirectory)) return false;
     testScene.SetCorridorMode(!legacyTest);
     if (legacyTest) testScene.SetTurretMode(turretTest);
+    else testScene.SetDroneMode(droneTest);
     return true;
 }
 

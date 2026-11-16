@@ -40,6 +40,8 @@
     <ClCompile Include="..\game\src\weapon_inventory.cpp" />
     <ClInclude Include="..\game\src\weapon_inventory.h" />
     <ClCompile Include="..\game\src\turret_encounter.cpp" />
+    <ClCompile Include="..\game\src\drone_behavior.cpp" />
+    <ClInclude Include="..\game\src\drone_behavior.h" />
     <ClInclude Include="..\game\src\combat.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -70,7 +70,7 @@ void restartFrameTimeCallback(GLFWwindow* window, int)
 
 } // namespace
 
-int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest)
+int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool droneTest)
 {
     const auto projectDirectory = ProjectDirectory();
     if (projectDirectory.empty()) {
@@ -107,7 +107,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest)
 
     FrameInput input;
     GameScene scene;
-    const bool ready = scene.Init(projectDirectory, combatTest, turretTest);
+    const bool ready = scene.Init(projectDirectory, combatTest, turretTest, droneTest);
     bool smokePassed = !smokeTest;
     if (ready) {
         glfwSetWindowUserPointer(window, &input);
@@ -115,8 +115,8 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest)
         glfwSetWindowFocusCallback(window, restartFrameTimeCallback);
         glfwSetWindowIconifyCallback(window, restartFrameTimeCallback);
         std::cout << "OpenGL " << glGetString(GL_VERSION) << '\n'
-                  << "F2: corridor/range | T: range/turret | LMB: fire | RMB drag: aim | B: cover | Space: pause | R: reset | Esc: exit\n"
-                  << "Fixed camera position; movement/time-slowing/drone combat are not connected yet." << std::endl;
+                  << "F2: corridor/range | F3: drone/turret | T: range/turret | LMB: fire | RMB drag: aim | B: cover | Space: pause | R: reset | Esc: exit\n"
+                  << "Fixed camera position; movement/time-slowing are not connected yet." << std::endl;
         glfwSwapInterval(smokeTest ? 0 : 1);
 
         constexpr double maxDeltaTime = 0.05;
@@ -164,6 +164,9 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest)
 
             if (drawable) {
                 scene.Draw(width, height);
+                if (smokeTest && scene.TestScene().IsDroneMode() && (smokeFrame==110 || smokeFrame==180)) {
+                    scene.TestScene().SaveFrame(projectDirectory/(smokeFrame==110 ? "build/drone-warning-smoke.ppm" : "build/drone-shot-smoke.ppm"),width,height);
+                }
                 if (smokeTest && !scene.TestScene().IsTurretMode() && smokeFrame==125) {
                     scene.TestScene().SaveFrame(projectDirectory/"build/weapon-empty-smoke.ppm",width,height);
                 }
@@ -172,7 +175,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest)
                         std::cerr << "Could not save weapon recoil frame\n";
                 }
                 if (smokeTest && smokeFrame == 40) {
-                    const auto capture=scene.TestScene().IsCorridorMode() ? "build/corridor-combat-smoke.ppm" : scene.TestScene().IsTurretMode() ? "build/turret-warning-smoke.ppm" : "build/combat-range-smoke.ppm";
+                    const auto capture=scene.TestScene().IsDroneMode() ? "build/drone-patrol-smoke.ppm" : scene.TestScene().IsCorridorMode() ? "build/corridor-combat-smoke.ppm" : scene.TestScene().IsTurretMode() ? "build/turret-warning-smoke.ppm" : "build/combat-range-smoke.ppm";
                     if (!scene.TestScene().SaveFrame(projectDirectory / capture, width, height)) {
                         std::cerr << "Could not save range smoke frame\n";
                     }
@@ -194,7 +197,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest)
             }
             if (smokeTest && smokeFrame >= scene.TestScene().SmokeFrameCount()) {
                 smokePassed = scene.TestScene().SmokePassed();
-                std::cout << (scene.TestScene().IsCorridorMode() ? "Corridor combat smoke: " : scene.TestScene().IsTurretMode() ? "Turret encounter smoke: " : "Combat render smoke: ")
+                std::cout << (scene.TestScene().IsDroneMode() ? "Drone combat smoke: " : scene.TestScene().IsCorridorMode() ? "Corridor combat smoke: " : scene.TestScene().IsTurretMode() ? "Turret encounter smoke: " : "Combat render smoke: ")
                     << (smokePassed ? "PASS" : "FAIL") << '\n';
                 glfwSetWindowShouldClose(window, GLFW_TRUE);
             }

@@ -70,13 +70,13 @@ void main() {
     glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(glm::vec3),nullptr);
     glEnableVertexAttribArray(0); glBindVertexArray(0);
     Reset();
-    if (!weapon.Init(projectDirectory)) { Clear(); return false; }
+    if (!weapon.Init(projectDirectory) || !droneRenderer.Init(projectDirectory/"game/shaders") || !drone.Init(projectDirectory)) { Clear(); return false; }
     return true;
 }
 
 void CombatTestScene::Reset()
 {
-    range.Reset(); encounter.Reset(); weapon.Reset(); yaw = pitch = 0;
+    range.Reset(); encounter.Reset(); weapon.Reset(); drone.Reset(); yaw = pitch = 0;
     camera.SetPose({0,0,0}, yaw, pitch);
     // Held input remains latched until release (R must not create a fresh shot).
     lookHeld = false;
@@ -85,7 +85,13 @@ void CombatTestScene::Reset()
 void CombatTestScene::SetCorridorMode(bool enabled) {
     corridorMode=enabled;
     encounter.SetEnvironment(enabled ? std::span<const combat::Collider>(corridor_asset::walls) : std::span<const combat::Collider>());
+    encounter.SetDroneMode(enabled);
     SetTurretMode(enabled);
+}
+
+void CombatTestScene::SetDroneMode(bool enabled) {
+    encounter.SetDroneMode(enabled); Reset();
+    smokeFailureSeen=smokePatrolSeen=smokeWarningSeen=smokeShotSeen=false;
 }
 
 void CombatTestScene::SetTurretMode(bool enabled)
@@ -118,9 +124,11 @@ void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
     const bool cover = glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS;
     const bool drop = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
     const bool interact = glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS;
+    const bool droneToggle = glfwGetKey(window, GLFW_KEY_F3) == GLFW_PRESS;
     const bool turret = glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS;
     double x{}, y{}; glfwGetCursorPos(window, &x, &y);
     if (active) {
+        if (corridorMode && droneToggle && !droneToggleHeld) SetDroneMode(!IsDroneMode());
         if (!corridorMode && turret && !turretHeld) SetTurretMode(!turretMode);
         const bool playing=!turretMode || encounter.Result()==combat::EncounterResult::Running;
         const bool canEquip=!turretMode || encounter.Result()!=combat::EncounterResult::Failed;
@@ -142,7 +150,7 @@ void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
         }
     }
     mouseHeld = left; coverHeld = cover; lookHeld = active && right;
-    turretHeld=turret; dropHeld=drop; interactHeld=interact;
+    turretHeld=turret; droneToggleHeld=droneToggle; dropHeld=drop; interactHeld=interact;
     lastX=x; lastY=y;
 }
 
@@ -150,6 +158,7 @@ void CombatTestScene::Update(double realDt, double gameDt)
 {
     if (turretMode) encounter.Update(static_cast<float>(realDt),static_cast<float>(gameDt),camera.EyePosition(),camera.ViewDirection());
     else range.Update(static_cast<float>(realDt), static_cast<float>(gameDt));
+    if (IsDroneMode() && encounter.Result()==combat::EncounterResult::Running) drone.UpdateCombat(gameDt);
     weapon.Update(realDt);
 }
 
@@ -174,19 +183,25 @@ void CombatTestScene::Draw(int width, int height,
     const auto projection=glm::perspective(glm::radians(60.0f),static_cast<float>(width)/height,0.05f,80.0f);
     const auto vp=projection*camera.ViewMatrix();
     if (drawEnvironment) drawEnvironment(vp,camera.EyePosition());
+    if (IsDroneMode() && encounter.Result()!=combat::EncounterResult::Cleared) {
+        const auto& state=encounter.DroneState();
+        const auto world=glm::rotate(glm::translate(glm::mat4(1),state.Position()),state.Yaw(),glm::vec3(0,1,0));
+        droneRenderer.Begin(camera.EyePosition(),{0.45f,0.9f,0.7f},{1,1,1},4,0.25f);
+        drone.Draw(droneRenderer,vp,world,state.Phase()==combat::DronePhase::Warning,state.Armed());
+    }
     glUseProgram(program); glBindVertexArray(vao);
     const std::span<const combat::Collider> boxes=turretMode
         ? std::span<const combat::Collider>(encounter.Colliders())
         : std::span<const combat::Collider>(range.Colliders());
     for (const auto& box : boxes) {
-        if (!box.enabled || (corridorMode && box.kind==combat::HitKind::Wall)) continue;
+        if ((IsDroneMode() && (box.id==500 || box.id==501)) || !box.enabled || (corridorMode && box.kind==combat::HitKind::Wall)) continue;
         const glm::vec3 color = box.id==500 ? glm::vec3(0.28f,0.34f,0.43f)
             : box.kind == combat::HitKind::Weapon ? glm::vec3(0.9f,0.7f,0.2f)
             : box.kind == combat::HitKind::Body ? glm::vec3(0.05f,0.9f,0.7f)
             : box.id == 200 ? glm::vec3(0.95f,0.35f,0.12f) : glm::vec3(0.15f,0.22f,0.31f);
         DrawBox(vp,box.minimum,box.maximum,color);
     }
-    if (turretMode && encounter.Result()!=combat::EncounterResult::Cleared) {
+    if (turretMode && !IsDroneMode() && encounter.Result()!=combat::EncounterResult::Cleared) {
         DrawBox(vp,{-0.9f,0,-10.6f},{0.9f,0.35f,-9.3f},{0.25f,0.3f,0.4f});
 
         const auto sensor=encounter.Phase()==combat::TurretPhase::Warning
@@ -226,6 +241,7 @@ void CombatTestScene::Draw(int width, int height,
 
 void CombatTestScene::Clear()
 {
+    drone.Clear(); droneRenderer.Clear();
     weapon.Clear();
     if (vbo) glDeleteBuffers(1,&vbo);
     if (vao) glDeleteVertexArrays(1,&vao);
@@ -235,6 +251,14 @@ void CombatTestScene::Clear()
 
 void CombatTestScene::SetSmokeFrame(int frame)
 {
+    if (IsDroneMode()) {
+        smokePatrolSeen=smokePatrolSeen || encounter.DroneState().Position().x>-0.5f;
+        smokeWarningSeen=smokeWarningSeen || encounter.DroneState().Phase()==combat::DronePhase::Warning;
+        smokeShotSeen=smokeShotSeen || encounter.EnemyShots()>0;
+        if (frame==900) { smokeFailureSeen=encounter.Result()==combat::EncounterResult::Failed; Reset(); }
+        if (frame==901) Fire(encounter.DroneState().Position()-camera.EyePosition());
+        return;
+    }
     if (turretMode) {
         if (frame==660) {
             smokeFailureSeen=encounter.Result()==combat::EncounterResult::Failed;
@@ -254,6 +278,7 @@ void CombatTestScene::SetSmokeFrame(int frame)
 
 bool CombatTestScene::SmokePassed() const
 {
+    if (IsDroneMode() && (!smokePatrolSeen || !smokeWarningSeen || !smokeShotSeen)) return false;
     if (turretMode) return smokeFailureSeen && encounter.Result()==combat::EncounterResult::Cleared
         && encounter.Health()==100 && encounter.PlayerFlights().empty() && encounter.EnemyFlights().empty()
         && weapon.ShotCount()==encounter.PlayerShots() && !Inventory().Armed() && Inventory().Breaks()==1
@@ -276,11 +301,11 @@ std::string CombatTestScene::StatusTitle(bool paused) const
         : encounter.Result()==combat::EncounterResult::Cleared ? "CLEARED"
         : encounter.Phase()==combat::TurretPhase::Warning ? "WARNING"
         : encounter.Phase()==combat::TurretPhase::Cooldown ? "COOLDOWN"
-        : encounter.Phase()==combat::TurretPhase::Disarmed ? "DISARMED" : "READY";
-    return std::string(corridorMode ? "AEGIS CORRIDOR | " : "AEGIS TURRET | ")+(paused ? "PAUSED | " : "")+state
+        : encounter.Phase()==combat::TurretPhase::Disarmed ? "DISARMED" : IsDroneMode() ? "PATROL" : "READY";
+    return std::string(IsDroneMode() ? "AEGIS DRONE | " : corridorMode ? "AEGIS CORRIDOR | " : "AEGIS TURRET | ")+(paused ? "PAUSED | " : "")+state
         +" | HP: "+std::to_string(encounter.Health())+" | Hits: "+std::to_string(encounter.HitsTaken())
         +" | EnemyShots: "+std::to_string(encounter.EnemyShots())+" | PlayerShots: "+std::to_string(encounter.PlayerShots())
-        +" | Cover: "+(encounter.CoverEnabled()?"ON":"OFF")+weaponStatus+(corridorMode ? " | G drop / E use / R retry / F2 range" : " | G drop / E pickup or supply / R retry / T range");
+        +" | Cover: "+(encounter.CoverEnabled()?"ON":"OFF")+weaponStatus+(corridorMode ? " | F3 enemy / G drop / E use / R retry / F2 range" : " | G drop / E pickup or supply / R retry / T range");
 }
 
 bool CombatTestScene::SaveFrame(const std::filesystem::path& path, int width, int height) const

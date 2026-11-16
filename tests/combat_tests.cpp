@@ -284,6 +284,93 @@ int main()
     battle.SetEnvironment(empty);
     check(battle.Colliders().size()==5 && battle.Colliders()[2].enabled,
         "return to legacy tests removes corridor collision state");
+
+    DroneBehavior ai;
+    check(ai.Phase()==DronePhase::Patrol && ai.Body().enabled && ai.Weapon().enabled,
+        "drone starts intact on its fixed patrol route");
+    ai.Update(0.5f,eye,empty);
+    check(close(ai.Position().x,-0.325f),"drone patrol advances at game-time speed");
+    const auto pausedPosition=ai.Position();
+    ai.Update(0,eye,empty); ai.Update(-1,eye,empty);
+    ai.Update(std::numeric_limits<float>::infinity(),eye,empty);
+    check(ai.Position()==pausedPosition && ai.Phase()==DronePhase::Patrol,
+        "paused or invalid game time cannot move or fire drone");
+    ai.Reset();
+    for(int i=0;i<151;++i) ai.Update(0.01f,eye,empty);
+    check(ai.Phase()==DronePhase::Warning,"drone patrol transitions into aim warning when player is visible");
+    const auto aimingPosition=ai.Position(); const auto lockedAim=ai.AimPoint();
+    bool fired=false;
+    for(int i=0;i<50;++i) fired=ai.Update(0.01f,eye,empty)||fired;
+    check(!fired && ai.Position()==aimingPosition,"warning stops patrol and cannot fire early");
+    for(int i=0;i<60;++i) fired=ai.Update(0.01f,eye+glm::vec3(0.4f,0,0),empty)||fired;
+    check(fired && ai.Phase()==DronePhase::Waiting && ai.AimPoint()==lockedAim,
+        "warning fires once toward locked aim point then enters wait");
+    int extraShots=0;
+    for(int i=0;i<100;++i) extraShots+=ai.Update(0.01f,eye,empty) ? 1:0;
+    check(extraShots==0,"waiting drone cannot fire repeatedly");
+    for(int i=0;i<70;++i) ai.Update(0.01f,eye,empty);
+    check(ai.Phase()==DronePhase::Warning,"drone reacquires visible player after waiting");
+    const std::array<Collider,1> sightWall{{{800,HitKind::Wall,{-4,0,-6},{4,4,-5.8f}}}};
+    ai.Update(0.01f,eye,sightWall);
+    check(ai.Phase()==DronePhase::Patrol,"occlusion cancels drone warning immediately");
+    bool throughWallShot=false; bool moved=false;
+    const auto beforeHidden=ai.Position();
+    for(int i=0;i<500;++i) { throughWallShot=ai.Update(0.01f,eye,sightWall)||throughWallShot; moved=moved || ai.Position()!=beforeHidden; }
+    check(!throughWallShot && moved && ai.Phase()==DronePhase::Patrol,"hidden player causes continued patrol without wall shots");
+    const std::array<Collider,2> constrained{{sightWall[0],{801,HitKind::Wall,{1.8f,0,-12},{2,4,-8}}}};
+    ai.Reset(); bool safePatrol=true;
+    for(int i=0;i<1000;++i) { ai.Update(0.01f,eye,constrained); safePatrol=safePatrol && ai.Body().maximum.x<1.8001f; }
+    check(safePatrol,"swept drone body refuses patrol steps into scenery");
+    DroneBehavior coarse,fine;
+    for(int i=0;i<23;++i) coarse.Update(0.1f,eye,sightWall);
+    for(int i=0;i<230;++i) fine.Update(0.01f,eye,sightWall);
+    check(close(coarse.Position().x,fine.Position().x),"patrol turnaround preserves speed across frame subdivisions");
+    ai.Reset(); ai.Update(1.51f,eye,empty); ai.Disarm();
+    check(ai.Phase()==DronePhase::Disarmed && !ai.Weapon().enabled && ai.Body().enabled,
+        "drone weapon disarm leaves body intact");
+    check(!ai.Update(10,eye,empty),"disarmed drone cannot fire again");
+    ai.Destroy();
+    check(!ai.Body().enabled && !ai.Weapon().enabled,"destroyed drone disables body and weapon");
+    ai.Reset();
+    check(ai.Phase()==DronePhase::Patrol && close(ai.Position().x,-0.65f) && ai.Weapon().enabled,
+        "drone restart restores patrol, position and weapon");
+
+    battle.SetEnvironment(corridor); battle.SetDroneMode(true);
+    tick(150);
+    check(battle.IsDroneMode() && battle.EnemyShots()==0 && battle.Health()==100,
+        "drone encounter allows patrol before any attack");
+    tick(110);
+    check(battle.EnemyShots()==1 && battle.Health()==100 && battle.EnemyFlights().size()==1,
+        "drone launches a visible projectile after its full warning");
+    tick(150);
+    check(battle.Health()==75 && battle.HitsTaken()==1,"drone projectile applies existing player damage rules");
+    battle.Reset();
+    const auto gun=battle.Colliders()[4];
+    check(battle.Fire(eye,(gun.minimum+gun.maximum)*0.5f-eye),"player can aim at separate drone gun hitbox");
+    // Freeze patrol by letting it acquire a stationary player before weapon test below.
+    battle.Reset(); tick(160);
+    const auto stationaryGun=battle.Colliders()[4];
+    battle.Fire(eye,(stationaryGun.minimum+stationaryGun.maximum)*0.5f-eye); tick(100);
+    check(battle.Result()==EncounterResult::Running && !battle.Colliders()[4].enabled
+        && battle.DroneState().Phase()==DronePhase::Disarmed && battle.Inventory().Armed(),
+        "hit on actual drone weapon stops its firing and preserves player gun");
+    const auto disarmedShots=battle.EnemyShots(); tick(500);
+    check(battle.EnemyShots()==disarmedShots,"disarmed drone does not generate later shots");
+    battle.Fire(eye,battle.DroneState().Position()-eye); tick(100);
+    check(battle.Result()==EncounterResult::Cleared && battle.Inventory().Drops().empty(),
+        "destroyed drone with broken gun never drops a weapon");
+    battle.Reset(); battle.Fire(eye,battle.DroneState().Position()-eye); tick(100);
+    check(battle.Result()==EncounterResult::Cleared && !battle.Inventory().Armed()
+        && battle.Inventory().Drops().size()==1 && battle.DroneState().Phase()==DronePhase::Destroyed,
+        "drone body hit destroys source gun and drops intact enemy gun once");
+    battle.Reset(); tick(1600);
+    check(battle.Result()==EncounterResult::Failed && battle.Health()==0 && battle.HitsTaken()==4,
+        "drone encounter reaches existing four-hit failure");
+    battle.Reset();
+    check(battle.Health()==100 && battle.EnemyFlights().empty() && battle.PlayerFlights().empty()
+        && battle.Inventory().Armed() && battle.Inventory().Drops().empty()
+        && battle.DroneState().Phase()==DronePhase::Patrol,
+        "drone encounter restart clears projectiles, damage, drops and AI");
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

@@ -74,6 +74,8 @@
     <ClInclude Include="src\weapon_inventory.h" />
     <ClCompile Include="src\weapon_view.cpp" />
     <ClCompile Include="src\turret_encounter.cpp" />
+    <ClCompile Include="src\drone_behavior.cpp" />
+    <ClInclude Include="src\drone_behavior.h" />
     <ClCompile Include="src\combat_test_hud.cpp" />
     <ClCompile Include="src\combat_test_scene.cpp" />
     <ClInclude Include="src\combat.h" />

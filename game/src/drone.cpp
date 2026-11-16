@@ -112,6 +112,12 @@ void Drone::Update(double deltaTime)
     parts[RightFan].angleDegrees = -parts[LeftFan].angleDegrees;
 }
 
+void Drone::UpdateCombat(double gameDt) {
+    Update(gameDt);
+    parts[Sensor].angleDegrees=0;
+    parts[Weapon].angleDegrees=0; // Gameplay world pose aims the complete model.
+}
+
 glm::mat4 Drone::PartTransform(const glm::mat4& world, const DronePart& part)
 {
     // OBJ의 로컬 원점이 피벗이다. 회전 후 조립 위치로 옮긴다.
@@ -119,10 +125,13 @@ glm::mat4 Drone::PartTransform(const glm::mat4& world, const DronePart& part)
     return glm::rotate(position, glm::radians(part.angleDegrees), part.rotationAxis);
 }
 
-void Drone::Draw(const MeshRenderer& renderer, const glm::mat4& scene, const glm::mat4& world) const
+void Drone::Draw(const MeshRenderer& renderer, const glm::mat4& scene, const glm::mat4& world, bool warning, bool armed) const
 {
-    for (const auto& part : parts) {
-        renderer.Draw(part.meshes, scene, PartTransform(world, part));
+    for (std::size_t i=0;i<parts.size();++i) {
+        if (i==Weapon && !armed) continue;
+        const auto& part=parts[i];
+        const glm::vec3 red(1,0.04f,0.02f);
+        renderer.Draw(part.meshes, scene, PartTransform(world, part), i==Sensor && warning ? &red : nullptr);
     }
 }
 

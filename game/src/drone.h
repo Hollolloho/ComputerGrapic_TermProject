@@ -16,8 +16,9 @@ public:
 
     bool Init(const std::filesystem::path& projectDirectory);
     void Update(double deltaTime);
-    void Draw(const MeshRenderer& renderer, const glm::mat4& scene, const glm::mat4& world) const;
+    void Draw(const MeshRenderer& renderer, const glm::mat4& scene, const glm::mat4& world, bool warning=false, bool armed=true) const;
     void Reset();
+    void UpdateCombat(double gameDt);
     void Clear();
 
 private:

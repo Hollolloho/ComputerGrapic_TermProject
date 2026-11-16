@@ -4,6 +4,7 @@
 #include "player_camera.h"
 #include "turret_encounter.h"
 #include "weapon_view.h"
+#include "drone.h"
 #include <GL/glew.h>
 #include <filesystem>
 #include <string>
@@ -28,9 +29,11 @@ public:
     const combat::CombatRange& Range() const { return range; }
     void SetTurretMode(bool enabled);
     void SetCorridorMode(bool enabled);
+    void SetDroneMode(bool enabled);
+    bool IsDroneMode() const { return turretMode && encounter.IsDroneMode(); }
     bool IsCorridorMode() const { return corridorMode; }
     bool IsTurretMode() const { return turretMode; }
-    int SmokeFrameCount() const { return turretMode ? 780 : 300; }
+    int SmokeFrameCount() const { return IsDroneMode() ? 1080 : turretMode ? 780 : 300; }
     std::string StatusTitle(bool paused) const;
 
 private:
@@ -45,6 +48,8 @@ private:
     combat::TurretEncounter encounter;
     PlayerCamera camera;
     WeaponView weapon;
+    Drone drone;
+    MeshRenderer droneRenderer;
     GLuint program{};
     GLuint vao{};
     GLuint vbo{};
@@ -54,6 +59,10 @@ private:
     bool coverHeld{};
     bool lookHeld{};
     bool turretHeld{};
+    bool droneToggleHeld{};
+    bool smokePatrolSeen{};
+    bool smokeWarningSeen{};
+    bool smokeShotSeen{};
     bool dropHeld{};
     bool interactHeld{};
     bool turretMode{};

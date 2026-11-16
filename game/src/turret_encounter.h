@@ -2,6 +2,7 @@
 
 #include "combat_range.h"
 #include "weapon_inventory.h"
+#include "drone_behavior.h"
 
 namespace aegis::combat {
 
@@ -14,6 +15,9 @@ public:
     TurretEncounter();
     void Reset();
     void SetEnvironment(std::span<const Collider> walls);
+    void SetDroneMode(bool enabled);
+    bool IsDroneMode() const { return droneMode; }
+    const DroneBehavior& DroneState() const { return drone; }
     bool Fire(const glm::vec3& eye, const glm::vec3& direction);
     void Update(float realDt, float gameDt, const glm::vec3& eye,
         const glm::vec3& forward=glm::vec3(0,0,-1));
@@ -37,6 +41,8 @@ public:
     const std::vector<Flight>& EnemyFlights() const { return enemyFlights; }
 
 private:
+    DroneBehavior drone;
+    bool droneMode{};
     WeaponInventory inventory;
     std::vector<Collider> colliders;
     std::vector<Collider> environment;

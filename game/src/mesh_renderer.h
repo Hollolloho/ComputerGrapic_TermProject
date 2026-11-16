@@ -27,7 +27,7 @@ public:
     void Begin(const glm::vec3& eyePosition, const glm::vec3& lightDirection,
                const glm::vec3& lightColor, float lightStrength, float ambientStrength) const;
     void Draw(const std::vector<DrawMesh>& meshes, const glm::mat4& scene,
-              const glm::mat4& model) const;
+              const glm::mat4& model, const glm::vec3* overrideColor=nullptr) const;
     void Clear();
 
 private:

@@ -52,7 +52,7 @@ void Label(const std::string& text,int x,int y,int scale,const glm::vec3& color)
 void CombatTestScene::DrawHud(int width,int height) const
 {
     const int scale=width<900 ? 2 : 3;
-    if (corridorMode) Label("CORRIDOR COMBAT / F2 TEST RANGE",24,height-135,2,{0.3f,0.9f,1});
+    if (corridorMode) Label(IsDroneMode() ? "DRONE COMBAT / F3 TURRET / F2 RANGE" : "CORRIDOR COMBAT / F3 DRONE / F2 RANGE",24,height-135,2,{0.3f,0.9f,1});
     const auto armed=Inventory().Armed();
     Label(armed ? "CW01C READY / G DROP" : "EMPTY / LOOK LEFT DOWN FOR SUPPLY",24,height-105,2,
         armed ? glm::vec3(0.2f,1,0.7f) : glm::vec3(1,0.7f,0.2f));
@@ -73,7 +73,7 @@ void CombatTestScene::DrawHud(int width,int height) const
     glClearColor(hpColor.r,hpColor.g,hpColor.b,1);
     glScissor(24,height-72,240*encounter.Health()/100,16); glClear(GL_COLOR_BUFFER_BIT);
     if (result==combat::EncounterResult::Running) {
-        std::string phaseLabel="READY";
+        std::string phaseLabel=IsDroneMode() ? "PATROL" : "READY";
         if (encounter.Phase()==combat::TurretPhase::Warning) phaseLabel="WARNING";
         if (encounter.Phase()==combat::TurretPhase::Cooldown) phaseLabel="COOLDOWN";
         if (encounter.Phase()==combat::TurretPhase::Disarmed) phaseLabel="DISARMED";

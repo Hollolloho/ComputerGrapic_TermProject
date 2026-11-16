@@ -38,6 +38,8 @@ void TurretEncounter::Reset()
         colliders[1].enabled=colliders[2].enabled=colliders[3].enabled=false;
         colliders.insert(colliders.end(),environment.begin(),environment.end());
     }
+    drone.Reset();
+    if (droneMode) { colliders[0]=drone.Body(); colliders[4]=drone.Weapon(); }
     inventory.Reset();
     playerFlights.clear(); enemyFlights.clear();
     result=EncounterResult::Running; phase=TurretPhase::Idle;
@@ -49,6 +51,8 @@ void TurretEncounter::Reset()
 void TurretEncounter::SetEnvironment(std::span<const Collider> walls) {
     environment.assign(walls.begin(),walls.end()); Reset();
 }
+
+void TurretEncounter::SetDroneMode(bool enabled) { droneMode=enabled; Reset(); }
 
 bool TurretEncounter::Fire(const glm::vec3& eye,const glm::vec3& direction)
 {
@@ -83,14 +87,30 @@ void TurretEncounter::Update(float realDt,float gameDt,const glm::vec3& eye,cons
     damageFlash=std::max(0.0f,damageFlash-gameDt);
     if (gameDt==0) return;
 
+    bool droneShot=false;
+    if (droneMode) {
+        std::vector<Collider> walls;
+        for (const auto& box:colliders) if (box.enabled && (box.kind==HitKind::Wall || box.kind==HitKind::Armor)) walls.push_back(box);
+        droneShot=drone.Update(gameDt,eye,walls);
+        colliders[0]=drone.Body(); colliders[4]=drone.Weapon();
+        phase=drone.Phase()==DronePhase::Warning ? TurretPhase::Warning
+            : drone.Phase()==DronePhase::Waiting ? TurretPhase::Cooldown
+            : drone.Phase()==DronePhase::Disarmed ? TurretPhase::Disarmed : TurretPhase::Idle;
+    }
+
     // Player shots never collide with the shooter's body. One impact per bullet.
     for (auto& flight:playerFlights) {
         if (auto hit=AdvanceProjectile(flight.projectile,gameDt,colliders)) {
             if (hit->objectId==turretWeaponId) {
                 colliders[4].enabled=false; phase=TurretPhase::Disarmed;
+                if (droneMode) drone.Disarm();
             } else if (hit->objectId==turretId) {
                 inventory.Break(flight.projectile.sourceWeaponId);
-                if (colliders[4].enabled) inventory.SpawnDrop({0.85f,0.12f,-9.3f});
+                if (colliders[4].enabled) {
+                    const auto drop=droneMode ? drone.Muzzle() : glm::vec3(0.85f,0.12f,-9.3f);
+                    inventory.SpawnDrop({drop.x,0.12f,drop.z});
+                }
+                if (droneMode) drone.Destroy();
                 colliders[4].enabled=false;
                 colliders[0].enabled=false;
                 phase=TurretPhase::Destroyed;
@@ -133,6 +153,14 @@ void TurretEncounter::Update(float realDt,float gameDt,const glm::vec3& eye,cons
 
     if (!colliders[4].enabled) { phase=TurretPhase::Disarmed; return; }
     enemyColliders[bodyIndex+1].enabled=false; // Own held gun must not hide the player from AI sight.
+    if (droneMode) {
+        if (droneShot && drone.Armed()) {
+            if (auto shot=MakeProjectile(drone.Muzzle(),drone.AimPoint()-drone.Muzzle(),7.0f,900)) {
+                enemyFlights.push_back({*shot,0}); ++enemyShots;
+            }
+        }
+        return;
+    }
     const auto sight=FindFirstHit(muzzle,eye,enemyColliders);
     const bool visible=sight && sight->objectId==playerId;
     if (phase==TurretPhase::Cooldown) {
