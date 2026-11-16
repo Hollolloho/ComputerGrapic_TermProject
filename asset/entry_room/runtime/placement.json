@@ -1,0 +1,222 @@
+{
+  "schema_version": 1,
+  "units": "metres",
+  "up": "+Y",
+  "forward": "-Z",
+  "source": {
+    "commit": "4bc595d",
+    "file": "asset/corridor/test_scene/scene_manifest.json",
+    "anchor": "entrance",
+    "position": [
+      0,
+      0,
+      0
+    ]
+  },
+  "geometry": {
+    "file": "obj/entry_room.obj",
+    "mtl": "obj/entry_room.mtl",
+    "bounds": {
+      "min": [
+        -3.58,
+        -0.278,
+        -0.032
+      ],
+      "max": [
+        3.58,
+        3.83,
+        5.8
+      ]
+    },
+    "triangles": 3812,
+    "vertices": 2078,
+    "materials": [
+      "recess",
+      "steel",
+      "dark",
+      "teal",
+      "wall",
+      "shell",
+      "white",
+      "floor",
+      "light",
+      "amber"
+    ]
+  },
+  "placement": {
+    "translation": [
+      0,
+      0,
+      0
+    ],
+    "yaw_degrees": 0
+  },
+  "anchors": {
+    "corridor_joint": {
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "forward": [
+        0,
+        0,
+        -1
+      ],
+      "floor_top": 0,
+      "clear_width": 6.19,
+      "clear_height": 3.392
+    },
+    "threshold_approach": {
+      "position": [
+        0,
+        0,
+        0.5
+      ]
+    },
+    "player_start": {
+      "position": [
+        0,
+        0,
+        3.75
+      ],
+      "yaw_degrees": 0,
+      "pitch_degrees": 0,
+      "forward": [
+        0,
+        0,
+        -1
+      ]
+    },
+    "analysis_terminal": {
+      "position": [
+        -2.45,
+        0,
+        2.85
+      ],
+      "yaw_degrees": 90,
+      "front": [
+        1,
+        0,
+        0
+      ],
+      "max_local_footprint": [
+        1.2,
+        0.75
+      ],
+      "footprint_bounds": {
+        "min": [
+          -2.825,
+          0,
+          2.25
+        ],
+        "max": [
+          -2.075,
+          0,
+          3.45
+        ]
+      },
+      "assembly": "../../props/runtime/assembly.json",
+      "source_asset": "analysis_terminal"
+    },
+    "analysis_approach": {
+      "position": [
+        -1.69,
+        0,
+        2.85
+      ],
+      "view_direction": [
+        -1,
+        0,
+        0
+      ]
+    }
+  },
+  "collision_policy": "Conservative static AABBs. The open corridor joint has no blocking collider. The analysis terminal collider bounds match its placed mesh.",
+  "static_colliders": [
+    {
+      "id": "floor",
+      "min": [
+        -3.58,
+        -0.278,
+        -0.032
+      ],
+      "max": [
+        3.58,
+        0,
+        5.8
+      ]
+    },
+    {
+      "id": "ceiling",
+      "min": [
+        -3.58,
+        3.392,
+        0
+      ],
+      "max": [
+        3.58,
+        3.83,
+        5.8
+      ]
+    },
+    {
+      "id": "rear_bulkhead",
+      "min": [
+        -3.58,
+        0,
+        5.365
+      ],
+      "max": [
+        3.58,
+        3.7,
+        5.8
+      ]
+    },
+    {
+      "id": "left_wall",
+      "min": [
+        -3.58,
+        0,
+        0
+      ],
+      "max": [
+        -3.095,
+        3.69,
+        5.8
+      ]
+    },
+    {
+      "id": "right_wall",
+      "min": [
+        3.095,
+        0,
+        0
+      ],
+      "max": [
+        3.58,
+        3.69,
+        5.8
+      ]
+    },
+    {
+      "id": "analysis_terminal",
+      "max": [
+        -2.18,
+        1.2472763,
+        3.2
+      ],
+      "min": [
+        -2.72,
+        0,
+        2.5
+      ]
+    }
+  ],
+  "validation": {
+    "triangle_winding_and_area": "pass",
+    "player_path_radius_m": 0.32,
+    "entry_centre_and_terminal_approach": "clear",
+    "runtime_integration": "pending"
+  }
+}
