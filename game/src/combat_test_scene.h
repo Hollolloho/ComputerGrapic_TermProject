@@ -31,9 +31,11 @@ public:
     void SetCorridorMode(bool enabled);
     void SetDroneMode(bool enabled);
     bool IsDroneMode() const { return turretMode && encounter.IsDroneMode(); }
+    bool CanAnalyze() const { return turretMode && encounter.CanAnalyze(); }
+    float DoorProgress() const { return corridorMode ? encounter.DoorProgress() : 0; }
     bool IsCorridorMode() const { return corridorMode; }
     bool IsTurretMode() const { return turretMode; }
-    int SmokeFrameCount() const { return IsDroneMode() ? 1080 : turretMode ? 780 : 300; }
+    int SmokeFrameCount() const { return IsDroneMode() ? 1320 : turretMode ? 780 : 300; }
     std::string StatusTitle(bool paused) const;
 
 private:
@@ -63,6 +65,7 @@ private:
     bool smokePatrolSeen{};
     bool smokeWarningSeen{};
     bool smokeShotSeen{};
+    bool smokeSecuringSeen{};
     bool dropHeld{};
     bool interactHeld{};
     bool turretMode{};

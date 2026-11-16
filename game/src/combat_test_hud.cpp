@@ -53,6 +53,7 @@ void CombatTestScene::DrawHud(int width,int height) const
 {
     const int scale=width<900 ? 2 : 3;
     if (corridorMode) Label(IsDroneMode() ? "DRONE COMBAT / F3 TURRET / F2 RANGE" : "CORRIDOR COMBAT / F3 DRONE / F2 RANGE",24,height-135,2,{0.3f,0.9f,1});
+    if (CanAnalyze()) Label("SECTOR SAFE / ANALYSIS READY",24,height-165,2,{0.2f,1,0.6f});
     const auto armed=Inventory().Armed();
     Label(armed ? "CW01C READY / G DROP" : "EMPTY / LOOK LEFT DOWN FOR SUPPLY",24,height-105,2,
         armed ? glm::vec3(0.2f,1,0.7f) : glm::vec3(1,0.7f,0.2f));
@@ -72,12 +73,16 @@ void CombatTestScene::DrawHud(int width,int height) const
     glClearColor(0.15f,0.2f,0.26f,1); glScissor(24,height-72,240,16); glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(hpColor.r,hpColor.g,hpColor.b,1);
     glScissor(24,height-72,240*encounter.Health()/100,16); glClear(GL_COLOR_BUFFER_BIT);
-    if (result==combat::EncounterResult::Running) {
+    if (result==combat::EncounterResult::Running || result==combat::EncounterResult::Securing) {
         std::string phaseLabel=IsDroneMode() ? "PATROL" : "READY";
         if (encounter.Phase()==combat::TurretPhase::Warning) phaseLabel="WARNING";
         if (encounter.Phase()==combat::TurretPhase::Cooldown) phaseLabel="COOLDOWN";
         if (encounter.Phase()==combat::TurretPhase::Disarmed) phaseLabel="DISARMED";
+        if (result==combat::EncounterResult::Securing) phaseLabel="INCOMING SHOTS / STAY ALERT";
         Label(phaseLabel,(width-static_cast<int>(phaseLabel.size())*6*scale)/2,height-40,scale,{1,0.45f,0.2f});
+    } else if (result==combat::EncounterResult::Cleared) {
+        Label("SECTOR CLEAR",(width-12*6*scale)/2,height-70,scale,{0.2f,1,0.65f});
+        Label("R RESTART",(width-9*12)/2,height-95,2,{1,1,1});
     } else {
         glClearColor(0.035f,0.05f,0.075f,1);
         glScissor(width/2-220,height/2,440,145);

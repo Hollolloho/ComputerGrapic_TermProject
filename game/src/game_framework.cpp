@@ -164,6 +164,9 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
 
             if (drawable) {
                 scene.Draw(width, height);
+                if (smokeTest && scene.TestScene().IsDroneMode() && (smokeFrame==1115 || smokeFrame==1250)) {
+                    scene.TestScene().SaveFrame(projectDirectory/(smokeFrame==1115 ? "build/sector-securing-smoke.ppm" : "build/sector-open-smoke.ppm"),width,height);
+                }
                 if (smokeTest && scene.TestScene().IsDroneMode() && (smokeFrame==110 || smokeFrame==180)) {
                     scene.TestScene().SaveFrame(projectDirectory/(smokeFrame==110 ? "build/drone-warning-smoke.ppm" : "build/drone-shot-smoke.ppm"),width,height);
                 }

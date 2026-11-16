@@ -82,7 +82,11 @@ void GameScene::Draw(int width, int height) const
     if (legacyTest) { testScene.Draw(width,height); return; }
     testScene.Draw(width,height,[this](const glm::mat4& vp,const glm::vec3& eye) {
         renderer.Begin(eye,{0.45f,0.9f,0.7f},{1,1,1},2.5f,0.45f);
-        for (const auto& object:corridor) renderer.Draw(object.meshes,vp,object.model);
+        for (std::size_t i=0;i<corridor.size();++i) {
+            auto model=corridor[i].model;
+            if (i==2 || i==3) model=glm::translate(model,glm::vec3((i==2 ? -1:1)*corridor_asset::doorTravel*testScene.DoorProgress(),0,0));
+            renderer.Draw(corridor[i].meshes,vp,model);
+        }
     });
 }
 

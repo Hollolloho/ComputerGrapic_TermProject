@@ -6,7 +6,7 @@
 
 namespace aegis::combat {
 
-enum class EncounterResult { Running, Failed, Cleared };
+enum class EncounterResult { Running, Securing, Failed, Cleared };
 enum class TurretPhase { Idle, Warning, Cooldown, Disarmed, Destroyed };
 
 // A fixed-turret encounter. Input, camera, drawing and global time are external.
@@ -16,6 +16,10 @@ public:
     void Reset();
     void SetEnvironment(std::span<const Collider> walls);
     void SetDroneMode(bool enabled);
+    void SetExitDoors(ObjectId left,ObjectId right,float distance);
+    bool CanAnalyze() const { return result==EncounterResult::Cleared; }
+    float DoorProgress() const { return doorProgress; }
+    bool EnemyAlive() const { return colliders[0].enabled; }
     bool IsDroneMode() const { return droneMode; }
     const DroneBehavior& DroneState() const { return drone; }
     bool Fire(const glm::vec3& eye, const glm::vec3& direction);
@@ -41,6 +45,9 @@ public:
     const std::vector<Flight>& EnemyFlights() const { return enemyFlights; }
 
 private:
+    void UpdateDoors(float gameDt);
+    ObjectId leftDoor{},rightDoor{};
+    float doorDistance{},doorProgress{};
     DroneBehavior drone;
     bool droneMode{};
     WeaponInventory inventory;

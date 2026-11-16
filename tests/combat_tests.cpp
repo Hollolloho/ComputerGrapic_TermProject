@@ -371,6 +371,54 @@ int main()
         && battle.Inventory().Armed() && battle.Inventory().Drops().empty()
         && battle.DroneState().Phase()==DronePhase::Patrol,
         "drone encounter restart clears projectiles, damage, drops and AI");
+
+    battle.SetDroneMode(false); battle.SetEnvironment(corridor);
+    battle.SetExitDoors(10010,10011,aegis::corridor_asset::doorTravel);
+    check(!battle.CanAnalyze() && battle.DoorProgress()==0,"live enemy locks analysis and exit door");
+    tick(120); // First hostile shot is already travelling when player fires.
+    battle.Fire(eye,{0,0,-1}); tick(85);
+    check(!battle.EnemyAlive() && battle.Result()==EncounterResult::Securing
+        && battle.EnemyFlights().size()==1 && battle.Health()==100,
+        "last enemy death preserves its in-flight hostile projectile");
+    check(!battle.CanAnalyze() && battle.DoorProgress()==0 && !battle.Fire(eye,{0,0,-1}),
+        "pending enemy shots lock analysis, door and additional firing");
+    const auto pendingPosition=battle.EnemyFlights()[0].projectile.position;
+    battle.Update(0,0,eye);
+    check(battle.Result()==EncounterResult::Securing && battle.EnemyFlights()[0].projectile.position==pendingPosition,
+        "pause freezes securing state and hostile projectile");
+    const auto shotsAtDeath=battle.EnemyShots(); tick(60);
+    check(battle.Health()==75 && battle.HitsTaken()==1 && battle.Result()==EncounterResult::Cleared
+        && battle.EnemyFlights().empty() && battle.EnemyShots()==shotsAtDeath,
+        "dead enemy projectile still deals one hit and sector clears only after it settles");
+    check(battle.CanAnalyze(),"safe sector enables analysis permission");
+    const float beforeDoor=battle.DoorProgress(); tick(50);
+    check(close(battle.DoorProgress(),std::min(1.0f,beforeDoor+0.5f)),"exit leaves open over game time after sector clear");
+    const float doorPaused=battle.DoorProgress(); battle.Update(0.5f,0,eye);
+    check(battle.DoorProgress()==doorPaused,"pause freezes exit door animation");
+    tick(70);
+    check(close(battle.DoorProgress(),1),"exit door stops at full open distance");
+    hit=FindFirstHit(eye,{0,1.65f,-20},std::span<const Collider>(battle.Colliders()).subspan(5));
+    check(!hit,"opening visible exit leaves also clears centre bullet collision");
+    battle.Reset();
+    hit=FindFirstHit(eye,{0,1.65f,-20},std::span<const Collider>(battle.Colliders()).subspan(5));
+    check(battle.DoorProgress()==0 && !battle.CanAnalyze() && battle.EnemyAlive() && hit,
+        "restart closes collision and door and resets analysis permission");
+    // Enemy dies first, but the already-fired last shot may still kill the player.
+    for(int i=0;i<1500 && battle.EnemyShots()<4;++i) battle.Update(0.01f,0.01f,eye);
+    check(battle.Health()==25 && battle.EnemyShots()==4,"fatal pending-shot scenario begins at one remaining hit point tier");
+    battle.Fire(eye,{0,0,-1}); tick(85);
+    check(battle.Result()==EncounterResult::Securing && !battle.EnemyAlive(),
+        "last kill can enter securing while a lethal hostile shot remains");
+    tick(100);
+    check(battle.Result()==EncounterResult::Failed && battle.Health()==0 && !battle.CanAnalyze()
+        && battle.DoorProgress()==0,"post-kill lethal hit fails sector instead of opening exit");
+    // Remaining shot misses a relocated player and must expire normally.
+    battle.Reset(); tick(120); battle.Fire(eye,{0,0,-1}); tick(85);
+    for(int i=0;i<500;++i) battle.Update(0.01f,0.01f,{2,1.65f,0});
+    check(battle.Result()==EncounterResult::Cleared && battle.Health()==100 && battle.EnemyFlights().empty(),
+        "missed hostile projectile expires before safe completion without extra damage");
+    battle.Reset(); tick(50);
+    check(!battle.CanAnalyze(),"analysis remains locked during live enemy warning");
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

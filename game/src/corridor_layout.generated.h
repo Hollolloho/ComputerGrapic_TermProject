@@ -26,4 +26,5 @@ inline const std::array<combat::Collider,12> walls{{
     {10010,combat::HitKind::Wall,{-1.42000000f,-0.00300000f,-17.89000000f},{0.00000000f,2.90700000f,-17.58800000f}},
     {10011,combat::HitKind::Wall,{0.00000000f,-0.00300000f,-17.89000000f},{1.42000000f,2.90700000f,-17.58800000f}},
 }};
+inline constexpr float doorTravel=1.45000000f;
 } // namespace aegis::corridor_asset

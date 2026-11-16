@@ -44,7 +44,10 @@ def generate(root):
     for i,(low,high) in enumerate(walls):
         assert all(a<=b for a,b in zip(low,high))
         lines.append(f'    {{{10000+i},combat::HitKind::Wall,{vec(low)},{vec(high)}}},')
-    lines += ['}};', '} // namespace aegis::corridor_asset', '']
+    travel = placements[names.index('door_left')]['open_distance']
+    assert travel == placements[names.index('door_right')]['open_distance']
+    lines += ['}};', f'inline constexpr float doorTravel={float(travel):.8f}f;',
+              '} // namespace aegis::corridor_asset', '']
     return '\n'.join(lines)
 
 

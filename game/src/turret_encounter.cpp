@@ -43,13 +43,29 @@ void TurretEncounter::Reset()
     inventory.Reset();
     playerFlights.clear(); enemyFlights.clear();
     result=EncounterResult::Running; phase=TurretPhase::Idle;
-    phaseTime=playerCooldown=damageFlash=0;
+    phaseTime=playerCooldown=damageFlash=doorProgress=0;
     health=100; playerShots=enemyShots=hitsTaken=blockedEnemyShots=0;
     aimPoint=glm::vec3(0);
 }
 
 void TurretEncounter::SetEnvironment(std::span<const Collider> walls) {
     environment.assign(walls.begin(),walls.end()); Reset();
+}
+
+void TurretEncounter::SetExitDoors(ObjectId left,ObjectId right,float distance) {
+    leftDoor=left; rightDoor=right; doorDistance=distance; Reset();
+}
+void TurretEncounter::UpdateDoors(float gameDt) {
+    if (!leftDoor || !rightDoor || doorDistance<=0) return;
+    doorProgress=std::min(1.0f,doorProgress+gameDt);
+    for (auto& box:colliders) {
+        if (box.id!=leftDoor && box.id!=rightDoor) continue;
+        const auto original=std::find_if(environment.begin(),environment.end(),[&](const Collider& c){return c.id==box.id;});
+        if (original==environment.end()) continue;
+        const float offset=(box.id==leftDoor ? -1:1)*doorDistance*doorProgress;
+        box.minimum=original->minimum+glm::vec3(offset,0,0);
+        box.maximum=original->maximum+glm::vec3(offset,0,0);
+    }
 }
 
 void TurretEncounter::SetDroneMode(bool enabled) { droneMode=enabled; Reset(); }
@@ -76,19 +92,20 @@ WeaponInteraction TurretEncounter::InteractionHint(const glm::vec3& eye,const gl
 
 void TurretEncounter::ToggleCover()
 {
-    if (environment.empty() && result==EncounterResult::Running) colliders[1].enabled=!colliders[1].enabled;
+    if (environment.empty() && (result==EncounterResult::Running || result==EncounterResult::Securing)) colliders[1].enabled=!colliders[1].enabled;
 }
 
 void TurretEncounter::Update(float realDt,float gameDt,const glm::vec3& eye,const glm::vec3& forward)
 {
-    if (result!=EncounterResult::Running || !std::isfinite(realDt) || !std::isfinite(gameDt)
+    if (result==EncounterResult::Failed || !std::isfinite(realDt) || !std::isfinite(gameDt)
         || realDt<0 || gameDt<0 || !Finite(eye)) return;
     playerCooldown=std::max(0.0f,playerCooldown-realDt);
     damageFlash=std::max(0.0f,damageFlash-gameDt);
     if (gameDt==0) return;
+    if (result==EncounterResult::Cleared) { UpdateDoors(gameDt); return; }
 
     bool droneShot=false;
-    if (droneMode) {
+    if (droneMode && EnemyAlive()) {
         std::vector<Collider> walls;
         for (const auto& box:colliders) if (box.enabled && (box.kind==HitKind::Wall || box.kind==HitKind::Armor)) walls.push_back(box);
         droneShot=drone.Update(gameDt,eye,walls);
@@ -114,14 +131,10 @@ void TurretEncounter::Update(float realDt,float gameDt,const glm::vec3& eye,cons
                 colliders[4].enabled=false;
                 colliders[0].enabled=false;
                 phase=TurretPhase::Destroyed;
-                result=EncounterResult::Cleared;
-                break;
+                result=EncounterResult::Securing;
             }
         }
         flight.age+=gameDt;
-    }
-    if (result==EncounterResult::Cleared) {
-        playerFlights.clear(); enemyFlights.clear(); return;
     }
     RemoveExpired(playerFlights);
 
@@ -151,6 +164,11 @@ void TurretEncounter::Update(float realDt,float gameDt,const glm::vec3& eye,cons
         playerFlights.clear(); enemyFlights.clear(); return;
     }
 
+    if (!EnemyAlive()) {
+        phase=TurretPhase::Destroyed;
+        if (enemyFlights.empty()) { result=EncounterResult::Cleared; playerFlights.clear(); }
+        return;
+    }
     if (!colliders[4].enabled) { phase=TurretPhase::Disarmed; return; }
     enemyColliders[bodyIndex+1].enabled=false; // Own held gun must not hide the player from AI sight.
     if (droneMode) {
