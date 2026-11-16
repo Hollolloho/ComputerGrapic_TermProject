@@ -71,6 +71,9 @@
     <ClCompile Include="src\combat.cpp" />
     <ClCompile Include="src\combat_range.cpp" />
     <ClCompile Include="src\weapon_inventory.cpp" />
+    <ClCompile Include="src\analysis_session.cpp" />
+    <ClInclude Include="src\analysis_session.h" />
+    <ClInclude Include="src\terminal_layout.generated.h" />
     <ClInclude Include="src\weapon_inventory.h" />
     <ClCompile Include="src\weapon_view.cpp" />
     <ClCompile Include="src\turret_encounter.cpp" />

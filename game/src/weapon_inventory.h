@@ -17,6 +17,8 @@ public:
     bool Break(ObjectId sourceId);
     bool Drop(const glm::vec3& eye,const glm::vec3& direction);
     bool SpawnDrop(const glm::vec3& position);
+    std::optional<float> InteractionDistance(const glm::vec3& eye,const glm::vec3& direction,
+        std::span<const Collider> obstacles) const;
     WeaponInteraction Hint(const glm::vec3& eye,const glm::vec3& direction,
         std::span<const Collider> obstacles) const;
     bool Interact(const glm::vec3& eye,const glm::vec3& direction,
@@ -29,7 +31,7 @@ public:
     Collider HeldCollider(const glm::vec3& eye,const glm::vec3& direction) const;
 
 private:
-    ObjectId FindInteraction(const glm::vec3& eye,const glm::vec3& direction,
+    std::optional<Hit> FindInteraction(const glm::vec3& eye,const glm::vec3& direction,
         std::span<const Collider> obstacles) const;
     ObjectId equipped{1},nextId{2};
     std::vector<DroppedWeapon> drops;

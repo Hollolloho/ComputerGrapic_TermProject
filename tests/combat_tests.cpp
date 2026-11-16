@@ -1,6 +1,8 @@
 #include "combat.h"
 #include "combat_range.h"
 #include "turret_encounter.h"
+#include "analysis_session.h"
+#include "terminal_layout.generated.h"
 #include "corridor_layout.generated.h"
 
 #include <algorithm>
@@ -419,6 +421,54 @@ int main()
         "missed hostile projectile expires before safe completion without extra damage");
     battle.Reset(); tick(50);
     check(!battle.CanAnalyze(),"analysis remains locked during live enemy warning");
+
+    AnalysisSession terminal;
+    const auto& terminalBox=aegis::terminal_asset::collider;
+    const auto terminalDirection=aegis::terminal_asset::interactionPoint-eye;
+    const std::array<Collider,1> terminalObstacle{{terminalBox}};
+    check(terminal.TargetDistance(terminalBox,eye,terminalDirection,terminalObstacle).has_value(),
+        "near aimed terminal can be selected despite its own collision proxy");
+    check(!terminal.Open(false,terminalBox,eye,terminalDirection,terminalObstacle)
+        && terminal.Entries()==0 && !terminal.Active(),"unsafe sector rejects terminal entry without an event");
+    check(!terminal.Open(true,terminalBox,eye,{0,0,-1},terminalObstacle),"terminal requires looking at it");
+    check(!terminal.Open(true,terminalBox,{0,1.65f,8},terminalDirection,terminalObstacle),
+        "distant terminal rejects interaction");
+    check(!terminal.Open(true,terminalBox,eye,{0,0,0},terminalObstacle)
+        && !terminal.Open(true,terminalBox,eye,{std::numeric_limits<float>::quiet_NaN(),0,0},terminalObstacle),
+        "invalid terminal direction cannot enter analysis");
+    check(!terminal.Open(true,terminalBox,eye,terminalDirection,nearbyWall),
+        "wall between eye and terminal blocks analysis entry");
+    const auto terminalDistance=*terminal.TargetDistance(terminalBox,eye,terminalDirection,terminalObstacle);
+    check(!terminal.Open(true,terminalBox,eye,terminalDirection,terminalObstacle,terminalDistance-0.1f),
+        "nearer weapon takes priority over terminal for the same interaction");
+    check(terminal.Open(true,terminalBox,eye,terminalDirection,terminalObstacle,terminalDistance+0.1f)
+        && terminal.Active() && terminal.Entries()==1,"safe nearest terminal emits one entry revision");
+    check(!terminal.Open(true,terminalBox,eye,terminalDirection,terminalObstacle)
+        && terminal.Entries()==1,"already active analysis cannot emit duplicate entries");
+    check(terminal.Close() && !terminal.Active() && terminal.Exits()==1,"closing analysis emits one exit revision");
+    check(!terminal.Close() && terminal.Exits()==1,"already closed analysis cannot emit duplicate exits");
+    terminal.Open(true,terminalBox,eye,terminalDirection,terminalObstacle); terminal.Reset();
+    check(!terminal.Active() && terminal.Entries()==2 && terminal.Exits()==2,
+        "reset closes session and preserves monotonic signals for camera and time owners");
+    inventory.Reset();
+    check(!inventory.InteractionDistance(eye,supplyDirection,empty),"armed inventory offers no pickup distance");
+    inventory.Drop(eye,{0,0,-1});
+    check(inventory.InteractionDistance(eye,inventory.Drops()[0].position-eye,empty).has_value(),
+        "empty inventory exposes aimed pickup distance for one-target arbitration");
+    battle.Reset();
+    check(!terminal.Open(battle.CanAnalyze(),terminalBox,eye,terminalDirection,terminalObstacle),
+        "live encounter cannot enter terminal analysis");
+    battle.Fire(eye,{0,0,-1}); tick(100);
+    check(terminal.Open(battle.CanAnalyze(),terminalBox,eye,terminalDirection,terminalObstacle),
+        "completed encounter enables terminal entry through shared safe flag");
+    terminal.Close();
+    battle.Reset(); tick(120); battle.Fire(eye,{0,0,-1}); tick(85);
+    check(battle.Result()==EncounterResult::Securing
+        && !terminal.Open(battle.CanAnalyze(),terminalBox,eye,terminalDirection,terminalObstacle),
+        "pending hostile projectile prevents terminal entry after last kill");
+    tick(100);
+    check(terminal.Open(battle.CanAnalyze(),terminalBox,eye,terminalDirection,terminalObstacle),
+        "settled hostile projectile enables terminal analysis");
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

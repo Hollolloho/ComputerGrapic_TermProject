@@ -52,6 +52,14 @@ void Label(const std::string& text,int x,int y,int scale,const glm::vec3& color)
 void CombatTestScene::DrawHud(int width,int height) const
 {
     const int scale=width<900 ? 2 : 3;
+    if (AnalysisActive()) {
+        Label("DRONE ANALYSIS",24,height-40,scale,{0.3f,1,0.9f});
+        Label("S07 / SENSOR / ROTORS / WEAPON",24,height-80,2,{0.8f,0.9f,1});
+        Label("E OR ESC RETURN",24,24,2,{0.3f,1,0.8f});
+        return;
+    }
+    if (TerminalTarget()) Label(CanAnalyze() ? "E ANALYZE DRONE" : "ANALYSIS LOCKED / AREA NOT SAFE",
+        width/2-180,height/2-80,2,CanAnalyze()?glm::vec3(0.3f,1,0.8f):glm::vec3(1,0.45f,0.2f));
     if (corridorMode) Label(IsDroneMode() ? "DRONE COMBAT / F3 TURRET / F2 RANGE" : "CORRIDOR COMBAT / F3 DRONE / F2 RANGE",24,height-135,2,{0.3f,0.9f,1});
     if (CanAnalyze()) Label("SECTOR SAFE / ANALYSIS READY",24,height-165,2,{0.2f,1,0.6f});
     const auto armed=Inventory().Armed();

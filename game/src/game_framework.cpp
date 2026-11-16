@@ -18,6 +18,7 @@ namespace aegis {
 namespace {
 
 struct FrameInput {
+    GameScene* scene{};
     bool paused{};
     bool resetRequested{};
     bool restartFrameTime{};
@@ -49,8 +50,10 @@ void keyCallback(GLFWwindow* window, int key, int, int action, int)
 
     auto& input = *static_cast<FrameInput*>(glfwGetWindowUserPointer(window));
     if (key == GLFW_KEY_ESCAPE) {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
+        if (input.scene && input.scene->CloseAnalysis()) input.restartFrameTime=true;
+        else glfwSetWindowShouldClose(window, GLFW_TRUE);
     } else if (key == GLFW_KEY_SPACE) {
+        if (input.scene && input.scene->AnalysisActive()) return;
         input.paused = !input.paused;
         input.restartFrameTime = true;
     } else if (key == GLFW_KEY_R) {
@@ -110,6 +113,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
     const bool ready = scene.Init(projectDirectory, combatTest, turretTest, droneTest);
     bool smokePassed = !smokeTest;
     if (ready) {
+        input.scene=&scene;
         glfwSetWindowUserPointer(window, &input);
         glfwSetKeyCallback(window, keyCallback);
         glfwSetWindowFocusCallback(window, restartFrameTimeCallback);
@@ -164,6 +168,9 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
 
             if (drawable) {
                 scene.Draw(width, height);
+                if (smokeTest && scene.TestScene().IsDroneMode() && smokeFrame==1160) {
+                    scene.TestScene().SaveFrame(projectDirectory/"build/analysis-terminal-smoke.ppm",width,height);
+                }
                 if (smokeTest && scene.TestScene().IsDroneMode() && (smokeFrame==1115 || smokeFrame==1250)) {
                     scene.TestScene().SaveFrame(projectDirectory/(smokeFrame==1115 ? "build/sector-securing-smoke.ppm" : "build/sector-open-smoke.ppm"),width,height);
                 }

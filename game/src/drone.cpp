@@ -125,13 +125,13 @@ glm::mat4 Drone::PartTransform(const glm::mat4& world, const DronePart& part)
     return glm::rotate(position, glm::radians(part.angleDegrees), part.rotationAxis);
 }
 
-void Drone::Draw(const MeshRenderer& renderer, const glm::mat4& scene, const glm::mat4& world, bool warning, bool armed) const
+void Drone::Draw(const MeshRenderer& renderer, const glm::mat4& scene, const glm::mat4& world, bool warning, bool armed, bool staticPose) const
 {
     for (std::size_t i=0;i<parts.size();++i) {
         if (i==Weapon && !armed) continue;
         const auto& part=parts[i];
         const glm::vec3 red(1,0.04f,0.02f);
-        renderer.Draw(part.meshes, scene, PartTransform(world, part), i==Sensor && warning ? &red : nullptr);
+        renderer.Draw(part.meshes, scene, staticPose ? glm::translate(world,part.origin) : PartTransform(world, part), i==Sensor && warning ? &red : nullptr);
     }
 }
 

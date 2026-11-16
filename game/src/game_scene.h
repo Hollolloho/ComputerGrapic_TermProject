@@ -18,6 +18,9 @@ public:
     void Clear();
     void ToggleMode();
     void SampleInput(GLFWwindow* window, bool active);
+    bool AnalysisActive() const { return testScene.AnalysisActive(); }
+    bool CloseAnalysis() { return testScene.CloseAnalysis(); }
+    const combat::AnalysisSession& AnalysisState() const { return testScene.AnalysisState(); }
     bool IsCombatTest() const { return true; }
     const CombatTestScene& TestScene() const { return testScene; }
     void SmokeFrame(int frame) { testScene.SetSmokeFrame(frame); }

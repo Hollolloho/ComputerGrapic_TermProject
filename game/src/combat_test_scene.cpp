@@ -1,5 +1,6 @@
 #include "combat_test_scene.h"
 #include "corridor_layout.generated.h"
+#include "terminal_layout.generated.h"
 
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -70,12 +71,24 @@ void main() {
     glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(glm::vec3),nullptr);
     glEnableVertexAttribArray(0); glBindVertexArray(0);
     Reset();
-    if (!weapon.Init(projectDirectory) || !droneRenderer.Init(projectDirectory/"game/shaders") || !drone.Init(projectDirectory)) { Clear(); return false; }
+    if (!weapon.Init(projectDirectory) || !droneRenderer.Init(projectDirectory/"game/shaders") || !drone.Init(projectDirectory) || !InitTerminal(projectDirectory)) { Clear(); return false; }
     return true;
+}
+
+bool CombatTestScene::InitTerminal(const std::filesystem::path& root) {
+    ModelData model; std::string error;
+    if (!LoadModel(root/terminal_asset::mesh,model,error)) { std::cerr << error << '\n'; return false; }
+    std::size_t triangles=0;
+    for (const auto& mesh:model.meshes) {
+        triangles+=mesh.indices.size()/3;
+        auto& gpu=terminalMeshes.emplace_back(); gpu.Upload(mesh,model.materials.at(mesh.materialIndex));
+    }
+    return triangles==terminal_asset::triangles;
 }
 
 void CombatTestScene::Reset()
 {
+    analysis.Reset();
     range.Reset(); encounter.Reset(); weapon.Reset(); drone.Reset(); yaw = pitch = 0;
     camera.SetPose({0,0,0}, yaw, pitch);
     // Held input remains latched until release (R must not create a fresh shot).
@@ -84,7 +97,9 @@ void CombatTestScene::Reset()
 
 void CombatTestScene::SetCorridorMode(bool enabled) {
     corridorMode=enabled;
-    encounter.SetEnvironment(enabled ? std::span<const combat::Collider>(corridor_asset::walls) : std::span<const combat::Collider>());
+    std::vector<combat::Collider> walls;
+    if (enabled) { walls.assign(corridor_asset::walls.begin(),corridor_asset::walls.end()); walls.push_back(terminal_asset::collider); }
+    encounter.SetEnvironment(walls);
     encounter.SetExitDoors(enabled ? 10010:0,enabled ? 10011:0,enabled ? corridor_asset::doorTravel:0);
     encounter.SetDroneMode(enabled);
     SetTurretMode(enabled);
@@ -92,7 +107,7 @@ void CombatTestScene::SetCorridorMode(bool enabled) {
 
 void CombatTestScene::SetDroneMode(bool enabled) {
     encounter.SetDroneMode(enabled); Reset();
-    smokeFailureSeen=smokePatrolSeen=smokeWarningSeen=smokeShotSeen=smokeSecuringSeen=false;
+    smokeFailureSeen=smokePatrolSeen=smokeWarningSeen=smokeShotSeen=smokeSecuringSeen=smokeAnalysisSeen=smokeAnalysisReturned=smokeWorldFrozen=false;
 }
 
 void CombatTestScene::SetTurretMode(bool enabled)
@@ -111,9 +126,17 @@ bool CombatTestScene::Fire(const glm::vec3& direction)
 
 const combat::WeaponInventory& CombatTestScene::Inventory() const { return turretMode ? encounter.Inventory() : range.Inventory(); }
 bool CombatTestScene::Interact(const glm::vec3& direction) {
+    if (TerminalTarget(direction)) return analysis.Open(CanAnalyze(),terminal_asset::collider,camera.EyePosition(),direction,encounter.Colliders());
     return turretMode ? encounter.Interact(camera.EyePosition(),direction) : range.Interact(camera.EyePosition(),direction);
 }
+bool CombatTestScene::TerminalTarget() const { return TerminalTarget(camera.ViewDirection()); }
+bool CombatTestScene::TerminalTarget(const glm::vec3& direction) const {
+    if (!corridorMode) return false;
+    return analysis.IsFirstTarget(terminal_asset::collider,camera.EyePosition(),direction,encounter.Colliders(),
+        Inventory().InteractionDistance(camera.EyePosition(),direction,encounter.Colliders()));
+}
 combat::WeaponInteraction CombatTestScene::InteractionHint() const {
+    if (TerminalTarget()) return combat::WeaponInteraction::None;
     return turretMode ? encounter.InteractionHint(camera.EyePosition(),camera.ViewDirection())
         : range.InteractionHint(camera.EyePosition(),camera.ViewDirection());
 }
@@ -128,6 +151,12 @@ void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
     const bool droneToggle = glfwGetKey(window, GLFW_KEY_F3) == GLFW_PRESS;
     const bool turret = glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS;
     double x{}, y{}; glfwGetCursorPos(window, &x, &y);
+    if (analysis.Active()) {
+        if (active && interact && !interactHeld) analysis.Close();
+        mouseHeld=left; coverHeld=cover; lookHeld=false; turretHeld=turret;
+        droneToggleHeld=droneToggle; dropHeld=drop; interactHeld=interact; lastX=x; lastY=y;
+        return;
+    }
     if (active) {
         if (corridorMode && droneToggle && !droneToggleHeld) SetDroneMode(!IsDroneMode());
         if (!corridorMode && turret && !turretHeld) SetTurretMode(!turretMode);
@@ -157,6 +186,7 @@ void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
 
 void CombatTestScene::Update(double realDt, double gameDt)
 {
+    if (analysis.Active()) return;
     if (turretMode) encounter.Update(static_cast<float>(realDt),static_cast<float>(gameDt),camera.EyePosition(),camera.ViewDirection());
     else range.Update(static_cast<float>(realDt), static_cast<float>(gameDt));
     if (IsDroneMode() && encounter.Result()==combat::EncounterResult::Running) drone.UpdateCombat(gameDt);
@@ -177,6 +207,7 @@ void CombatTestScene::Draw(int width, int height,
     const std::function<void(const glm::mat4&,const glm::vec3&)>& drawEnvironment) const
 {
     if (width <= 0 || height <= 0) return;
+    if (analysis.Active()) { DrawAnalysis(width,height); return; }
     glViewport(0,0,width,height); glDisable(GL_FRAMEBUFFER_SRGB); glDisable(GL_BLEND);
     glDisable(GL_CULL_FACE); glEnable(GL_DEPTH_TEST); glDepthMask(GL_TRUE);
     glClearColor(0.025f,0.04f,0.065f,1);
@@ -184,6 +215,10 @@ void CombatTestScene::Draw(int width, int height,
     const auto projection=glm::perspective(glm::radians(60.0f),static_cast<float>(width)/height,0.05f,80.0f);
     const auto vp=projection*camera.ViewMatrix();
     if (drawEnvironment) drawEnvironment(vp,camera.EyePosition());
+    if (corridorMode) {
+        droneRenderer.Begin(camera.EyePosition(),{0.45f,0.9f,0.7f},{1,1,1},3,0.3f);
+        droneRenderer.Draw(terminalMeshes,vp,glm::translate(glm::mat4(1),terminal_asset::position));
+    }
     if (IsDroneMode() && encounter.EnemyAlive()) {
         const auto& state=encounter.DroneState();
         const auto world=glm::rotate(glm::translate(glm::mat4(1),state.Position()),state.Yaw(),glm::vec3(0,1,0));
@@ -195,7 +230,7 @@ void CombatTestScene::Draw(int width, int height,
         ? std::span<const combat::Collider>(encounter.Colliders())
         : std::span<const combat::Collider>(range.Colliders());
     for (const auto& box : boxes) {
-        if ((IsDroneMode() && (box.id==500 || box.id==501)) || !box.enabled || (corridorMode && box.kind==combat::HitKind::Wall)) continue;
+        if ((corridorMode && box.id==12000) || (IsDroneMode() && (box.id==500 || box.id==501)) || !box.enabled || (corridorMode && box.kind==combat::HitKind::Wall)) continue;
         const glm::vec3 color = box.id==500 ? glm::vec3(0.28f,0.34f,0.43f)
             : box.kind == combat::HitKind::Weapon ? glm::vec3(0.9f,0.7f,0.2f)
             : box.kind == combat::HitKind::Body ? glm::vec3(0.05f,0.9f,0.7f)
@@ -240,8 +275,23 @@ void CombatTestScene::Draw(int width, int height,
     glDisable(GL_SCISSOR_TEST);
 }
 
+void CombatTestScene::DrawAnalysis(int width,int height) const {
+    glViewport(0,0,width,height); glDisable(GL_FRAMEBUFFER_SRGB); glDisable(GL_SCISSOR_TEST); glDisable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST); glDepthMask(GL_TRUE); glDisable(GL_CULL_FACE);
+    glClearColor(0.025f,0.055f,0.09f,1); glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    const glm::vec3 eye{3.2f,1.8f,4.5f};
+    const auto vp=glm::perspective(glm::radians(45.0f),static_cast<float>(width)/height,0.05f,30.0f)
+        *glm::lookAt(eye,glm::vec3(0),glm::vec3(0,1,0));
+    droneRenderer.Begin(eye,{0.45f,0.9f,0.7f},{1,1,1},5,0.3f);
+    drone.Draw(droneRenderer,vp,glm::mat4(1),false,true,true);
+    glEnable(GL_SCISSOR_TEST); DrawHud(width,height); glDisable(GL_SCISSOR_TEST);
+}
+
 void CombatTestScene::Clear()
 {
+    analysis.Reset();
+    for (auto& mesh:terminalMeshes) mesh.Clear();
+    terminalMeshes.clear();
     drone.Clear(); droneRenderer.Clear();
     weapon.Clear();
     if (vbo) glDeleteBuffers(1,&vbo);
@@ -258,6 +308,10 @@ void CombatTestScene::SetSmokeFrame(int frame)
         smokeShotSeen=smokeShotSeen || encounter.EnemyShots()>0;
         if (frame==900) { smokeFailureSeen=encounter.Result()==combat::EncounterResult::Failed; Reset(); }
         smokeSecuringSeen=smokeSecuringSeen || encounter.Result()==combat::EncounterResult::Securing;
+        if (frame==1150) { smokeDoorSnapshot=DoorProgress(); Interact(terminal_asset::interactionPoint-camera.EyePosition()); }
+        if (frame==1160) { smokeAnalysisSeen=analysis.Active(); smokeWorldFrozen=DoorProgress()==smokeDoorSnapshot && smokeDoorSnapshot<1; }
+        if (frame==1190) analysis.Close();
+        if (frame==1191) smokeAnalysisReturned=!analysis.Active() && analysis.Entries()>0 && analysis.Exits()>0;
         if (frame==1060) Fire(encounter.DroneState().Position()-camera.EyePosition());
         return;
     }
@@ -280,7 +334,7 @@ void CombatTestScene::SetSmokeFrame(int frame)
 
 bool CombatTestScene::SmokePassed() const
 {
-    if (IsDroneMode() && (!smokePatrolSeen || !smokeWarningSeen || !smokeShotSeen || !smokeSecuringSeen)) return false;
+    if (IsDroneMode() && (!smokePatrolSeen || !smokeWarningSeen || !smokeShotSeen || !smokeSecuringSeen || !smokeAnalysisSeen || !smokeAnalysisReturned || !smokeWorldFrozen)) return false;
     if (turretMode) return smokeFailureSeen && encounter.Result()==combat::EncounterResult::Cleared
         && encounter.Health()==(IsDroneMode()?75:100) && encounter.PlayerFlights().empty() && encounter.EnemyFlights().empty()
         && weapon.ShotCount()==encounter.PlayerShots() && !Inventory().Armed() && Inventory().Breaks()==1
@@ -293,6 +347,8 @@ bool CombatTestScene::SmokePassed() const
 
 std::string CombatTestScene::StatusTitle(bool paused) const
 {
+    if (analysis.Active()) return "AEGIS ANALYSIS | World: PAUSED | Enter: "+std::to_string(analysis.Entries())
+        +" | Exit: "+std::to_string(analysis.Exits())+" | E or Esc return";
     const std::string weaponStatus=std::string(" | Weapon: ")+(Inventory().Armed()?"READY":"EMPTY")
         +" | Breaks: "+std::to_string(Inventory().Breaks())+" | Supplies: "+std::to_string(Inventory().Supplies())
         +" | Pickups: "+std::to_string(Inventory().Pickups())+" | Drops: "+std::to_string(Inventory().Drops().size());
@@ -309,7 +365,7 @@ std::string CombatTestScene::StatusTitle(bool paused) const
     return std::string(IsDroneMode() ? "AEGIS DRONE | " : corridorMode ? "AEGIS CORRIDOR | " : "AEGIS TURRET | ")+(paused ? "PAUSED | " : "")+state
         +" | HP: "+std::to_string(encounter.Health())+" | Hits: "+std::to_string(encounter.HitsTaken())
         +" | EnemyShots: "+std::to_string(encounter.EnemyShots())+" | PlayerShots: "+std::to_string(encounter.PlayerShots())
-        +" | Hostiles: "+std::to_string(encounter.EnemyFlights().size())+" | Cover: "+(encounter.CoverEnabled()?"ON":"OFF")+" | Analysis: "+(CanAnalyze()?"READY":"LOCKED")+" | Door: "+std::to_string(static_cast<int>(DoorProgress()*100))+weaponStatus+(corridorMode ? " | F3 enemy / G drop / E use / R retry / F2 range" : " | G drop / E pickup or supply / R retry / T range");
+        +" | Hostiles: "+std::to_string(encounter.EnemyFlights().size())+" | Cover: "+(encounter.CoverEnabled()?"ON":"OFF")+" | Analysis: "+(CanAnalyze()?"READY":"LOCKED")+" | Entries: "+std::to_string(analysis.Entries())+" | Exits: "+std::to_string(analysis.Exits())+" | Door: "+std::to_string(static_cast<int>(DoorProgress()*100))+weaponStatus+(corridorMode ? " | F3 enemy / G drop / E use / R retry / F2 range" : " | G drop / E pickup or supply / R retry / T range");
 }
 
 bool CombatTestScene::SaveFrame(const std::filesystem::path& path, int width, int height) const

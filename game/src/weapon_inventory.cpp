@@ -36,9 +36,9 @@ bool WeaponInventory::SpawnDrop(const glm::vec3& position) {
     drops.push_back({nextId++,position}); return true;
 }
 
-ObjectId WeaponInventory::FindInteraction(const glm::vec3& eye,const glm::vec3& direction,
+std::optional<Hit> WeaponInventory::FindInteraction(const glm::vec3& eye,const glm::vec3& direction,
     std::span<const Collider> obstacles) const {
-    if (Armed() || !Finite(eye) || !Direction(direction)) return 0;
+    if (Armed() || !Finite(eye) || !Direction(direction)) return {};
     const auto end=eye+glm::normalize(direction)*2.5f;
     std::vector<Collider> candidates;
     candidates.push_back({supplyId,HitKind::Weapon,SupplyPosition()-glm::vec3(0.3f,0.25f,0.25f),
@@ -46,22 +46,30 @@ ObjectId WeaponInventory::FindInteraction(const glm::vec3& eye,const glm::vec3& 
     for (const auto& drop:drops) candidates.push_back({drop.id,HitKind::Weapon,
         drop.position-glm::vec3(0.25f,0.12f,0.25f),drop.position+glm::vec3(0.25f,0.12f,0.25f)});
     const auto item=FindFirstHit(eye,end,candidates);
-    if (!item) return 0;
+    if (!item) return {};
     // Walls/armor/body occlude interaction; no pickup through scenery or enemies.
     const auto obstruction=FindFirstHit(eye,end,obstacles);
-    if (obstruction && obstruction->fraction<=item->fraction) return 0;
-    return item->objectId;
+    if (obstruction && obstruction->fraction<=item->fraction) return {};
+    return item;
+}
+
+std::optional<float> WeaponInventory::InteractionDistance(const glm::vec3& eye,const glm::vec3& direction,
+    std::span<const Collider> obstacles) const {
+    const auto hit=FindInteraction(eye,direction,obstacles);
+    return hit ? std::optional<float>(hit->fraction*2.5f) : std::nullopt;
 }
 
 WeaponInteraction WeaponInventory::Hint(const glm::vec3& eye,const glm::vec3& direction,
     std::span<const Collider> obstacles) const {
-    const auto id=FindInteraction(eye,direction,obstacles);
+    const auto hit=FindInteraction(eye,direction,obstacles);
+    const auto id=hit ? hit->objectId : 0;
     return id==supplyId ? WeaponInteraction::Supply : id ? WeaponInteraction::Pickup : WeaponInteraction::None;
 }
 
 bool WeaponInventory::Interact(const glm::vec3& eye,const glm::vec3& direction,
     std::span<const Collider> obstacles) {
-    const auto id=FindInteraction(eye,direction,obstacles);
+    const auto hit=FindInteraction(eye,direction,obstacles);
+    const auto id=hit ? hit->objectId : 0;
     if (!id) return false;
     if (id==supplyId) {
         if (nextId==supplyId) return false;

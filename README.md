@@ -59,4 +59,7 @@ py -3 tools/check_corridor_test_assets.py
 `--drone-test --smoke-test`는 실제 복도에서 순찰·예고·사격·플레이어 실패 → 초기화 → 드론 격파·무기 파손·드롭을 검사한다. `--corridor-test`는 기존 복도 포탑, `--combat-test`와 `--turret-test`는 기존 별도 시험장을 유지한다. 각 옵션 뒤에 `--smoke-test`를 붙이면 자동 검사 후 종료한다.
 
 
-구역 완료 상태는 전투 중 → 적탄 잔여 대기(`SECURING`) → 안전 완료(`CLEARED`)로 나뉜다. 분석 허용 여부는 안전 완료에서만 READY가 되며 분석 단말 화면 자체는 후속 구현이다. 출구 문 모델과 충돌은 같은 진행도로 1게임초 동안 열리고, R로 재시작하면 닫힌 상태로 복원된다.
+구역 완료 상태는 전투 중 → 적탄 잔여 대기(`SECURING`) → 안전 완료(`CLEARED`)로 나뉜다. 분석 허용 여부는 안전 완료에서만 READY가 된다. 오른쪽 아래의 분석 단말을 바라보고 E로 열면 고정된 드론 미리보기를 볼 수 있다. 분석 중 세계와 전투 입력은 멈추며 E 또는 Esc로 원래 시점에 복귀한다. 공전·확대 카메라는 후속 연결이다. 출구 문 모델과 충돌은 같은 진행도로 1게임초 동안 열리고, R로 재시작하면 닫힌 상태로 복원된다.
+
+
+분석 단말은 친구의 `feature/asset` 커밋 `3e60203`에 포함된 OBJ를 사용한다. `python tools/generate_terminal_layout.py --check`로 원본 메타데이터·삼각형 수·공유 배치 헤더를 검사한다. 분석 진입/종료 상태는 `GameScene::AnalysisActive()`와 `AnalysisState().Entries()/Exits()`로 카메라·시간 담당 코드에 전달한다.
