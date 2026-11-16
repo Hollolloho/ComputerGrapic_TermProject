@@ -1,0 +1,269 @@
+{
+  "schema_version": 1,
+  "asset": "core_room",
+  "units": "metres",
+  "up": "+Y",
+  "front": "+Z",
+  "origin_definition": "entrance floor centre; room extends along -Z",
+  "corridor_source_commit": "4bc595d",
+  "corridor_source": "asset/corridor/test_scene/scene_manifest.json",
+  "room_translation_in_corridor_scene_m": [
+    0,
+    0,
+    -18.2
+  ],
+  "corridor_last_floor_top_edge_z_m": -17.967,
+  "threshold_corridor_extent_z_m": -17.968,
+  "interior": {
+    "width_between_panels_m": 10.342,
+    "length_m": 12.01,
+    "ceiling_mount_y_m": 5.8,
+    "entrance_clear_width_m": 6.19,
+    "entrance_clear_height_m": 3.392,
+    "floor_y_m": 0
+  },
+  "placements": [
+    {
+      "id": "room",
+      "mesh": "obj/core_room.obj",
+      "translation_m": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "boss_e",
+      "assembly": "../../boss_e/runtime/assembly.json",
+      "translation_m": [
+        0,
+        5.8,
+        -8.8
+      ],
+      "yaw_deg": 0
+    },
+    {
+      "id": "cover_left",
+      "source_asset": "cover",
+      "placement_source": "corridor_source",
+      "translation_m": [
+        -2.71,
+        0,
+        -4.7
+      ],
+      "yaw_deg": 90,
+      "scale": [
+        1,
+        1.55,
+        1
+      ]
+    },
+    {
+      "id": "cover_right",
+      "source_asset": "cover",
+      "placement_source": "corridor_source",
+      "translation_m": [
+        2.71,
+        0,
+        -4.7
+      ],
+      "yaw_deg": 90,
+      "scale": [
+        1,
+        1.55,
+        1
+      ]
+    },
+    {
+      "id": "weapon_supply",
+      "assembly": "../../props/runtime/assembly.json",
+      "source_asset": "cw01c_supply_station",
+      "translation_m": [
+        2.72,
+        0,
+        -3.69
+      ],
+      "yaw_deg": 0
+    }
+  ],
+  "anchors_m": {
+    "corridor_join": [
+      0,
+      0,
+      0
+    ],
+    "entry_foot": [
+      0,
+      0,
+      -0.5
+    ],
+    "boss_mount": [
+      0,
+      5.8,
+      -8.8
+    ],
+    "refill_stand_foot": [
+      2.72,
+      0,
+      -3.69
+    ]
+  },
+  "static_colliders": [
+    {
+      "id": "floor",
+      "min": [
+        -5.5,
+        -0.2,
+        -12.5
+      ],
+      "max": [
+        5.5,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "wall_left",
+      "min": [
+        -5.5,
+        0,
+        -12.5
+      ],
+      "max": [
+        -5.05,
+        5.8,
+        0
+      ]
+    },
+    {
+      "id": "wall_right",
+      "min": [
+        5.05,
+        0,
+        -12.5
+      ],
+      "max": [
+        5.5,
+        5.8,
+        0
+      ]
+    },
+    {
+      "id": "rear_bulkhead",
+      "min": [
+        -5.5,
+        0,
+        -12.5
+      ],
+      "max": [
+        5.5,
+        5.8,
+        -11.74
+      ]
+    },
+    {
+      "id": "entry_left",
+      "min": [
+        -5.5,
+        0,
+        -0.4
+      ],
+      "max": [
+        -3.095,
+        5.8,
+        0
+      ]
+    },
+    {
+      "id": "entry_right",
+      "min": [
+        3.095,
+        0,
+        -0.4
+      ],
+      "max": [
+        5.5,
+        5.8,
+        0
+      ]
+    },
+    {
+      "id": "entry_header",
+      "min": [
+        -3.095,
+        3.392,
+        -0.4
+      ],
+      "max": [
+        3.095,
+        5.8,
+        0
+      ]
+    },
+    {
+      "id": "roof",
+      "min": [
+        -5.5,
+        5.55,
+        -12.5
+      ],
+      "max": [
+        5.5,
+        6.12,
+        0
+      ]
+    },
+    {
+      "id": "cover_left",
+      "min": [
+        -3.225,
+        0,
+        -4.9945
+      ],
+      "max": [
+        -2.195,
+        1.767,
+        -4.4055
+      ]
+    },
+    {
+      "id": "cover_right",
+      "min": [
+        2.195,
+        0,
+        -4.9945
+      ],
+      "max": [
+        3.225,
+        1.767,
+        -4.4055
+      ]
+    },
+    {
+      "id": "weapon_supply",
+      "min": [
+        2.02,
+        0,
+        -4.06
+      ],
+      "max": [
+        3.42,
+        0.9,
+        -3.3175
+      ]
+    },
+    {
+      "id": "threshold",
+      "min": [
+        -3.095,
+        -0.056,
+        -0.023
+      ],
+      "max": [
+        3.095,
+        0,
+        0.232
+      ]
+    }
+  ]
+}

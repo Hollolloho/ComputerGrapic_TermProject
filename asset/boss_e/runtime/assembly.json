@@ -1,0 +1,464 @@
+{
+  "stage": "production_asset",
+  "units": "metres",
+  "up": "+Y",
+  "front": "+Z",
+  "left": "-X",
+  "right": "+X",
+  "bounds_xyz_without_ceiling_mount": [
+    [
+      -2.3862827,
+      2.3862827
+    ],
+    [
+      -3.6744909,
+      -1.0843561
+    ],
+    [
+      -0.8045,
+      1.125
+    ]
+  ],
+  "root": "ceiling attachment center",
+  "nodes": {
+    "boss_root": {
+      "parent": null,
+      "translation_m": [
+        0.0,
+        0.0,
+        -0.0
+      ],
+      "rest_rotation_deg": [
+        0,
+        0,
+        0
+      ]
+    },
+    "ceiling_mount": {
+      "parent": "boss_root",
+      "translation_m": [
+        0.0,
+        -0.5511236,
+        -0.11
+      ],
+      "rest_rotation_deg": [
+        0,
+        0,
+        0
+      ]
+    },
+    "body_fixed": {
+      "parent": "boss_root",
+      "translation_m": [
+        0.0,
+        -1.170303,
+        -0.0
+      ],
+      "rest_rotation_deg": [
+        0,
+        0,
+        0
+      ]
+    },
+    "core_socket": {
+      "parent": "boss_root",
+      "translation_m": [
+        0.0,
+        -2.7807691,
+        0.37
+      ],
+      "rest_rotation_deg": [
+        0,
+        0,
+        0
+      ]
+    },
+    "core_visual": {
+      "parent": "boss_root",
+      "translation_m": [
+        0.0,
+        -2.8499999,
+        0.66
+      ],
+      "rest_rotation_deg": [
+        0,
+        0,
+        0
+      ]
+    },
+    "warning_lights": {
+      "parent": "boss_root",
+      "translation_m": [
+        0.0,
+        -2.120965,
+        0.45
+      ],
+      "rest_rotation_deg": [
+        0,
+        0,
+        0
+      ]
+    },
+    "lower_armor_L_slide": {
+      "parent": "boss_root",
+      "translation_m": [
+        -0.24,
+        -2.9293847,
+        0.982
+      ],
+      "rest_rotation_deg": [
+        0,
+        0,
+        0
+      ],
+      "motion": {
+        "type": "lateral_slide",
+        "axis": "-X",
+        "keys": [
+          {
+            "open_fraction": 0,
+            "translation_from_rest_m": [
+              -0.0,
+              0,
+              0
+            ]
+          },
+          {
+            "open_fraction": 1,
+            "translation_from_rest_m": [
+              -0.555,
+              0.0,
+              0.0
+            ]
+          }
+        ]
+      }
+    },
+    "turret_L_yaw": {
+      "parent": "boss_root",
+      "translation_m": [
+        -1.9400001,
+        -1.4392297,
+        0.72
+      ],
+      "rest_rotation_deg": [
+        0,
+        0,
+        0
+      ],
+      "rotation_axis": "+Y",
+      "range_deg": [
+        -25,
+        25
+      ]
+    },
+    "turret_L_pitch": {
+      "parent": "turret_L_yaw",
+      "translation_m": [
+        0.0,
+        0.0,
+        -0.0
+      ],
+      "rest_rotation_deg": [
+        0,
+        0,
+        0
+      ],
+      "rotation_axis": "+X",
+      "range_deg": [
+        -10,
+        35
+      ]
+    },
+    "muzzle_L": {
+      "parent": "turret_L_pitch",
+      "translation_m": [
+        -0.145,
+        0.0,
+        0.419
+      ],
+      "rest_rotation_deg": [
+        0,
+        0,
+        0
+      ],
+      "forward": [
+        0,
+        0,
+        1
+      ]
+    },
+    "lower_armor_R_slide": {
+      "parent": "boss_root",
+      "translation_m": [
+        0.24,
+        -2.9293847,
+        0.982
+      ],
+      "rest_rotation_deg": [
+        0,
+        0,
+        0
+      ],
+      "motion": {
+        "type": "lateral_slide",
+        "axis": "+X",
+        "keys": [
+          {
+            "open_fraction": 0,
+            "translation_from_rest_m": [
+              0.0,
+              0,
+              0
+            ]
+          },
+          {
+            "open_fraction": 1,
+            "translation_from_rest_m": [
+              0.555,
+              0.0,
+              0.0
+            ]
+          }
+        ]
+      }
+    },
+    "turret_R_yaw": {
+      "parent": "boss_root",
+      "translation_m": [
+        1.9400001,
+        -1.4392297,
+        0.72
+      ],
+      "rest_rotation_deg": [
+        0,
+        0,
+        0
+      ],
+      "rotation_axis": "+Y",
+      "range_deg": [
+        -25,
+        25
+      ]
+    },
+    "turret_R_pitch": {
+      "parent": "turret_R_yaw",
+      "translation_m": [
+        0.0,
+        0.0,
+        -0.0
+      ],
+      "rest_rotation_deg": [
+        0,
+        0,
+        0
+      ],
+      "rotation_axis": "+X",
+      "range_deg": [
+        -10,
+        35
+      ]
+    },
+    "muzzle_R": {
+      "parent": "turret_R_pitch",
+      "translation_m": [
+        0.145,
+        0.0,
+        0.419
+      ],
+      "rest_rotation_deg": [
+        0,
+        0,
+        0
+      ],
+      "forward": [
+        0,
+        0,
+        1
+      ]
+    }
+  },
+  "parts": [
+    {
+      "id": "ceiling_clamp",
+      "parent": "ceiling_mount",
+      "obj": "obj/ceiling_clamp.obj",
+      "triangles": 256
+    },
+    {
+      "id": "body_frame",
+      "parent": "body_fixed",
+      "obj": "obj/body_frame.obj",
+      "triangles": 548
+    },
+    {
+      "id": "shoulder_shell",
+      "parent": "body_fixed",
+      "obj": "obj/shoulder_shell.obj",
+      "triangles": 444
+    },
+    {
+      "id": "turret_sockets",
+      "parent": "body_fixed",
+      "obj": "obj/turret_sockets.obj",
+      "triangles": 480
+    },
+    {
+      "id": "armor_guides",
+      "parent": "body_fixed",
+      "obj": "obj/armor_guides.obj",
+      "triangles": 184
+    },
+    {
+      "id": "core_socket_mesh",
+      "parent": "core_socket",
+      "obj": "obj/core_socket_mesh.obj",
+      "triangles": 176
+    },
+    {
+      "id": "core_crystal",
+      "parent": "core_visual",
+      "obj": "obj/core_crystal.obj",
+      "triangles": 8
+    },
+    {
+      "id": "sector_warning",
+      "parent": "warning_lights",
+      "obj": "obj/sector_warning.obj",
+      "triangles": 88
+    },
+    {
+      "id": "lower_armor_L",
+      "parent": "lower_armor_L_slide",
+      "obj": "obj/lower_armor_L.obj",
+      "triangles": 36
+    },
+    {
+      "id": "lower_armor_R",
+      "parent": "lower_armor_R_slide",
+      "obj": "obj/lower_armor_R.obj",
+      "triangles": 76
+    },
+    {
+      "id": "turret_pod_L",
+      "parent": "turret_L_pitch",
+      "obj": "obj/turret_pod_L.obj",
+      "triangles": 400
+    },
+    {
+      "id": "turret_warning_L",
+      "parent": "turret_L_pitch",
+      "obj": "obj/turret_warning_L.obj",
+      "triangles": 44
+    },
+    {
+      "id": "turret_pod_R",
+      "parent": "turret_R_pitch",
+      "obj": "obj/turret_pod_R.obj",
+      "triangles": 400
+    },
+    {
+      "id": "turret_warning_R",
+      "parent": "turret_R_pitch",
+      "obj": "obj/turret_warning_R.obj",
+      "triangles": 44
+    }
+  ],
+  "muzzles": {
+    "L": {
+      "rest_root_m": [
+        -2.085,
+        -1.4392297,
+        1.1390001
+      ],
+      "rest_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    "R": {
+      "rest_root_m": [
+        2.085,
+        -1.4392297,
+        1.1390001
+      ],
+      "rest_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  },
+  "material": "obj/boss_e.mtl",
+  "collision_proxies_game_axes": [
+    {
+      "id": "body_fixed",
+      "shape": "convex_from_inverted_wedge",
+      "visual_part": "body_frame"
+    },
+    {
+      "id": "shoulders",
+      "shape": "two convex shapes from the original side shoulder volumes",
+      "visual_parts": [
+        "shoulder_shell"
+      ]
+    },
+    {
+      "id": "moving_armor",
+      "shape": "two hulls parented to lateral slide nodes",
+      "visual_parts": [
+        "lower_armor_L",
+        "lower_armor_R"
+      ]
+    },
+    {
+      "id": "weakspot",
+      "shape": "box",
+      "half_extents_m": [
+        0.125,
+        0.44,
+        0.1475
+      ],
+      "center_local_m": [
+        0.0,
+        0.01,
+        0.0175
+      ],
+      "parent": "core_visual",
+      "active_when": "armor_fully_open"
+    }
+  ],
+  "animation": {
+    "fps": 24,
+    "frames": {
+      "closed": 1,
+      "opening": 24,
+      "half_open": 36,
+      "fully_open": 48,
+      "closing": 72,
+      "half_closed": 84,
+      "closed_again": 96
+    }
+  },
+  "asset": "boss_e",
+  "atlas_size": 2048,
+  "maps": {
+    "basecolor": "textures/boss_e_basecolor.png",
+    "metallic": "textures/boss_e_metallic.png",
+    "roughness": "textures/boss_e_roughness.png",
+    "emission": "textures/boss_e_emission.png",
+    "normal": "textures/boss_e_normal.png"
+  },
+  "normal_space": "tangent_opengl_positive_y",
+  "basecolor_color_space": "sRGB",
+  "emission_color_space": "sRGB",
+  "data_color_space": "linear",
+  "emission_multiplier": 2.55,
+  "warning_meshes": [
+    "sector_warning",
+    "turret_warning_L",
+    "turret_warning_R"
+  ],
+  "core_glow_mesh": "core_crystal"
+}
