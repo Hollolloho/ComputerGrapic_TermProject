@@ -1,4 +1,5 @@
 #include "combat_test_scene.h"
+#include "corridor_layout.generated.h"
 
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -81,6 +82,12 @@ void CombatTestScene::Reset()
     lookHeld = false;
 }
 
+void CombatTestScene::SetCorridorMode(bool enabled) {
+    corridorMode=enabled;
+    encounter.SetEnvironment(enabled ? std::span<const combat::Collider>(corridor_asset::walls) : std::span<const combat::Collider>());
+    SetTurretMode(enabled);
+}
+
 void CombatTestScene::SetTurretMode(bool enabled)
 {
     turretMode=enabled;
@@ -114,9 +121,10 @@ void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
     const bool turret = glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS;
     double x{}, y{}; glfwGetCursorPos(window, &x, &y);
     if (active) {
-        if (turret && !turretHeld) SetTurretMode(!turretMode);
+        if (!corridorMode && turret && !turretHeld) SetTurretMode(!turretMode);
         const bool playing=!turretMode || encounter.Result()==combat::EncounterResult::Running;
-        if (playing && right && lookHeld) {
+        const bool canEquip=!turretMode || encounter.Result()!=combat::EncounterResult::Failed;
+        if (canEquip && right && lookHeld) {
             yaw -= static_cast<float>(x-lastX)*0.14f;
             pitch = std::clamp(pitch-static_cast<float>(y-lastY)*0.14f, -65.0f,65.0f);
             camera.SetPose({0,0,0}, yaw,pitch);
@@ -124,7 +132,6 @@ void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
         if (playing && cover && !coverHeld) {
             if (turretMode) encounter.ToggleCover(); else range.ToggleCover();
         }
-        const bool canEquip=!turretMode || encounter.Result()!=combat::EncounterResult::Failed;
         if (canEquip && drop && !dropHeld) {
             if (turretMode) encounter.DropWeapon(camera.EyePosition(),camera.ViewDirection());
             else range.DropWeapon(camera.EyePosition(),camera.ViewDirection());
@@ -156,7 +163,8 @@ void CombatTestScene::DrawBox(const glm::mat4& vp, const glm::vec3& minimum,
     glDrawArrays(GL_TRIANGLES,0,36);
 }
 
-void CombatTestScene::Draw(int width, int height) const
+void CombatTestScene::Draw(int width, int height,
+    const std::function<void(const glm::mat4&,const glm::vec3&)>& drawEnvironment) const
 {
     if (width <= 0 || height <= 0) return;
     glViewport(0,0,width,height); glDisable(GL_FRAMEBUFFER_SRGB); glDisable(GL_BLEND);
@@ -165,12 +173,13 @@ void CombatTestScene::Draw(int width, int height) const
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     const auto projection=glm::perspective(glm::radians(60.0f),static_cast<float>(width)/height,0.05f,80.0f);
     const auto vp=projection*camera.ViewMatrix();
+    if (drawEnvironment) drawEnvironment(vp,camera.EyePosition());
     glUseProgram(program); glBindVertexArray(vao);
     const std::span<const combat::Collider> boxes=turretMode
         ? std::span<const combat::Collider>(encounter.Colliders())
         : std::span<const combat::Collider>(range.Colliders());
     for (const auto& box : boxes) {
-        if (!box.enabled) continue;
+        if (!box.enabled || (corridorMode && box.kind==combat::HitKind::Wall)) continue;
         const glm::vec3 color = box.id==500 ? glm::vec3(0.28f,0.34f,0.43f)
             : box.kind == combat::HitKind::Weapon ? glm::vec3(0.9f,0.7f,0.2f)
             : box.kind == combat::HitKind::Body ? glm::vec3(0.05f,0.9f,0.7f)
@@ -185,7 +194,7 @@ void CombatTestScene::Draw(int width, int height) const
         DrawBox(vp,{-0.28f,1.94f,-9.52f},{0.28f,2.12f,-9.46f},sensor);
     }
     // Floor strips make depth and aiming changes visible without extra assets.
-    for (int z=0;z>=-12;--z) DrawBox(vp,{-5,0.005f,static_cast<float>(z)-0.015f},
+    if (!corridorMode) for (int z=0;z>=-12;--z) DrawBox(vp,{-5,0.005f,static_cast<float>(z)-0.015f},
         {5,0.012f,static_cast<float>(z)+0.015f},{0.23f,0.35f,0.44f});
     const auto& shots=turretMode ? encounter.PlayerFlights() : range.Flights();
     for (const auto& flight : shots) {
@@ -268,10 +277,10 @@ std::string CombatTestScene::StatusTitle(bool paused) const
         : encounter.Phase()==combat::TurretPhase::Warning ? "WARNING"
         : encounter.Phase()==combat::TurretPhase::Cooldown ? "COOLDOWN"
         : encounter.Phase()==combat::TurretPhase::Disarmed ? "DISARMED" : "READY";
-    return std::string("AEGIS TURRET | ")+(paused ? "PAUSED | " : "")+state
+    return std::string(corridorMode ? "AEGIS CORRIDOR | " : "AEGIS TURRET | ")+(paused ? "PAUSED | " : "")+state
         +" | HP: "+std::to_string(encounter.Health())+" | Hits: "+std::to_string(encounter.HitsTaken())
         +" | EnemyShots: "+std::to_string(encounter.EnemyShots())+" | PlayerShots: "+std::to_string(encounter.PlayerShots())
-        +" | Cover: "+(encounter.CoverEnabled()?"ON":"OFF")+weaponStatus+" | G drop / E pickup or supply / R retry / T range";
+        +" | Cover: "+(encounter.CoverEnabled()?"ON":"OFF")+weaponStatus+(corridorMode ? " | G drop / E use / R retry / F2 range" : " | G drop / E pickup or supply / R retry / T range");
 }
 
 bool CombatTestScene::SaveFrame(const std::filesystem::path& path, int width, int height) const

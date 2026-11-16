@@ -115,8 +115,8 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest)
         glfwSetWindowFocusCallback(window, restartFrameTimeCallback);
         glfwSetWindowIconifyCallback(window, restartFrameTimeCallback);
         std::cout << "OpenGL " << glGetString(GL_VERSION) << '\n'
-                  << "F2: drone/range | T: range/turret | LMB: fire | RMB drag: aim | B: cover | Space: pause | R: reset | Esc: exit\n"
-                  << "Test scenes: fixed camera position; movement/time-slowing/drone combat are not connected yet." << std::endl;
+                  << "F2: corridor/range | T: range/turret | LMB: fire | RMB drag: aim | B: cover | Space: pause | R: reset | Esc: exit\n"
+                  << "Fixed camera position; movement/time-slowing/drone combat are not connected yet." << std::endl;
         glfwSwapInterval(smokeTest ? 0 : 1);
 
         constexpr double maxDeltaTime = 0.05;
@@ -172,7 +172,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest)
                         std::cerr << "Could not save weapon recoil frame\n";
                 }
                 if (smokeTest && smokeFrame == 40) {
-                    const auto capture=scene.TestScene().IsTurretMode() ? "build/turret-warning-smoke.ppm" : "build/combat-range-smoke.ppm";
+                    const auto capture=scene.TestScene().IsCorridorMode() ? "build/corridor-combat-smoke.ppm" : scene.TestScene().IsTurretMode() ? "build/turret-warning-smoke.ppm" : "build/combat-range-smoke.ppm";
                     if (!scene.TestScene().SaveFrame(projectDirectory / capture, width, height)) {
                         std::cerr << "Could not save range smoke frame\n";
                     }
@@ -194,7 +194,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest)
             }
             if (smokeTest && smokeFrame >= scene.TestScene().SmokeFrameCount()) {
                 smokePassed = scene.TestScene().SmokePassed();
-                std::cout << (scene.TestScene().IsTurretMode() ? "Turret encounter smoke: " : "Combat render smoke: ")
+                std::cout << (scene.TestScene().IsCorridorMode() ? "Corridor combat smoke: " : scene.TestScene().IsTurretMode() ? "Turret encounter smoke: " : "Combat render smoke: ")
                     << (smokePassed ? "PASS" : "FAIL") << '\n';
                 glfwSetWindowShouldClose(window, GLFW_TRUE);
             }

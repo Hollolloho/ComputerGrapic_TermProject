@@ -1,6 +1,7 @@
 #include "combat.h"
 #include "combat_range.h"
 #include "turret_encounter.h"
+#include "corridor_layout.generated.h"
 
 #include <algorithm>
 #include <array>
@@ -244,6 +245,45 @@ int main()
     battle.Reset(); tick(1200);
     check(!battle.Interact(eye,supplyDirection) && !battle.DropWeapon(eye,{0,0,-1}),
         "failed encounter rejects pickup and drop actions");
+
+    const auto& corridor=aegis::corridor_asset::walls;
+    hit=FindFirstHit(eye,eye+glm::vec3(-5,0,0),corridor);
+    check(hit && hit->objectId==10001,"corridor left wall blocks bullet");
+    hit=FindFirstHit(eye,eye+glm::vec3(5,0,0),corridor);
+    check(hit && hit->objectId==10002,"corridor right wall blocks bullet");
+    hit=FindFirstHit(eye,{0,1.65f,-20},corridor);
+    check(hit && (hit->objectId==10010 || hit->objectId==10011),"closed door leaves block corridor exit shot");
+    hit=FindFirstHit({-0.72f,1.65f,0},{-0.72f,1.65f,-20},corridor);
+    check(hit && hit->objectId==10010,"left closed door has transformed world bounds");
+    hit=FindFirstHit({0.72f,1.65f,0},{0.72f,1.65f,-20},corridor);
+    check(hit && hit->objectId==10011,"right closed door has transformed world bounds");
+    hit=FindFirstHit({-1.2f,0.8f,0},{-1.2f,0.8f,-12},corridor);
+    check(hit && hit->objectId==10009,"rotated visible cabinet cover blocks low bullet");
+    check(!FindFirstHit(eye,{0,1.65f,-9},corridor),"corridor centre line to enemy stays open");
+    hit=FindFirstHit(eye,{0,-1,-5},corridor);
+    check(hit && hit->objectId==10000,"corridor floor blocks downward bullet");
+    hit=FindFirstHit(eye,{0,5,-5},corridor);
+    check(hit && hit->objectId==10003,"corridor ceiling blocks upward bullet");
+    battle.SetEnvironment(corridor);
+    check(battle.Colliders().size()==17 && !battle.Colliders()[1].enabled
+        && !battle.Colliders()[2].enabled && !battle.Colliders()[3].enabled,
+        "corridor replaces legacy test walls and keeps enemy hitboxes");
+    battle.ToggleCover();
+    check(!battle.CoverEnabled(),"corridor cannot toggle invisible legacy cover");
+    battle.Fire(eye,{0,0,-1}); tick(100);
+    check(battle.Result()==EncounterResult::Cleared && !battle.Inventory().Armed(),
+        "corridor combat can clear and apply source gun breakage");
+    check(battle.Interact(eye,supplyDirection) && battle.Inventory().Armed(),
+        "corridor supply is reachable and restores gun after victory");
+    battle.Reset(); tick(1200);
+    check(battle.Result()==EncounterResult::Failed && battle.Health()==0,
+        "corridor enemy shots can cause player failure");
+    battle.Reset();
+    check(battle.Health()==100 && battle.Colliders().size()==17 && battle.Inventory().Armed()
+        && battle.Inventory().Drops().empty(),"corridor restart preserves environment and restores battle state");
+    battle.SetEnvironment(empty);
+    check(battle.Colliders().size()==5 && battle.Colliders()[2].enabled,
+        "return to legacy tests removes corridor collision state");
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

@@ -7,6 +7,7 @@
 #include <GL/glew.h>
 #include <filesystem>
 #include <string>
+#include <functional>
 
 struct GLFWwindow;
 
@@ -18,13 +19,16 @@ public:
     void Reset();
     void SampleInput(GLFWwindow* window, bool active);
     void Update(double realDt, double gameDt);
-    void Draw(int width, int height) const;
+    void Draw(int width, int height,
+        const std::function<void(const glm::mat4&,const glm::vec3&)>& drawEnvironment={}) const;
     void Clear();
     void SetSmokeFrame(int frame);
     bool SmokePassed() const;
     bool SaveFrame(const std::filesystem::path& path, int width, int height) const;
     const combat::CombatRange& Range() const { return range; }
     void SetTurretMode(bool enabled);
+    void SetCorridorMode(bool enabled);
+    bool IsCorridorMode() const { return corridorMode; }
     bool IsTurretMode() const { return turretMode; }
     int SmokeFrameCount() const { return turretMode ? 780 : 300; }
     std::string StatusTitle(bool paused) const;
@@ -53,6 +57,7 @@ private:
     bool dropHeld{};
     bool interactHeld{};
     bool turretMode{};
+    bool corridorMode{};
     bool smokeFailureSeen{};
     double lastX{};
     double lastY{};

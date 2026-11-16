@@ -4,6 +4,7 @@
 #include "player_camera.h"
 #include "combat_test_scene.h"
 
+#include <array>
 #include <filesystem>
 
 namespace aegis {
@@ -17,15 +18,24 @@ public:
     void Clear();
     void ToggleMode();
     void SampleInput(GLFWwindow* window, bool active);
-    bool IsCombatTest() const { return combatTest; }
+    bool IsCombatTest() const { return true; }
     const CombatTestScene& TestScene() const { return testScene; }
     void SmokeFrame(int frame) { testScene.SetSmokeFrame(frame); }
 
 private:
+    struct CorridorObject {
+        glm::mat4 model{1.0f};
+        std::vector<DrawMesh> meshes;
+    };
+
+    bool InitCorridor(const std::filesystem::path& projectDirectory);
+
+    MeshRenderer renderer;
+    std::array<CorridorObject, 5> corridor;
     Drone drone;
     PlayerCamera camera;
     CombatTestScene testScene;
-    bool combatTest{};
+    bool legacyTest{};
 };
 
 } // namespace aegis

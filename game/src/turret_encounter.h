@@ -13,6 +13,7 @@ class TurretEncounter {
 public:
     TurretEncounter();
     void Reset();
+    void SetEnvironment(std::span<const Collider> walls);
     bool Fire(const glm::vec3& eye, const glm::vec3& direction);
     void Update(float realDt, float gameDt, const glm::vec3& eye,
         const glm::vec3& forward=glm::vec3(0,0,-1));
@@ -31,13 +32,14 @@ public:
     int BlockedEnemyShots() const { return blockedEnemyShots; }
     float DamageFlash() const { return damageFlash; }
     bool CoverEnabled() const { return colliders[1].enabled; }
-    const std::array<Collider,5>& Colliders() const { return colliders; }
+    const std::vector<Collider>& Colliders() const { return colliders; }
     const std::vector<Flight>& PlayerFlights() const { return playerFlights; }
     const std::vector<Flight>& EnemyFlights() const { return enemyFlights; }
 
 private:
     WeaponInventory inventory;
-    std::array<Collider,5> colliders{};
+    std::vector<Collider> colliders;
+    std::vector<Collider> environment;
     std::vector<Flight> playerFlights;
     std::vector<Flight> enemyFlights;
     glm::vec3 aimPoint{0.0f};

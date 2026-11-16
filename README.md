@@ -4,9 +4,9 @@
 
 ## 브랜치 기준
 
-- `main`: 최신 기획·역할·작업 목록·제안서의 공용 기준이다.
-- `codex/framework`: 게임 솔루션 `AEGIS.slnx`, `game/`, `external/`과 실행 기반을 관리한다. 기반 검증 전까지 이 변경은 `main`에 합치지 않는다.
-- 기획 변경은 `main`에 반영한 뒤 `codex/framework`에 병합한다. 기반을 사용하는 코드 작업은 현재 `codex/framework`에서 분기하고, 기반이 `main`에 병합된 뒤 공용 코드 기준을 `main`으로 전환한다.
+- `main`은 공용 기획과 통합 기준이다. 기본 게임 솔루션 `AEGIS.slnx`, 실행 코드, 공용 라이브러리, Assimp 로더가 들어 있다.
+- `codex/t006-corridor`에서 복도 시험 장면과 드론·카메라 연결을 관리한다. `feature/asset`에서 게임용 모델과 재질을, `feature/yoon-combat`에서 전투 구현을 관리한다.
+- 공용 브랜치로 PR을 열 때 기준은 `main`이다. 기능 브랜치의 구현이나 에셋이 필요한 작업은 사용할 브랜치와 커밋을 먼저 확인한다.
 
 ## 문서
 
@@ -25,13 +25,22 @@
 
 Visual Studio에서 [AEGIS.slnx](AEGIS.slnx)를 열고 MSVC `v145`, Windows SDK `10.0` 환경에서 `Debug | x64` 또는 `Release | x64`로 빌드한다. 게임 소스는 `game/src/`에 있고, [공용 라이브러리](external/README.md)는 솔루션 옆의 `external/`에 있다. 경로는 `$(SolutionDir)`를 기준으로 찾고 GLEW·Assimp DLL은 빌드할 때 실행 파일 옆으로 복사한다.
 
-`build/x64/Debug/AEGIS.exe`를 실행하면 OpenGL 확인용 창이 열린다. 모델 데이터는 아래처럼 확인한다.
+저장소 루트에서 `build/x64/Debug/AEGIS.exe` 또는 `build/x64/Release/AEGIS.exe`를 실행한다. 이 전투 브랜치의 기본 화면은 친구의 실제 복도에 고정 포탑 1대를 연결한 전투 장면이다. 오른쪽 드래그로 조준하고 좌클릭으로 사격한다. G는 무기 버리기, E는 가까운 무기 회수·왼쪽 녹색 보급대 이용, R은 전투·무기·카메라 전체 초기화다. Space는 일시정지/재개, Esc는 종료다.
+
+F2는 복도 전투와 기존 시험장을 왕복한다. 기존 시험장에서 T로 사격장/포탑 시험장을 바꾼다. 복도의 벽·바닥·천장·엄폐물·닫힌 문은 탄환을 차단한다. 현재 플레이어 위치는 고정이며 WASD 이동·플레이어 시설 충돌·이동 연동 시간은 아직 연결하지 않았다. 실행·무기 규칙과 검증 방법은 [전투 통합 문서](docs/COMBAT_INTEGRATION.md)를 참고한다.
+
+`--inspect-obj`는 Assimp로 OBJ와 연결된 MTL을 읽어 메시·삼각형 수와 재질 정보를 출력한다.
 
 ```powershell
-& .\build\x64\Debug\AEGIS.exe --inspect-obj ".\prototypes\drone-corridor\obj\drone_assembled.obj"
+& .\build\x64\Debug\AEGIS.exe --inspect-obj .\asset\corridor\test_scene\corridor_static.obj
+py -3 tools/check_corridor_test_assets.py
 ```
 
-Assimp가 OBJ와 `mtllib`로 연결된 MTL을 읽는다. 로더는 정점·UV·법선·삼각형 인덱스, 메시 이름과 재질 번호, 재질 색·반사·투명도·텍스처 참조를 게임 데이터로 넘긴다. 검사 명령은 메시와 삼각형의 개수, 읽은 재질을 출력한다. 이미지 로딩과 모델 렌더링은 이후 장면 작업에서 연결한다.
+## T006 복도 렌더링과 전투 연결
+
+복도, 문틀, 좌우 문짝, 엄폐물의 OBJ 5개를 미터 단위 그대로 그린다. 문틀은 `(0, 0, -17.81)`, 좌우 문짝은 문틀 기준 X축 `±0.72`에 닫힌 상태로 배치한다. 엄폐물은 `(-1.2, 0, -8.4)`에서 Y축으로 90도 회전한다. 렌더 배치와 닫힌 문 충돌 경계는 `python tools/generate_corridor_layout.py`로 생성하며 `--check`로 원본과 일치를 검사한다. 닫힌 두 문짝의 중앙 4cm 시각적 틈은 점 탄환 통과를 막도록 충돌 경계에서 닫는다. 배치는 [장면 매니페스트](asset/corridor/test_scene/scene_manifest.json)를 따르며, [에셋 검사 스크립트](tools/check_corridor_test_assets.py)로 OBJ 구조와 매니페스트를 확인할 수 있다.
+
+복도는 MTL의 `Kd`를 기본색으로 사용한다. `Ks`는 0~1 범위로 제한해 유전체의 정면 반사율(F0)로 사용하고, `Ns`는 `sqrt(2 / (Ns + 2))`로 거칠기를 근사한다. 드론은 자체 재질의 금속성과 거칠기를 사용한다. 현재 두 모델 모두 불투명하게 그리며, 이미지 텍스처와 노멀맵은 후속 연결 항목이다.
 
 ## 작업 원칙
 
@@ -39,7 +48,6 @@ Assimp가 OBJ와 `mtllib`로 연결된 MTL을 읽는다. 로더는 정점·UV·�
 - 문서와 제안서가 달라지면 최신 사용자 결정을 우선하고 해당 기준 문서와 제출본을 함께 맞춘다.
 - 카메라 확대·이동·자전·공전·부모 관계는 모두 필수다.
 - 시간 전투·중앙 AI 보스·결과·재시작까지 연결한 뒤 선택 표현을 추가한다.
-- 현재 드론과 복도는 브라우저 디자인 시제품이다. OpenGL 게임의 카메라·전투·시간·보스가 완성됐다는 뜻은 아니다.
 - 문서 작성이나 컴파일만으로 구현 완료를 체크하지 않는다.
 - 잔향은 겨울방학 프로젝트로 보류하며 현재 게임의 작업과 섞지 않는다. 보관본 원문은 변경하지 않는다.
 
