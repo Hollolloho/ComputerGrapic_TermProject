@@ -1,0 +1,9 @@
+newmtl boss_e_atlas
+Kd 1 1 1
+Pm 0.45
+Pr 0.47
+map_Kd ../textures/boss_e_basecolor.png
+norm ../textures/boss_e_normal.png
+map_Pm ../textures/boss_e_metallic.png
+map_Pr ../textures/boss_e_roughness.png
+map_Ke ../textures/boss_e_emission.png
