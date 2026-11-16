@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "asset": "cw01c",
+  "units": "metres",
+  "up": "+Y",
+  "front": "+Z",
+  "atlas_size": 2048,
+  "normal_space": "tangent_opengl_positive_y",
+  "basecolor_color_space": "sRGB",
+  "data_color_space": "linear",
+  "maps": {
+    "basecolor": "textures/cw01c_basecolor.png",
+    "normal": "textures/cw01c_normal.png",
+    "metallic": "textures/cw01c_metallic.png",
+    "roughness": "textures/cw01c_roughness.png",
+    "emission": "textures/cw01c_emission.png"
+  },
+  "emission_multiplier": 1.8,
+  "parts": [
+    {
+      "id": "upper_shell",
+      "mesh": "obj/upper_shell.obj",
+      "assembled_translation": [
+        -0.0,
+        0.05351676,
+        0.00271053
+      ],
+      "triangles": 632
+    },
+    {
+      "id": "rear_armor",
+      "mesh": "obj/rear_armor.obj",
+      "assembled_translation": [
+        -0.0,
+        0.06457159,
+        -0.08169486
+      ],
+      "triangles": 880
+    },
+    {
+      "id": "crystal_cartridge",
+      "mesh": "obj/crystal_cartridge.obj",
+      "assembled_translation": [
+        -0.0,
+        0.06073567,
+        0.00392107
+      ],
+      "triangles": 672
+    },
+    {
+      "id": "lower_chassis",
+      "mesh": "obj/lower_chassis.obj",
+      "assembled_translation": [
+        -0.0,
+        0.02576419,
+        0.02978039
+      ],
+      "triangles": 292
+    },
+    {
+      "id": "trigger_guard",
+      "mesh": "obj/trigger_guard.obj",
+      "assembled_translation": [
+        -0.0,
+        0.00920791,
+        -0.02556902
+      ],
+      "triangles": 540
+    },
+    {
+      "id": "grip",
+      "mesh": "obj/grip.obj",
+      "assembled_translation": [
+        -0.0,
+        -0.01820818,
+        -0.11268961
+      ],
+      "triangles": 1096
+    },
+    {
+      "id": "heel",
+      "mesh": "obj/heel.obj",
+      "assembled_translation": [
+        -0.0,
+        -0.08438723,
+        -0.12937782
+      ],
+      "triangles": 116
+    },
+    {
+      "id": "front_trim",
+      "mesh": "obj/front_trim.obj",
+      "assembled_translation": [
+        -0.0,
+        0.04902406,
+        0.14345783
+      ],
+      "triangles": 1378
+    }
+  ]
+}
