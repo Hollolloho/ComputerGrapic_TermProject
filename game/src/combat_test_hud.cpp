@@ -52,9 +52,17 @@ void Label(const std::string& text,int x,int y,int scale,const glm::vec3& color)
 void CombatTestScene::DrawHud(int width,int height) const
 {
     const int scale=width<900 ? 2 : 3;
+    const auto armed=Inventory().Armed();
+    Label(armed ? "CW01C READY / G DROP" : "EMPTY / LOOK LEFT DOWN FOR SUPPLY",24,height-105,2,
+        armed ? glm::vec3(0.2f,1,0.7f) : glm::vec3(1,0.7f,0.2f));
+    const auto hint=InteractionHint();
+    if (hint!=combat::WeaponInteraction::None) {
+        const std::string text=hint==combat::WeaponInteraction::Supply ? "E RESUPPLY" : "E PICK UP";
+        Label(text,(width-static_cast<int>(text.size())*12)/2,height/2-50,2,{0.3f,1,0.8f});
+    }
     if (!turretMode) {
         Label("SHOOTING RANGE",24,height-40,scale,{0.2f,1,0.7f});
-        Label("LMB FIRE  RMB AIM  B COVER  T TURRET  R RESET",24,24,2,{0.8f,0.9f,1});
+        Label("LMB FIRE  RMB AIM  E USE  G DROP  B COVER  T TURRET  R RESET",24,24,2,{0.8f,0.9f,1});
         return;
     }
     const auto result=encounter.Result();
@@ -67,6 +75,7 @@ void CombatTestScene::DrawHud(int width,int height) const
         std::string phaseLabel="READY";
         if (encounter.Phase()==combat::TurretPhase::Warning) phaseLabel="WARNING";
         if (encounter.Phase()==combat::TurretPhase::Cooldown) phaseLabel="COOLDOWN";
+        if (encounter.Phase()==combat::TurretPhase::Disarmed) phaseLabel="DISARMED";
         Label(phaseLabel,(width-static_cast<int>(phaseLabel.size())*6*scale)/2,height-40,scale,{1,0.45f,0.2f});
     } else {
         glClearColor(0.035f,0.05f,0.075f,1);
@@ -85,7 +94,7 @@ void CombatTestScene::DrawHud(int width,int height) const
         glScissor(0,0,6,height); glClear(GL_COLOR_BUFFER_BIT);
         glScissor(width-6,0,6,height); glClear(GL_COLOR_BUFFER_BIT);
     }
-    Label("LMB FIRE  RMB AIM  B COVER  T RANGE  R RESET",24,24,2,{0.8f,0.9f,1});
+    Label("LMB FIRE  RMB AIM  E USE  G DROP  B COVER  T RANGE  R RESET",24,24,2,{0.8f,0.9f,1});
 }
 
 } // namespace aegis

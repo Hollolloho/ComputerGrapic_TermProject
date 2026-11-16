@@ -176,8 +176,20 @@ void WeaponView::Draw(float aspect) const
     mount=glm::rotate(mount,glm::radians(-4.0f+recoil*5.0f),glm::vec3(1,0,0));
     // Viewmodel has its own depth pass; it must not inherit distant scene depth.
     glClear(GL_DEPTH_BUFFER_BIT); glEnable(GL_DEPTH_TEST); glDepthMask(GL_TRUE);
+    DrawMeshes(projection,mount,recoil);
+}
+
+void WeaponView::DrawWorld(const glm::mat4& projection,const glm::mat4& view,const glm::vec3& position) const
+{
+    if (!program) return;
+    const auto model=glm::rotate(glm::translate(glm::mat4(1),position),glm::radians(90.0f),glm::vec3(0,1,0));
+    DrawMeshes(projection,view*model,0);
+}
+
+void WeaponView::DrawMeshes(const glm::mat4& projection,const glm::mat4& mount,float glow) const
+{
     glDisable(GL_BLEND); glDisable(GL_CULL_FACE); glUseProgram(program);
-    glUniform1f(shotLocation,recoil);
+    glUniform1f(shotLocation,glow);
     for(std::size_t i=0;i<textures.size();++i) {
         glActiveTexture(GL_TEXTURE0+static_cast<GLenum>(i)); glBindTexture(GL_TEXTURE_2D,textures[i]);
     }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "combat.h"
+#include "weapon_inventory.h"
 #include <array>
 #include <vector>
 
@@ -19,6 +20,11 @@ public:
     bool Fire(const glm::vec3& eye, const glm::vec3& direction);
     void Update(float realDt, float gameDt);
     void ToggleCover();
+    const WeaponInventory& Inventory() const { return inventory; }
+    bool DropWeapon(const glm::vec3& eye,const glm::vec3& direction);
+    bool Interact(const glm::vec3& eye,const glm::vec3& direction);
+    WeaponInteraction InteractionHint(const glm::vec3& eye,const glm::vec3& direction) const;
+
     const std::array<Collider, 6>& Colliders() const { return colliders; }
     const std::vector<Flight>& Flights() const { return flights; }
     int RemainingTargets() const;
@@ -29,6 +35,7 @@ public:
     float ImpactTime() const { return impactTime; }
 
 private:
+    WeaponInventory inventory;
     std::array<Collider, 6> colliders{};
     std::vector<Flight> flights;
     std::optional<Hit> lastHit;

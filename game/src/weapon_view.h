@@ -20,10 +20,12 @@ public:
     void OnShot();
     void Update(double realDt);
     void Draw(float aspect) const;
+    void DrawWorld(const glm::mat4& projection,const glm::mat4& view,const glm::vec3& position) const;
     void Clear();
     int ShotCount() const { return shotCount; }
 
 private:
+    void DrawMeshes(const glm::mat4& projection,const glm::mat4& mount,float glow) const;
     struct Mesh {
         GLuint vao{},vbo{},ebo{};
         GLsizei indices{};

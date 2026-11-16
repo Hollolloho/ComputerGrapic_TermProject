@@ -84,8 +84,10 @@ int main()
     range.Fire(eye,{0,0,-1});
     for (int i=0;i<60;++i) range.Update(1.0f/60,1.0f/60);
     check(range.RemainingTargets()==2, "range centre target disappears after cover removed");
+    range.Interact(eye,WeaponInventory::SupplyPosition()-eye);
     range.Fire(eye,glm::vec3(-2.1f,1.6f,-9.8f)-eye);
     for (int i=0;i<60;++i) range.Update(1.0f/60,1.0f/60);
+    range.Interact(eye,WeaponInventory::SupplyPosition()-eye);
     range.Fire(eye,glm::vec3(2.1f,1.6f,-9.8f)-eye);
     for (int i=0;i<60;++i) range.Update(1.0f/60,1.0f/60);
     check(range.RemainingTargets()==0 && range.Shots()==4, "range can complete all three targets");
@@ -161,6 +163,87 @@ int main()
     battle.Reset(); battle.ToggleCover(); battle.Fire(eye,{0,0,-1}); tick(150);
     check(battle.Result()==EncounterResult::Running && battle.Colliders()[0].enabled,
         "player shot cannot damage turret through cover");
+
+    WeaponInventory inventory;
+    const auto supplyDirection=WeaponInventory::SupplyPosition()-eye;
+    const auto firstId=inventory.EquippedId();
+    check(!inventory.Interact(eye,supplyDirection,empty),"armed player cannot duplicate supplies");
+    check(inventory.Drop(eye,{0,0,-1}) && !inventory.Armed() && inventory.Drops().size()==1,
+        "drop changes equipped weapon into one intact world item");
+    check(!inventory.Drop(eye,{0,0,-1}) && inventory.Drops().size()==1,"empty hands cannot duplicate a drop");
+    const auto dropped=inventory.Drops()[0].position;
+    check(inventory.Hint(eye,dropped-eye,empty)==WeaponInteraction::Pickup,
+        "nearby aimed dropped weapon offers pickup");
+    check(inventory.Interact(eye,dropped-eye,empty) && inventory.EquippedId()==firstId
+        && inventory.Drops().empty() && inventory.Pickups()==1,"pickup consumes world item once and preserves its instance ID");
+    check(!inventory.Interact(eye,dropped-eye,empty),"holding E cannot acquire an already collected item");
+    check(!inventory.Break(firstId+100) && inventory.Armed(),"old weapon bullet cannot break a different equipped weapon");
+    check(inventory.Break(firstId) && !inventory.Armed() && inventory.Breaks()==1
+        && !inventory.Break(firstId),"matching weapon breaks exactly once and leaves no recoverable drop");
+    check(!inventory.Interact(eye,{1,0,0},empty),"supply requires looking at station");
+    check(!inventory.Interact({0,1.65f,10},supplyDirection,empty),"distant supply cannot be used");
+    const std::array<Collider,1> nearbyWall{{{100,HitKind::Wall,{-2,0,-0.6f},{2,3,-0.5f}}}};
+    check(!inventory.Interact(eye,supplyDirection,nearbyWall),"supply cannot be used through a wall");
+    check(inventory.Interact(eye,supplyDirection,empty) && inventory.EquippedId()!=firstId
+        && inventory.Supplies()==1,"empty player resupplies one new uniquely identified weapon");
+    check(!inventory.Break(firstId) && inventory.Armed(),"resupplied gun survives an old source ID impact");
+    inventory.Reset();
+    check(inventory.Armed() && inventory.Drops().empty() && inventory.Supplies()==0
+        && inventory.Pickups()==0 && inventory.Breaks()==0,"reset restores equipment and clears all weapon state");
+    check(!inventory.Drop(eye,{0,0,0}) && inventory.Armed(),"invalid drop input preserves equipped weapon");
+    inventory.Drop(eye,{0,0,-1});
+    check(!inventory.Interact(eye,{std::numeric_limits<float>::quiet_NaN(),0,0},empty),
+        "invalid interaction direction cannot equip a weapon");
+    check(!inventory.Interact(eye,inventory.Drops()[0].position-eye,nearbyWall),
+        "nearby drop cannot be picked through a wall");
+
+    range.Reset(); range.ToggleCover(); range.Fire(eye,{0,0,-1});
+    const auto firedId=range.Flights()[0].projectile.sourceWeaponId;
+    range.DropWeapon(eye,{0,0,-1}); range.Interact(eye,supplyDirection);
+    for(int i=0;i<100;++i) range.Update(0.01f,0.01f);
+    check(range.RemainingTargets()==2 && range.Inventory().Armed()
+        && range.Inventory().EquippedId()!=firedId && range.Inventory().Breaks()==0,
+        "in-flight old shot destroys target without breaking resupplied gun");
+    range.Reset(); range.ToggleCover(); range.Fire(eye,{0,0,-1});
+    for(int i=0;i<100;++i) range.Update(0.01f,0.01f);
+    check(!range.Inventory().Armed() && !range.Fire(eye,{0,0,-1})
+        && range.Inventory().Breaks()==1 && range.Inventory().Drops().size()==1,
+        "valid body hit breaks source gun and empty player cannot shoot");
+    check(range.Interact(eye,supplyDirection) && range.Fire(eye,{0,1,0}),
+        "supply restores ability to shoot after valid-hit breakage");
+    for(int i=0;i<500;++i) range.Update(0.01f,0.01f);
+    check(range.Inventory().Armed(),"miss does not consume weapon");
+    range.Reset(); range.Fire(eye,{0,0,-1});
+    for(int i=0;i<100;++i) range.Update(0.01f,0.01f);
+    check(range.Inventory().Armed() && range.Inventory().Breaks()==0,"wall hit does not break weapon");
+
+    battle.Reset();
+    battle.Fire(eye,glm::vec3(0.85f,1.65f,-9.2f)-eye); tick(100);
+    check(battle.Result()==EncounterResult::Running && battle.Colliders()[0].enabled
+        && !battle.Colliders()[4].enabled && battle.Phase()==TurretPhase::Disarmed
+        && battle.Inventory().Armed(),"enemy weapon hit disarms turret without damaging body or player gun");
+    const auto shotsBeforeDisarm=battle.EnemyShots(); tick(500);
+    check(battle.EnemyShots()==shotsBeforeDisarm,"disarmed turret stops firing");
+    battle.Fire(eye,{0,0,-1}); tick(100);
+    check(battle.Result()==EncounterResult::Cleared && battle.Inventory().Drops().empty(),
+        "destroying disarmed enemy never drops a broken gun");
+    battle.Reset(); battle.Fire(eye,{0,0,-1}); tick(100);
+    check(!battle.Inventory().Armed() && battle.Inventory().Breaks()==1
+        && battle.Inventory().Drops().size()==1,"intact enemy gun drops once on body destruction");
+    tick(200);
+    check(battle.Inventory().Drops().size()==1,"cleared encounter cannot duplicate enemy drop");
+
+    battle.Reset();
+    const glm::vec3 interceptDirection{-0.3f,0.3f,-1};
+    for(int i=0;i<260;++i) battle.Update(0.01f,0.01f,eye,interceptDirection);
+    check(!battle.Inventory().Armed() && battle.Inventory().Breaks()==1
+        && battle.Health()==100 && battle.HitsTaken()==0 && battle.BlockedEnemyShots()==1,
+        "first enemy impact on held gun breaks only gun and stops the same bullet");
+    tick(250);
+    check(battle.Health()==75 && battle.HitsTaken()==1,"following enemy shot damages empty-handed player");
+    battle.Reset(); tick(1200);
+    check(!battle.Interact(eye,supplyDirection) && !battle.DropWeapon(eye,{0,0,-1}),
+        "failed encounter rejects pickup and drop actions");
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

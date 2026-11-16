@@ -37,6 +37,8 @@
     <ClCompile Include="combat_tests.cpp" />
     <ClCompile Include="..\game\src\combat.cpp" />
     <ClCompile Include="..\game\src\combat_range.cpp" />
+    <ClCompile Include="..\game\src\weapon_inventory.cpp" />
+    <ClInclude Include="..\game\src\weapon_inventory.h" />
     <ClCompile Include="..\game\src\turret_encounter.cpp" />
     <ClInclude Include="..\game\src\combat.h" />
   </ItemGroup>

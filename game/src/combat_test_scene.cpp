@@ -95,11 +95,22 @@ bool CombatTestScene::Fire(const glm::vec3& direction)
     return fired;
 }
 
+const combat::WeaponInventory& CombatTestScene::Inventory() const { return turretMode ? encounter.Inventory() : range.Inventory(); }
+bool CombatTestScene::Interact(const glm::vec3& direction) {
+    return turretMode ? encounter.Interact(camera.EyePosition(),direction) : range.Interact(camera.EyePosition(),direction);
+}
+combat::WeaponInteraction CombatTestScene::InteractionHint() const {
+    return turretMode ? encounter.InteractionHint(camera.EyePosition(),camera.ViewDirection())
+        : range.InteractionHint(camera.EyePosition(),camera.ViewDirection());
+}
+
 void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
 {
     const bool left = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
     const bool right = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
     const bool cover = glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS;
+    const bool drop = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
+    const bool interact = glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS;
     const bool turret = glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS;
     double x{}, y{}; glfwGetCursorPos(window, &x, &y);
     if (active) {
@@ -113,18 +124,24 @@ void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
         if (playing && cover && !coverHeld) {
             if (turretMode) encounter.ToggleCover(); else range.ToggleCover();
         }
+        const bool canEquip=!turretMode || encounter.Result()!=combat::EncounterResult::Failed;
+        if (canEquip && drop && !dropHeld) {
+            if (turretMode) encounter.DropWeapon(camera.EyePosition(),camera.ViewDirection());
+            else range.DropWeapon(camera.EyePosition(),camera.ViewDirection());
+        }
+        if (canEquip && interact && !interactHeld) Interact(camera.ViewDirection());
         if (playing && left && !mouseHeld) {
             Fire(camera.ViewDirection());
         }
     }
     mouseHeld = left; coverHeld = cover; lookHeld = active && right;
-    turretHeld=turret;
+    turretHeld=turret; dropHeld=drop; interactHeld=interact;
     lastX=x; lastY=y;
 }
 
 void CombatTestScene::Update(double realDt, double gameDt)
 {
-    if (turretMode) encounter.Update(static_cast<float>(realDt),static_cast<float>(gameDt),camera.EyePosition());
+    if (turretMode) encounter.Update(static_cast<float>(realDt),static_cast<float>(gameDt),camera.EyePosition(),camera.ViewDirection());
     else range.Update(static_cast<float>(realDt), static_cast<float>(gameDt));
     weapon.Update(realDt);
 }
@@ -146,7 +163,8 @@ void CombatTestScene::Draw(int width, int height) const
     glDisable(GL_CULL_FACE); glEnable(GL_DEPTH_TEST); glDepthMask(GL_TRUE);
     glClearColor(0.025f,0.04f,0.065f,1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    const auto vp=glm::perspective(glm::radians(60.0f),static_cast<float>(width)/height,0.05f,80.0f)*camera.ViewMatrix();
+    const auto projection=glm::perspective(glm::radians(60.0f),static_cast<float>(width)/height,0.05f,80.0f);
+    const auto vp=projection*camera.ViewMatrix();
     glUseProgram(program); glBindVertexArray(vao);
     const std::span<const combat::Collider> boxes=turretMode
         ? std::span<const combat::Collider>(encounter.Colliders())
@@ -154,13 +172,14 @@ void CombatTestScene::Draw(int width, int height) const
     for (const auto& box : boxes) {
         if (!box.enabled) continue;
         const glm::vec3 color = box.id==500 ? glm::vec3(0.28f,0.34f,0.43f)
+            : box.kind == combat::HitKind::Weapon ? glm::vec3(0.9f,0.7f,0.2f)
             : box.kind == combat::HitKind::Body ? glm::vec3(0.05f,0.9f,0.7f)
             : box.id == 200 ? glm::vec3(0.95f,0.35f,0.12f) : glm::vec3(0.15f,0.22f,0.31f);
         DrawBox(vp,box.minimum,box.maximum,color);
     }
     if (turretMode && encounter.Result()!=combat::EncounterResult::Cleared) {
         DrawBox(vp,{-0.9f,0,-10.6f},{0.9f,0.35f,-9.3f},{0.25f,0.3f,0.4f});
-        DrawBox(vp,{-0.16f,1.49f,-9.5f},{0.16f,1.81f,-9.25f},{0.12f,0.16f,0.22f});
+
         const auto sensor=encounter.Phase()==combat::TurretPhase::Warning
             ? glm::vec3(1,0.15f,0.1f) : glm::vec3(0.2f,0.7f,1);
         DrawBox(vp,{-0.28f,1.94f,-9.52f},{0.28f,2.12f,-9.46f},sensor);
@@ -181,8 +200,12 @@ void CombatTestScene::Draw(int width, int height) const
         const auto p=range.LastHit()->position;
         DrawBox(vp,p-glm::vec3(0.07f),p+glm::vec3(0.07f),{1,1,1});
     }
+    const auto supply=combat::WeaponInventory::SupplyPosition();
+    DrawBox(vp,supply+glm::vec3(-0.32f,-0.5f,-0.27f),supply+glm::vec3(0.32f,-0.15f,0.27f),{0.1f,0.55f,0.38f});
     glBindVertexArray(0); glUseProgram(0);
-    weapon.Draw(static_cast<float>(width)/height);
+    weapon.DrawWorld(projection,camera.ViewMatrix(),supply);
+    for (const auto& drop:Inventory().Drops()) weapon.DrawWorld(projection,camera.ViewMatrix(),drop.position);
+    if (Inventory().Armed()) weapon.Draw(static_cast<float>(width)/height);
     // Crisp centre crosshair drawn in framebuffer pixels.
     glEnable(GL_SCISSOR_TEST);
     glClearColor(range.RemainingTargets()==0 ? 0.15f : 0.95f,1,0.7f,1);
@@ -212,7 +235,10 @@ void CombatTestScene::SetSmokeFrame(int frame)
         return;
     }
     if (frame==1) Fire({0,0,-1});
+    if (frame==45) range.DropWeapon(camera.EyePosition(),camera.ViewDirection());
+    if (frame==50 && !range.Inventory().Drops().empty()) Interact(range.Inventory().Drops()[0].position-camera.EyePosition());
     if (frame==70) { range.ToggleCover(); Fire({0,0,-1}); }
+    if (frame==130 || frame==200) Interact(combat::WeaponInventory::SupplyPosition()-camera.EyePosition());
     if (frame==140) Fire(glm::vec3(-2.1f,1.6f,-9.8f)-camera.EyePosition());
     if (frame==210) Fire(glm::vec3(2.1f,1.6f,-9.8f)-camera.EyePosition());
 }
@@ -221,25 +247,31 @@ bool CombatTestScene::SmokePassed() const
 {
     if (turretMode) return smokeFailureSeen && encounter.Result()==combat::EncounterResult::Cleared
         && encounter.Health()==100 && encounter.PlayerFlights().empty() && encounter.EnemyFlights().empty()
-        && weapon.ShotCount()==encounter.PlayerShots();
+        && weapon.ShotCount()==encounter.PlayerShots() && !Inventory().Armed() && Inventory().Breaks()==1
+        && Inventory().Drops().size()==1;
     return range.RemainingTargets()==0 && range.Shots()==4 && range.BlockedShots()==1 && range.Flights().empty()
-        && weapon.ShotCount()==range.Shots();
+        && weapon.ShotCount()==range.Shots() && !Inventory().Armed()
+        && Inventory().Breaks()==3 && Inventory().Supplies()==2 && Inventory().Pickups()==1 && Inventory().Drops().size()==3;
 }
 
 std::string CombatTestScene::StatusTitle(bool paused) const
 {
+    const std::string weaponStatus=std::string(" | Weapon: ")+(Inventory().Armed()?"READY":"EMPTY")
+        +" | Breaks: "+std::to_string(Inventory().Breaks())+" | Supplies: "+std::to_string(Inventory().Supplies())
+        +" | Pickups: "+std::to_string(Inventory().Pickups())+" | Drops: "+std::to_string(Inventory().Drops().size());
     if (!turretMode) return std::string("AEGIS RANGE | ")+(paused ? "PAUSED | " : "")
         +"Targets: "+std::to_string(range.RemainingTargets())+"/3 | Shots: "+std::to_string(range.Shots())
         +" | Blocked: "+std::to_string(range.BlockedShots())+" | Cover: "+(range.CoverEnabled()?"ON":"OFF")
-        +" | T turret / LMB fire / RMB aim / B cover / R reset / F2 drone";
+        +weaponStatus+" | G drop / E pickup or supply / T turret / R reset";
     const char* state=encounter.Result()==combat::EncounterResult::Failed ? "FAILED"
         : encounter.Result()==combat::EncounterResult::Cleared ? "CLEARED"
         : encounter.Phase()==combat::TurretPhase::Warning ? "WARNING"
-        : encounter.Phase()==combat::TurretPhase::Cooldown ? "COOLDOWN" : "READY";
+        : encounter.Phase()==combat::TurretPhase::Cooldown ? "COOLDOWN"
+        : encounter.Phase()==combat::TurretPhase::Disarmed ? "DISARMED" : "READY";
     return std::string("AEGIS TURRET | ")+(paused ? "PAUSED | " : "")+state
         +" | HP: "+std::to_string(encounter.Health())+" | Hits: "+std::to_string(encounter.HitsTaken())
         +" | EnemyShots: "+std::to_string(encounter.EnemyShots())+" | PlayerShots: "+std::to_string(encounter.PlayerShots())
-        +" | Cover: "+(encounter.CoverEnabled()?"ON":"OFF")+" | B cover / R retry / T range / F2 drone";
+        +" | Cover: "+(encounter.CoverEnabled()?"ON":"OFF")+weaponStatus+" | G drop / E pickup or supply / R retry / T range";
 }
 
 bool CombatTestScene::SaveFrame(const std::filesystem::path& path, int width, int height) const

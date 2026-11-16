@@ -1,11 +1,12 @@
 #pragma once
 
 #include "combat_range.h"
+#include "weapon_inventory.h"
 
 namespace aegis::combat {
 
 enum class EncounterResult { Running, Failed, Cleared };
-enum class TurretPhase { Idle, Warning, Cooldown, Destroyed };
+enum class TurretPhase { Idle, Warning, Cooldown, Disarmed, Destroyed };
 
 // A fixed-turret encounter. Input, camera, drawing and global time are external.
 class TurretEncounter {
@@ -13,8 +14,14 @@ public:
     TurretEncounter();
     void Reset();
     bool Fire(const glm::vec3& eye, const glm::vec3& direction);
-    void Update(float realDt, float gameDt, const glm::vec3& eye);
+    void Update(float realDt, float gameDt, const glm::vec3& eye,
+        const glm::vec3& forward=glm::vec3(0,0,-1));
     void ToggleCover();
+    const WeaponInventory& Inventory() const { return inventory; }
+    bool DropWeapon(const glm::vec3& eye,const glm::vec3& direction);
+    bool Interact(const glm::vec3& eye,const glm::vec3& direction);
+    WeaponInteraction InteractionHint(const glm::vec3& eye,const glm::vec3& direction) const;
+
     EncounterResult Result() const { return result; }
     TurretPhase Phase() const { return phase; }
     int Health() const { return health; }
@@ -24,12 +31,13 @@ public:
     int BlockedEnemyShots() const { return blockedEnemyShots; }
     float DamageFlash() const { return damageFlash; }
     bool CoverEnabled() const { return colliders[1].enabled; }
-    const std::array<Collider,4>& Colliders() const { return colliders; }
+    const std::array<Collider,5>& Colliders() const { return colliders; }
     const std::vector<Flight>& PlayerFlights() const { return playerFlights; }
     const std::vector<Flight>& EnemyFlights() const { return enemyFlights; }
 
 private:
-    std::array<Collider,4> colliders{};
+    WeaponInventory inventory;
+    std::array<Collider,5> colliders{};
     std::vector<Flight> playerFlights;
     std::vector<Flight> enemyFlights;
     glm::vec3 aimPoint{0.0f};

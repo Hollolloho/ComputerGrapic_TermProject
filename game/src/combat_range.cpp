@@ -17,6 +17,7 @@ void CombatRange::Reset()
         {300, HitKind::Wall, {-6,-0.2f,-14}, {6,0,3}},
         {301, HitKind::Wall, {-6,0,-13}, {6,4,-12.8f}}
     }};
+    inventory.Reset();
     flights.clear();
     lastHit.reset();
     cooldown = impactTime = 0;
@@ -25,8 +26,8 @@ void CombatRange::Reset()
 
 bool CombatRange::Fire(const glm::vec3& eye, const glm::vec3& direction)
 {
-    if (cooldown > 0 || flights.size() >= 64) return false;
-    auto projectile = MakeProjectile(eye, direction, 12.0f, 7);
+    if (!inventory.Armed() || cooldown > 0 || flights.size() >= 64) return false;
+    auto projectile = MakeProjectile(eye, direction, 12.0f, inventory.EquippedId());
     if (!projectile) return false;
     flights.push_back({*projectile, 0});
     cooldown = 0.25f;
@@ -45,8 +46,13 @@ void CombatRange::Update(float realDt, float gameDt)
             impactTime = 0.4f;
             if (hit->kind == HitKind::Body) {
                 for (auto& collider : colliders) {
-                    if (collider.id == hit->objectId) collider.enabled = false;
+                    if (collider.id == hit->objectId) {
+                        collider.enabled = false;
+                        const auto centre=(collider.minimum+collider.maximum)*0.5f;
+                        inventory.SpawnDrop({centre.x,0.12f,centre.z});
+                    }
                 }
+                inventory.Break(flight.projectile.sourceWeaponId);
             } else {
                 ++blockedShots;
             }
@@ -57,6 +63,10 @@ void CombatRange::Update(float realDt, float gameDt)
         return !flight.projectile.active || flight.age >= 4.0f;
     });
 }
+
+bool CombatRange::DropWeapon(const glm::vec3& eye,const glm::vec3& direction) { return inventory.Drop(eye,direction); }
+bool CombatRange::Interact(const glm::vec3& eye,const glm::vec3& direction) { return inventory.Interact(eye,direction,colliders); }
+WeaponInteraction CombatRange::InteractionHint(const glm::vec3& eye,const glm::vec3& direction) const { return inventory.Hint(eye,direction,colliders); }
 
 void CombatRange::ToggleCover() { colliders[3].enabled = !colliders[3].enabled; }
 

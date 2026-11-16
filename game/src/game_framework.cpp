@@ -164,6 +164,9 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest)
 
             if (drawable) {
                 scene.Draw(width, height);
+                if (smokeTest && !scene.TestScene().IsTurretMode() && smokeFrame==125) {
+                    scene.TestScene().SaveFrame(projectDirectory/"build/weapon-empty-smoke.ppm",width,height);
+                }
                 if (smokeTest && !scene.TestScene().IsTurretMode() && smokeFrame==5) {
                     if (!scene.TestScene().SaveFrame(projectDirectory/"build/weapon-fire-smoke.ppm",width,height))
                         std::cerr << "Could not save weapon recoil frame\n";

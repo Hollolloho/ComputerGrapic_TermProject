@@ -31,6 +31,9 @@ public:
 
 private:
     bool Fire(const glm::vec3& direction);
+    const combat::WeaponInventory& Inventory() const;
+    bool Interact(const glm::vec3& direction);
+    combat::WeaponInteraction InteractionHint() const;
     void DrawHud(int width,int height) const;
     void DrawBox(const glm::mat4& viewProjection, const glm::vec3& minimum,
         const glm::vec3& maximum, const glm::vec3& color) const;
@@ -47,6 +50,8 @@ private:
     bool coverHeld{};
     bool lookHeld{};
     bool turretHeld{};
+    bool dropHeld{};
+    bool interactHeld{};
     bool turretMode{};
     bool smokeFailureSeen{};
     double lastX{};

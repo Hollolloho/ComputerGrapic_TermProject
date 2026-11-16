@@ -7,7 +7,8 @@ namespace aegis::combat {
 namespace {
 constexpr ObjectId turretId=500;
 constexpr ObjectId playerId=600;
-const glm::vec3 muzzle{0.0f,1.65f,-9.25f};
+constexpr ObjectId turretWeaponId=501;
+const glm::vec3 muzzle{0.85f,1.65f,-9.05f};
 
 bool Finite(const glm::vec3& p)
 {
@@ -30,8 +31,10 @@ void TurretEncounter::Reset()
         {turretId,HitKind::Body,{-0.6f,0,-10.4f},{0.6f,2.25f,-9.5f}},
         {200,HitKind::Wall,{-0.85f,0,-6.3f},{0.85f,2.5f,-5.8f},false},
         {300,HitKind::Wall,{-6,-0.2f,-14},{6,0,3}},
-        {301,HitKind::Wall,{-6,0,-13},{6,4,-12.8f}}
+        {301,HitKind::Wall,{-6,0,-13},{6,4,-12.8f}},
+        {turretWeaponId,HitKind::Weapon,{0.65f,1.45f,-9.5f},{1.05f,1.85f,-9.05f}}
     }};
+    inventory.Reset();
     playerFlights.clear(); enemyFlights.clear();
     result=EncounterResult::Running; phase=TurretPhase::Idle;
     phaseTime=playerCooldown=damageFlash=0;
@@ -41,12 +44,22 @@ void TurretEncounter::Reset()
 
 bool TurretEncounter::Fire(const glm::vec3& eye,const glm::vec3& direction)
 {
-    if (result!=EncounterResult::Running || playerCooldown>0 || playerFlights.size()>=64) return false;
-    auto projectile=MakeProjectile(eye,direction,12.0f,7);
+    if (!inventory.Armed() || result!=EncounterResult::Running || playerCooldown>0 || playerFlights.size()>=64) return false;
+    auto projectile=MakeProjectile(eye,direction,12.0f,inventory.EquippedId());
     if (!projectile) return false;
     playerFlights.push_back({*projectile,0});
     playerCooldown=0.25f; ++playerShots;
     return true;
+}
+
+bool TurretEncounter::DropWeapon(const glm::vec3& eye,const glm::vec3& direction) {
+    return result!=EncounterResult::Failed && inventory.Drop(eye,direction);
+}
+bool TurretEncounter::Interact(const glm::vec3& eye,const glm::vec3& direction) {
+    return result!=EncounterResult::Failed && inventory.Interact(eye,direction,colliders);
+}
+WeaponInteraction TurretEncounter::InteractionHint(const glm::vec3& eye,const glm::vec3& direction) const {
+    return result==EncounterResult::Failed ? WeaponInteraction::None : inventory.Hint(eye,direction,colliders);
 }
 
 void TurretEncounter::ToggleCover()
@@ -54,7 +67,7 @@ void TurretEncounter::ToggleCover()
     if (result==EncounterResult::Running) colliders[1].enabled=!colliders[1].enabled;
 }
 
-void TurretEncounter::Update(float realDt,float gameDt,const glm::vec3& eye)
+void TurretEncounter::Update(float realDt,float gameDt,const glm::vec3& eye,const glm::vec3& forward)
 {
     if (result!=EncounterResult::Running || !std::isfinite(realDt) || !std::isfinite(gameDt)
         || realDt<0 || gameDt<0 || !Finite(eye)) return;
@@ -65,7 +78,12 @@ void TurretEncounter::Update(float realDt,float gameDt,const glm::vec3& eye)
     // Player shots never collide with the shooter's body. One impact per bullet.
     for (auto& flight:playerFlights) {
         if (auto hit=AdvanceProjectile(flight.projectile,gameDt,colliders)) {
-            if (hit->objectId==turretId) {
+            if (hit->objectId==turretWeaponId) {
+                colliders[4].enabled=false; phase=TurretPhase::Disarmed;
+            } else if (hit->objectId==turretId) {
+                inventory.Break(flight.projectile.sourceWeaponId);
+                if (colliders[4].enabled) inventory.SpawnDrop({0.85f,0.12f,-9.3f});
+                colliders[4].enabled=false;
                 colliders[0].enabled=false;
                 phase=TurretPhase::Destroyed;
                 result=EncounterResult::Cleared;
@@ -80,15 +98,19 @@ void TurretEncounter::Update(float realDt,float gameDt,const glm::vec3& eye)
     RemoveExpired(playerFlights);
 
     // Same environment proxies, but enemy shots ignore their source turret.
-    std::array<Collider,5> enemyColliders;
+    std::array<Collider,7> enemyColliders;
     std::copy(colliders.begin(),colliders.end(),enemyColliders.begin());
     enemyColliders[0].enabled=false;
-    enemyColliders[4]={playerId,HitKind::Body,eye+glm::vec3(-0.3f,-1.65f,-0.3f),
+    enemyColliders[4].enabled=false; // Source turret weapon never blocks its own shots.
+    enemyColliders[5]={playerId,HitKind::Body,eye+glm::vec3(-0.3f,-1.65f,-0.3f),
         eye+glm::vec3(0.3f,0.15f,0.3f)};
     for (auto& flight:enemyFlights) {
+        enemyColliders[6]=inventory.HeldCollider(eye,forward);
         if (auto hit=AdvanceProjectile(flight.projectile,gameDt,enemyColliders)) {
-            if (hit->objectId==playerId) {
+            if (hit->kind==HitKind::Body && hit->objectId==playerId) {
                 health=std::max(0,health-25); ++hitsTaken; damageFlash=0.3f;
+            } else if (hit->kind==HitKind::Weapon) {
+                inventory.Break(hit->objectId); ++blockedEnemyShots;
             } else ++blockedEnemyShots;
         }
         flight.age+=gameDt;
@@ -100,6 +122,8 @@ void TurretEncounter::Update(float realDt,float gameDt,const glm::vec3& eye)
         playerFlights.clear(); enemyFlights.clear(); return;
     }
 
+    if (!colliders[4].enabled) { phase=TurretPhase::Disarmed; return; }
+    enemyColliders[6].enabled=false; // Own held gun must not hide the player from AI sight.
     const auto sight=FindFirstHit(muzzle,eye,enemyColliders);
     const bool visible=sight && sight->objectId==playerId;
     if (phase==TurretPhase::Cooldown) {
