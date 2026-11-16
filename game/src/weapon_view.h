@@ -1,6 +1,6 @@
 #pragma once
 
-#include <GL/glew.h>
+#include "atlas_model.h"
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 #include <array>
@@ -20,21 +20,13 @@ public:
     void OnShot();
     void Update(double realDt);
     void Draw(float aspect) const;
-    void DrawWorld(const glm::mat4& projection,const glm::mat4& view,const glm::vec3& position) const;
+    void DrawWorld(const glm::mat4& projection,const glm::mat4& view,const glm::vec3& position,float yawDegrees=90) const;
     void Clear();
     int ShotCount() const { return shotCount; }
 
 private:
     void DrawMeshes(const glm::mat4& projection,const glm::mat4& mount,float glow) const;
-    struct Mesh {
-        GLuint vao{},vbo{},ebo{};
-        GLsizei indices{};
-        glm::vec3 offset{0};
-    };
-    std::vector<Mesh> meshes;
-    std::array<GLuint,5> textures{};
-    GLuint program{};
-    GLint transformLocation{-1},modelLocation{-1},shotLocation{-1};
+    AtlasModel atlas;
     float recoil{};
     int shotCount{};
 };

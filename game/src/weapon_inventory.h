@@ -12,6 +12,7 @@ enum class WeaponInteraction { None, Pickup, Supply };
 class WeaponInventory {
 public:
     void Reset();
+    bool SetSupplyPosition(const glm::vec3& point);
     bool Armed() const { return equipped!=0; }
     ObjectId EquippedId() const { return equipped; }
     bool Break(ObjectId sourceId);
@@ -33,6 +34,7 @@ public:
 private:
     std::optional<Hit> FindInteraction(const glm::vec3& eye,const glm::vec3& direction,
         std::span<const Collider> obstacles) const;
+    glm::vec3 supplyPosition=SupplyPosition();
     ObjectId equipped{1},nextId{2};
     std::vector<DroppedWeapon> drops;
     int breaks{},supplies{},pickups{};

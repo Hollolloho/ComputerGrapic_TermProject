@@ -6,6 +6,7 @@
 #include "weapon_view.h"
 #include "drone.h"
 #include "analysis_session.h"
+#include "boss_view.h"
 #include <GL/glew.h>
 #include <filesystem>
 #include <string>
@@ -31,19 +32,24 @@ public:
     void SetTurretMode(bool enabled);
     void SetCorridorMode(bool enabled);
     void SetDroneMode(bool enabled);
-    bool IsDroneMode() const { return turretMode && encounter.IsDroneMode(); }
+    void SetBossMode(bool enabled);
+    bool IsBossMode() const { return bossMode; }
+    bool IsDroneMode() const { return !bossMode && turretMode && encounter.IsDroneMode(); }
     bool AnalysisActive() const { return analysis.Active(); }
     bool CloseAnalysis() { return analysis.Close(); }
     const combat::AnalysisSession& AnalysisState() const { return analysis; }
-    bool CanAnalyze() const { return turretMode && encounter.CanAnalyze(); }
+    bool CanAnalyze() const { return !bossMode && turretMode && encounter.CanAnalyze(); }
     float DoorProgress() const { return corridorMode ? encounter.DoorProgress() : 0; }
     bool IsCorridorMode() const { return corridorMode; }
-    bool IsTurretMode() const { return turretMode; }
-    int SmokeFrameCount() const { return IsDroneMode() ? 1320 : turretMode ? 780 : 300; }
+    bool IsTurretMode() const { return bossMode || turretMode; }
+    int SmokeFrameCount() const { return bossMode ? 2400 : IsDroneMode() ? 1320 : turretMode ? 780 : 300; }
     std::string StatusTitle(bool paused) const;
 
 private:
     bool Fire(const glm::vec3& direction);
+    glm::vec3 CameraRoot() const;
+    void ToggleBossCover();
+    void DrawBossHud(int width,int height) const;
     bool InitTerminal(const std::filesystem::path& root);
     bool TerminalTarget() const;
     bool TerminalTarget(const glm::vec3& direction) const;
@@ -54,6 +60,9 @@ private:
     void DrawHud(int width,int height) const;
     void DrawBox(const glm::mat4& viewProjection, const glm::vec3& minimum,
         const glm::vec3& maximum, const glm::vec3& color) const;
+    combat::BossEncounter boss;
+    BossView bossView;
+    bool bossMode{},bossCovered{},bossToggleHeld{},smokeBossFailureSeen{};
     combat::AnalysisSession analysis;
     std::vector<DrawMesh> terminalMeshes;
     combat::CombatRange range;

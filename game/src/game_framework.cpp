@@ -73,7 +73,7 @@ void restartFrameTimeCallback(GLFWwindow* window, int)
 
 } // namespace
 
-int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool droneTest)
+int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool droneTest, bool bossTest)
 {
     const auto projectDirectory = ProjectDirectory();
     if (projectDirectory.empty()) {
@@ -110,7 +110,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
 
     FrameInput input;
     GameScene scene;
-    const bool ready = scene.Init(projectDirectory, combatTest, turretTest, droneTest);
+    const bool ready = scene.Init(projectDirectory, combatTest, turretTest, droneTest, bossTest);
     bool smokePassed = !smokeTest;
     if (ready) {
         input.scene=&scene;
@@ -119,7 +119,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
         glfwSetWindowFocusCallback(window, restartFrameTimeCallback);
         glfwSetWindowIconifyCallback(window, restartFrameTimeCallback);
         std::cout << "OpenGL " << glGetString(GL_VERSION) << '\n'
-                  << "F2: corridor/range | F3: drone/turret | T: range/turret | LMB: fire | RMB drag: aim | B: cover | Space: pause | R: reset | Esc: exit\n"
+                  << "F2: corridor/range | F3: drone/turret | F4: boss | T: range/turret | LMB: fire | RMB drag: aim | B: cover | Space: pause | R: reset | Esc: exit\n"
                   << "Fixed camera position; movement/time-slowing are not connected yet." << std::endl;
         glfwSwapInterval(smokeTest ? 0 : 1);
 
@@ -168,6 +168,9 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
 
             if (drawable) {
                 scene.Draw(width, height);
+                if (smokeTest && scene.TestScene().IsBossMode() && (smokeFrame==180 || smokeFrame==2300)) {
+                    scene.TestScene().SaveFrame(projectDirectory/(smokeFrame==180 ? "build/boss-core-open-smoke.ppm":"build/boss-victory-smoke.ppm"),width,height);
+                }
                 if (smokeTest && scene.TestScene().IsDroneMode() && smokeFrame==1160) {
                     scene.TestScene().SaveFrame(projectDirectory/"build/analysis-terminal-smoke.ppm",width,height);
                 }
@@ -185,12 +188,12 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
                         std::cerr << "Could not save weapon recoil frame\n";
                 }
                 if (smokeTest && smokeFrame == 40) {
-                    const auto capture=scene.TestScene().IsDroneMode() ? "build/drone-patrol-smoke.ppm" : scene.TestScene().IsCorridorMode() ? "build/corridor-combat-smoke.ppm" : scene.TestScene().IsTurretMode() ? "build/turret-warning-smoke.ppm" : "build/combat-range-smoke.ppm";
+                    const auto capture=scene.TestScene().IsBossMode() ? "build/boss-warning-smoke.ppm":scene.TestScene().IsDroneMode() ? "build/drone-patrol-smoke.ppm" : scene.TestScene().IsCorridorMode() ? "build/corridor-combat-smoke.ppm" : scene.TestScene().IsTurretMode() ? "build/turret-warning-smoke.ppm" : "build/combat-range-smoke.ppm";
                     if (!scene.TestScene().SaveFrame(projectDirectory / capture, width, height)) {
                         std::cerr << "Could not save range smoke frame\n";
                     }
                 }
-                if (smokeTest && scene.TestScene().IsTurretMode() && (smokeFrame==600 || smokeFrame==770)) {
+                if (smokeTest && !scene.TestScene().IsBossMode() && scene.TestScene().IsTurretMode() && (smokeFrame==600 || smokeFrame==770)) {
                     const auto capture=smokeFrame==600 ? "build/turret-failed-smoke.ppm" : "build/turret-cleared-smoke.ppm";
                     if (!scene.TestScene().SaveFrame(projectDirectory / capture,width,height))
                         std::cerr << "Could not save turret result frame\n";
@@ -207,7 +210,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
             }
             if (smokeTest && smokeFrame >= scene.TestScene().SmokeFrameCount()) {
                 smokePassed = scene.TestScene().SmokePassed();
-                std::cout << (scene.TestScene().IsDroneMode() ? "Drone combat smoke: " : scene.TestScene().IsCorridorMode() ? "Corridor combat smoke: " : scene.TestScene().IsTurretMode() ? "Turret encounter smoke: " : "Combat render smoke: ")
+                std::cout << (scene.TestScene().IsBossMode() ? "Boss combat smoke: ":scene.TestScene().IsDroneMode() ? "Drone combat smoke: " : scene.TestScene().IsCorridorMode() ? "Corridor combat smoke: " : scene.TestScene().IsTurretMode() ? "Turret encounter smoke: " : "Combat render smoke: ")
                     << (smokePassed ? "PASS" : "FAIL") << '\n';
                 glfwSetWindowShouldClose(window, GLFW_TRUE);
             }

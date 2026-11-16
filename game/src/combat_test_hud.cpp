@@ -52,6 +52,7 @@ void Label(const std::string& text,int x,int y,int scale,const glm::vec3& color)
 void CombatTestScene::DrawHud(int width,int height) const
 {
     const int scale=width<900 ? 2 : 3;
+    if (bossMode) { DrawBossHud(width,height); return; }
     if (AnalysisActive()) {
         Label("DRONE ANALYSIS",24,height-40,scale,{0.3f,1,0.9f});
         Label("S07 / SENSOR / ROTORS / WEAPON",24,height-80,2,{0.8f,0.9f,1});
@@ -109,6 +110,31 @@ void CombatTestScene::DrawHud(int width,int height) const
         glScissor(width-6,0,6,height); glClear(GL_COLOR_BUFFER_BIT);
     }
     Label(corridorMode ? "LMB FIRE  RMB AIM  E USE  G DROP  R RESET  F2 RANGE" : "LMB FIRE  RMB AIM  E USE  G DROP  B COVER  T RANGE  R RESET",24,24,2,{0.8f,0.9f,1});
+}
+
+
+void CombatTestScene::DrawBossHud(int width,int height) const {
+    const int scale=width<900 ? 2:3;
+    Label("HP "+std::to_string(boss.Health())+"/100",24,height-40,scale,{0.2f,1,0.7f});
+    Label("CORE "+std::to_string(boss.CoreHits())+"/3",24,height-75,scale,{0.3f,0.9f,1});
+    Label(Inventory().Armed()?"CW01C READY":"EMPTY / B COVER THEN E RESUPPLY",24,height-105,2,{1,0.8f,0.3f});
+    const char* phase=boss.Phase()==combat::BossPhase::Exposed ? "CORE OPEN / FIRE"
+        : boss.Phase()==combat::BossPhase::Warning ? "WARNING / B TAKE COVER"
+        : boss.Phase()==combat::BossPhase::Opening ? "ARMOR OPENING" : "ARMOR CLOSED";
+    if (boss.Result()==combat::EncounterResult::Securing) phase="INCOMING SHOTS";
+    if (boss.Result()==combat::EncounterResult::Failed) phase="FAILED / R RETRY";
+    if (boss.Result()==combat::EncounterResult::Cleared) phase="VICTORY / R RESTART";
+    const std::string text=phase;
+    Label(text,(width-static_cast<int>(text.size())*6*scale)/2,height-40,scale,
+        boss.Phase()==combat::BossPhase::Exposed || boss.Result()==combat::EncounterResult::Cleared ? glm::vec3(0.2f,1,0.8f):glm::vec3(1,0.4f,0.2f));
+    Label(bossCovered ? "COVER POSITION / B RETURN TO FIRE":"FIRING POSITION / B TAKE COVER",24,height-135,2,{0.7f,0.9f,1});
+    if (InteractionHint()==combat::WeaponInteraction::Supply) Label("E RESUPPLY",width/2-60,height/2-50,2,{0.3f,1,0.8f});
+    if (boss.DamageFlash()>0) {
+        glClearColor(0.9f,0.05f,0.05f,1);
+        glScissor(0,0,width,6); glClear(GL_COLOR_BUFFER_BIT);
+        glScissor(0,height-6,width,6); glClear(GL_COLOR_BUFFER_BIT);
+    }
+    Label("LMB FIRE  RMB AIM  B COVER  E USE  R RESET  F4 CORRIDOR",24,24,2,{0.8f,0.9f,1});
 }
 
 } // namespace aegis

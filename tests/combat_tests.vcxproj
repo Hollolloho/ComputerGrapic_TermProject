@@ -39,6 +39,11 @@
     <ClCompile Include="..\game\src\combat_range.cpp" />
     <ClCompile Include="..\game\src\weapon_inventory.cpp" />
     <ClCompile Include="..\game\src\analysis_session.cpp" />
+    <ClCompile Include="..\game\src\boss_geometry.cpp" />
+    <ClCompile Include="..\game\src\boss_encounter.cpp" />
+    <ClInclude Include="..\game\src\boss_geometry.h" />
+    <ClInclude Include="..\game\src\boss_encounter.h" />
+    <ClInclude Include="..\game\src\boss_layout.generated.h" />
     <ClInclude Include="..\game\src\analysis_session.h" />
     <ClInclude Include="..\game\src\terminal_layout.generated.h" />
     <ClInclude Include="..\game\src\weapon_inventory.h" />

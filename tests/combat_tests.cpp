@@ -2,6 +2,7 @@
 #include "combat_range.h"
 #include "turret_encounter.h"
 #include "analysis_session.h"
+#include "boss_encounter.h"
 #include "terminal_layout.generated.h"
 #include "corridor_layout.generated.h"
 
@@ -469,6 +470,95 @@ int main()
     tick(100);
     check(terminal.Open(battle.CanAnalyze(),terminalBox,eye,terminalDirection,terminalObstacle),
         "settled hostile projectile enables terminal analysis");
+
+    BossEncounter boss;
+    const auto firingEye=BossEncounter::FiringRoot()+glm::vec3(0,1.65f,0);
+    const auto coveredEye=BossEncounter::CoverRoot()+glm::vec3(0,1.65f,0);
+    auto closedPose=MakeBossPose(0,firingEye),openPose=MakeBossPose(1,firingEye);
+    const auto core=BossCoreCenter(openPose);
+    hit=FindBossHit(firingEye,core+(core-firingEye)*0.2f,closedPose,false);
+    check(hit && hit->kind==HitKind::Armor,"closed boss panels block actual core ray");
+    hit=FindBossHit(firingEye,core+(core-firingEye)*0.2f,openPose,true);
+    check(hit && hit->kind==HitKind::Body && hit->objectId==21000,
+        "open boss panels expose weakspot through precise part geometry");
+    hit=FindBossHit(firingEye,core+(core-firingEye)*0.2f,openPose,false);
+    check(hit && hit->kind==HitKind::Armor,"closing or inactive core rejects damage even while panels remain apart");
+    const auto bossTick=[&](int frames,const glm::vec3& location) { for(int i=0;i<frames;++i) boss.Update(0.01f,0.01f,location); };
+    check(boss.Fire(firingEye,boss.CoreCenter()-firingEye),"boss scene accepts initial player shot");
+    bossTick(70,coveredEye);
+    check(boss.CoreHits()==0 && boss.BlockedShots()==1 && boss.Inventory().Armed(),
+        "closed armor hit preserves player gun and boss health");
+    boss.Reset(); bossTick(119,firingEye);
+    check(boss.EnemyShots()==0 && boss.Health()==100,"boss warning precedes visible enemy fire");
+    bossTick(10,firingEye);
+    check(boss.EnemyShots()==2 && boss.Health()==100 && boss.EnemyFlights().size()==2,
+        "boss paired cannons emit travelling bullets after warning");
+    bossTick(120,firingEye);
+    check(boss.Health()==50,"boss paired bullets use one 25-point hit per bullet");
+    boss.Reset(); bossTick(900,coveredEye);
+    check(boss.Health()==100 && boss.EnemyShots()==0,"physical room cover blocks boss firing at covered player");
+    boss.Reset();
+    for(int i=0;i<500;++i) boss.Update(0.01f,0.001f,firingEye);
+    check(boss.Phase()==BossPhase::Warning && boss.EnemyShots()==0,"boss pattern obeys supplied slow game time");
+    boss.Update(1,0,firingEye);
+    check(boss.Phase()==BossPhase::Warning && boss.EnemyShots()==0,"pause stops boss phase and projectiles");
+    boss.Reset();
+    for(int i=0;i<1200 && boss.Phase()!=BossPhase::Exposed;++i) boss.Update(0.01f,0.01f,coveredEye);
+    check(boss.Phase()==BossPhase::Exposed && close(boss.ArmorOpen(),1),"only fully open armor enables boss weakspot");
+    boss.Fire(firingEye,boss.CoreCenter()-firingEye);
+    bossTick(26,coveredEye); boss.Fire(firingEye,boss.CoreCenter()-firingEye);
+    bossTick(100,coveredEye);
+    check(boss.CoreHits()==1 && boss.Phase()!=BossPhase::Exposed && !boss.Inventory().Armed(),
+        "one exposure accepts only one valid core hit and breaks matching player gun");
+    check(!boss.Fire(firingEye,boss.CoreCenter()-firingEye),"empty-handed boss player cannot fire");
+    check(boss.Interact(coveredEye,aegis::boss_asset::supplyInteraction-coveredEye)
+        && boss.Inventory().Armed() && boss.Inventory().Supplies()==1,
+        "boss cover-side station restores one weapon after core hit");
+    check(!boss.Interact(coveredEye,aegis::boss_asset::supplyInteraction-coveredEye),"boss station cannot duplicate armed weapons");
+    for(int hitIndex=1;hitIndex<3;++hitIndex) {
+        for(int i=0;i<1200 && boss.Phase()!=BossPhase::Exposed;++i) boss.Update(0.01f,0.01f,coveredEye);
+        boss.Fire(firingEye,boss.CoreCenter()-firingEye); bossTick(100,coveredEye);
+        if (hitIndex<2) boss.Interact(coveredEye,aegis::boss_asset::supplyInteraction-coveredEye);
+    }
+    check(boss.CoreHits()==3 && boss.Result()==EncounterResult::Cleared && boss.Health()==100,
+        "three separate core exposures and resupply cycles complete boss encounter");
+    check(boss.Inventory().Breaks()==3 && boss.Inventory().Supplies()==2 && !boss.Inventory().Armed(),
+        "boss victory preserves three breakages and two refills");
+    check(!boss.Fire(firingEye,boss.CoreCenter()-firingEye),"boss victory rejects extra shots");
+    bossTick(500,firingEye);
+    check(boss.CoreHits()==3 && boss.Result()==EncounterResult::Cleared,"boss victory cannot be counted repeatedly");
+    boss.Reset(); bossTick(1600,firingEye);
+    check(boss.Result()==EncounterResult::Failed && boss.Health()==0 && boss.EnemyFlights().empty(),
+        "boss encounter fails after four body impacts and clears flights");
+    boss.Reset();
+    check(boss.CoreHits()==0 && boss.Health()==100 && boss.Inventory().Armed()
+        && boss.Phase()==BossPhase::Warning && boss.ArmorOpen()==0
+        && boss.PlayerFlights().empty() && boss.EnemyFlights().empty(),
+        "boss restart resets phase, armor, core, health, weapon and all bullets");
+
+    boss.Reset();
+    for(int i=0;i<1200 && boss.Phase()!=BossPhase::Exposed;++i) boss.Update(0.01f,0.01f,coveredEye);
+    boss.Fire(firingEye,boss.CoreCenter()-firingEye);
+    const auto oldBossGun=boss.Inventory().EquippedId();
+    boss.DropWeapon(coveredEye,{0,0,1}); boss.Interact(coveredEye,aegis::boss_asset::supplyInteraction-coveredEye);
+    bossTick(100,coveredEye);
+    check(boss.CoreHits()==1 && boss.Inventory().Armed() && boss.Inventory().EquippedId()!=oldBossGun,
+        "old boss weakspot projectile cannot break a newly refilled gun");
+    boss.Reset();
+    for(int n=0;n<2;++n) {
+        for(int i=0;i<1200 && boss.Phase()!=BossPhase::Exposed;++i) boss.Update(0.01f,0.01f,coveredEye);
+        boss.Fire(firingEye,boss.CoreCenter()-firingEye); bossTick(100,coveredEye);
+        boss.Interact(coveredEye,aegis::boss_asset::supplyInteraction-coveredEye);
+    }
+    // Final volley aims through the room entrance; it remains in flight after the core hit.
+    const glm::vec3 distantEye{0,1.65f,7};
+    for(int i=0;i<1200 && boss.Phase()!=BossPhase::Exposed;++i) boss.Update(0.01f,0.01f,distantEye);
+    boss.Fire(firingEye,boss.CoreCenter()-firingEye); bossTick(65,coveredEye);
+    check(boss.CoreHits()==3 && boss.Result()==EncounterResult::Securing && !boss.EnemyFlights().empty(),
+        "third boss hit retains already-fired hostile bullets before victory");
+    bossTick(500,coveredEye);
+    check(boss.Result()==EncounterResult::Cleared && boss.EnemyFlights().empty(),
+        "boss victory waits for remaining volley to settle");
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

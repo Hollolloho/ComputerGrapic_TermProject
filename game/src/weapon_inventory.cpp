@@ -19,6 +19,10 @@ void WeaponInventory::Reset() {
     equipped=1; nextId=2; drops.clear(); breaks=supplies=pickups=0;
 }
 
+bool WeaponInventory::SetSupplyPosition(const glm::vec3& point) {
+    if (!Finite(point)) return false;
+    supplyPosition=point; return true;
+}
 bool WeaponInventory::Break(ObjectId sourceId) {
     if (!Armed() || equipped!=sourceId) return false;
     equipped=0; ++breaks; return true;
@@ -41,8 +45,8 @@ std::optional<Hit> WeaponInventory::FindInteraction(const glm::vec3& eye,const g
     if (Armed() || !Finite(eye) || !Direction(direction)) return {};
     const auto end=eye+glm::normalize(direction)*2.5f;
     std::vector<Collider> candidates;
-    candidates.push_back({supplyId,HitKind::Weapon,SupplyPosition()-glm::vec3(0.3f,0.25f,0.25f),
-        SupplyPosition()+glm::vec3(0.3f,0.25f,0.25f)});
+    candidates.push_back({supplyId,HitKind::Weapon,supplyPosition-glm::vec3(0.3f,0.25f,0.25f),
+        supplyPosition+glm::vec3(0.3f,0.25f,0.25f)});
     for (const auto& drop:drops) candidates.push_back({drop.id,HitKind::Weapon,
         drop.position-glm::vec3(0.25f,0.12f,0.25f),drop.position+glm::vec3(0.25f,0.12f,0.25f)});
     const auto item=FindFirstHit(eye,end,candidates);
