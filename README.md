@@ -4,9 +4,9 @@
 
 ## 브랜치 기준
 
-- `main`: 최신 기획·역할·작업 목록·제안서의 공용 기준이다.
-- `codex/framework`: 게임 솔루션 `AEGIS.slnx`, `game/`, `external/`과 실행 기반을 관리한다. 기반 검증 전까지 이 변경은 `main`에 합치지 않는다.
-- 기획 변경은 `main`에 반영한 뒤 `codex/framework`에 병합한다. 기반을 사용하는 코드 작업은 현재 `codex/framework`에서 분기하고, 기반이 `main`에 병합된 뒤 공용 코드 기준을 `main`으로 전환한다.
+- `main`은 공용 기획과 통합 기준이다. 기본 게임 솔루션 `AEGIS.slnx`, 실행 코드, 공용 라이브러리, Assimp 로더가 들어 있다.
+- `codex/t006-corridor`에서 복도 시험 장면과 드론·카메라 연결을 관리한다. `feature/asset`에서 게임용 모델과 재질을, `feature/yoon-combat`에서 전투 구현을 관리한다.
+- 공용 브랜치로 PR을 열 때 기준은 `main`이다. 기능 브랜치의 구현이나 에셋이 필요한 작업은 사용할 브랜치와 커밋을 먼저 확인한다.
 
 ## 문서
 

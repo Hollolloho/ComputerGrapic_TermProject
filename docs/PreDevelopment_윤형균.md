@@ -1,5 +1,7 @@
 # 윤형균 개발 전 준비 문서
 
+**커밋 유형 접두어(`docs:`, `fix:`, `refactor:` 등)는 영어로 사용해도 되며, 제목의 변경 설명과 본문은 한국어로 작성한다.**
+
 **AEGIS 저항 작전 · 2026년 11월 10일 · 기획 기준 커밋 `e8e59bd`**
 
 윤형균은 기본 사격과 피격, 드론·포탑·코어 보스, 무기 파손과 회수, 한글 UI와 게임 진행을 담당한다. 첫 목표는 **임시 복도에서 탄환 한 발이 처음 만난 벽 또는 표적에만 영향을 주고, 실패 후 같은 구역을 다시 시작하는 장면**을 만드는 것이다. 실제 완료 여부는 [TASKS](TASKS.md)에 기록한다.
@@ -22,17 +24,17 @@ cd ComputerGrapic_TermProject
 
 이미 저장소를 받은 경우에는 그 폴더에서 PowerShell을 열고 `git remote -v`로 `origin`이 팀 저장소를 가리키는지 확인한다. 이 문서의 기준 커밋이 원격에 올라왔는지도 홍준호와 확인한다. 로컬 시제품 에셋은 두 사람이 별도로 같은 버전을 맞춘다.
 
-### 2. 내 작업 브랜치 만들기
+### 2. 내 작업 브랜치 열기
 
-기획 문서의 기준은 `main`, 솔루션·라이브러리·실행 기반은 `codex/framework`다. 기반이 `main`에 병합되기 전에는 아래처럼 `codex/framework`에서 코드 작업을 시작한다. 기반 병합 후에는 새 코드 브랜치와 PR의 공용 기준을 `main`으로 바꾼다. 기존 작업 폴더를 쓰는 경우에는 `git status`로 작업 중인 변경을 먼저 확인한다.
+공용 기획과 통합 기준은 `main`이다. 전투 작업은 기존 원격 `feature/yoon-combat`에서 이어간다. 기존 작업 폴더를 쓰는 경우에는 `git status`로 작업 중인 변경을 먼저 확인한다. 해당 브랜치가 로컬에 처음이라면 아래 순서로 가져온다.
 
 ```powershell
 git fetch origin
-git switch --no-track -c feature/yoon-combat origin/codex/framework
+git switch --track origin/feature/yoon-combat
 git status -sb
 ```
 
-첫 줄에 `feature/yoon-combat`이 보이면 그 브랜치에서 코드를 수정한다. `--no-track`을 사용하면 개인 브랜치의 원격 연결을 첫 푸시에서 설정할 수 있다. 다음에 작업을 이어갈 때는 `git switch feature/yoon-combat`으로 돌아온다.
+첫 줄에 `feature/yoon-combat`이 보이면 그 브랜치에서 코드를 수정한다. 브랜치가 이미 로컬에 있으면 `git switch feature/yoon-combat`을 실행한다.
 
 ### 3. 수정한 파일 검토하고 커밋하기
 
@@ -54,11 +56,11 @@ git commit -m "feat: 탄환 첫 충돌 판정 추가"
 git push -u origin feature/yoon-combat
 ```
 
-첫 푸시가 성공하면 이후에는 같은 브랜치에서 `git push`로 커밋을 추가한다. 현재 GitHub에서 코드 PR을 열 때 **공용 브랜치(base)는 `codex/framework`**, **내 작업 브랜치(compare)는 `feature/yoon-combat`**으로 고른다. 기반이 `main`에 병합된 후에는 base를 `main`으로 바꾼다. 작업 ID, 바뀐 동작, 직접 실행한 확인 방법을 적고 홍준호와 검토한다.
+원격 추적이 설정된 뒤에는 같은 브랜치에서 `git push`로 커밋을 추가한다. 공용 브랜치로 코드 PR을 열 때 **기준 브랜치(base)는 `main`**, **작업 브랜치(compare)는 `feature/yoon-combat`**으로 고른다. 작업 ID, 바뀐 동작, 직접 실행한 확인 방법을 적고 홍준호와 검토한다.
 
 ### 5. 공용 브랜치의 변경 가져오기
 
-홍준호가 공용 브랜치에 변경을 합쳤다면, 내 브랜치에서 `git status -sb`로 브랜치 이름과 미커밋 변경을 확인한다. 작업 폴더가 깨끗할 때 `git fetch origin`으로 원격 정보를 받고 `git merge origin/codex/framework`로 공용 변경을 내 브랜치에 합친다. 기반 병합 후 공용 기준을 `main`으로 바꿨다면 `git merge origin/main`을 사용한다. 충돌이 표시되면 `git status`로 파일을 확인해 함께 정리한다. 합친 뒤 빌드·실행을 확인하고 다시 푸시한다.
+`main`에 공용 변경이 들어오면 내 브랜치에서 `git status -sb`로 브랜치 이름과 미커밋 변경을 확인한다. 작업 폴더가 깨끗할 때 `git fetch origin`으로 원격 정보를 받고 `git merge origin/main`으로 공용 변경을 내 브랜치에 합친다. 충돌이 표시되면 `git status`로 파일을 확인해 함께 정리한다. 합친 뒤 빌드·실행을 확인하고 다시 푸시한다.
 
 ## 첫 작업 전에 맞출 것
 
@@ -68,7 +70,7 @@ git push -u origin feature/yoon-combat
 
 ### 공유한 Visual Studio 설정으로 빌드하기
 
-`codex/framework`의 게임 솔루션 `AEGIS.slnx`, 프로젝트 `game/AEGIS.vcxproj`, `external/` 라이브러리를 같은 커밋에서 받는다. 현재 `main`에는 이 실행 기반이 아직 없다. `external/`은 **`.slnx`가 있는 폴더 바로 아래**에 둔다.
+기본 게임 솔루션 `AEGIS.slnx`, 프로젝트 `game/AEGIS.vcxproj`, `external/` 라이브러리는 `main`에 있다. 전투 기능을 확인할 때는 `feature/yoon-combat`의 같은 커밋에서 솔루션·코드·라이브러리를 사용한다. `external/`은 **`.slnx`가 있는 폴더 바로 아래**에 둔다.
 
 1. 받은 `.slnx`를 Visual Studio에서 연다. 홍준호와 같은 MSVC 도구 집합과 Windows SDK가 설치되어 있는지 확인한다.
 2. 상단 구성에서 **`Debug | x64`**를 선택하고 솔루션을 빌드한 뒤 게임 창을 실행한다. 제출용 실행을 확인할 때는 `Release | x64`로 다시 빌드한다.
