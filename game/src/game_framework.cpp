@@ -123,7 +123,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
         glfwSetWindowIconifyCallback(window, restartFrameTimeCallback);
         std::cout << "OpenGL " << glGetString(GL_VERSION) << '\n'
                   << (campaign ? "Campaign: mouse/Enter menus | LMB fire | RMB aim | B boss cover | E use | R checkpoint | Esc/Space menu\n" : "F2: corridor/range | F3: drone/turret | F4: boss | T: range/turret | LMB: fire | RMB drag: aim | B: cover | Space: pause | R: reset | Esc: exit\n")
-                  << "Fixed camera position; movement/time-slowing are not connected yet." << std::endl;
+                  << "F5: manual 1x/0.05x time preview | Shift: hold normal speed. Movement-based time is not connected yet." << std::endl;
         glfwSwapInterval(smokeTest ? 0 : 1);
 
         constexpr double maxDeltaTime = 0.05;
@@ -159,13 +159,13 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
             if (smokeTest) {
                 active = true;
                 scene.SmokeFrame(++smokeFrame);
-                scene.Update(1.0 / 60.0);
+                scene.Update(1.0 / 60.0,1.0 / 60.0);
             }
 
             // 복귀한 첫 프레임에는 중단 중에 흐른 시간을 회전에 더하지 않는다.
             if (!smokeTest && active && wasActive && !input.restartFrameTime) {
                 const double deltaTime = std::clamp(currentTime - previousTime, 0.0, maxDeltaTime);
-                scene.Update(deltaTime);
+                scene.Update(deltaTime,deltaTime*scene.PreviewTimeScale());
             }
             previousTime = currentTime;
             wasActive = active;

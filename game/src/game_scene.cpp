@@ -79,10 +79,10 @@ bool GameScene::InitCorridor(const std::filesystem::path& projectDirectory)
     return true;
 }
 
-void GameScene::Update(double deltaTime)
+void GameScene::Update(double realDt,double baseGameDt)
 {
     if (campaignMode && !flow.WorldRuns()) return;
-    testScene.Update(deltaTime,deltaTime);
+    testScene.Update(realDt,baseGameDt);
     if (campaignMode) flow.ObserveBattle(testScene.BattleResult()==combat::EncounterResult::Failed,
         testScene.BattleResult()==combat::EncounterResult::Cleared);
 }
@@ -222,7 +222,7 @@ UiPage GameScene::Page() const {
         page.footer=L"Enter: 게임 시작  ·  마우스로 버튼을 선택할 수 있습니다."; break;
     case CampaignScreen::Help:
         page.title=L"조작 안내";
-        page.body=L"왼쪽 클릭: 한 발 사격  /  오른쪽 드래그: 조준\nE: 무기 회수·보급·안전한 분석 단말 사용\nB: 보스전 엄폐·사격 위치 전환\nR: 현재 구역 다시 시작\nEsc 또는 Space: 일시정지 메뉴\n열린 보스 코어를 세 번 맞히면 승리합니다.";
+        page.body=L"왼쪽 클릭: 한 발 사격  /  오른쪽 드래그: 조준\nE: 무기 회수·보급·안전한 분석 단말 사용\nB: 보스전 엄폐·사격 위치 전환\nR: 현재 구역 다시 시작  /  Esc·Space: 일시정지\nF5: 수동 1배·0.05배 시험  /  Shift: 정상 진행\n열린 보스 코어를 세 번 맞히면 승리합니다.";
         add(UiAction::Title,L"시작 화면으로",2);
         page.footer=L"현재 구역 이동은 진입 버튼으로 진행합니다."; break;
     case CampaignScreen::Paused:
@@ -260,10 +260,10 @@ UiPage GameScene::Page() const {
     return page;
 }
 std::string GameScene::StatusTitle(bool paused) const {
-    if(!campaignMode) return testScene.StatusTitle(paused);
+    if(!campaignMode) return testScene.StatusTitle(paused)+testScene.TimeDebug();
     const char* screen=flow.Screen()==CampaignScreen::Title?"TITLE":flow.Screen()==CampaignScreen::Help?"HELP":flow.Screen()==CampaignScreen::Paused?"PAUSED":flow.Screen()==CampaignScreen::Failed?"FAILED":flow.Screen()==CampaignScreen::Victory?"VICTORY":"PLAYING";
     const char* stage=flow.Stage()==CampaignStage::Entry?"ENTRY":flow.Stage()==CampaignStage::Corridor?"CORRIDOR":"BOSS";
-    return std::string("AEGIS CAMPAIGN | ")+screen+" | "+stage+" | "+testScene.StatusTitle(false);
+    return std::string("AEGIS CAMPAIGN | ")+screen+" | "+stage+" | "+testScene.StatusTitle(false)+testScene.TimeDebug();
 }
 void GameScene::SmokeFrame(int frame) {
     if(!campaignMode) { testScene.SetSmokeFrame(frame); return; }

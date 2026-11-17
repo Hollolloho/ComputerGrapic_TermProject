@@ -14,7 +14,8 @@ namespace aegis {
 class GameScene {
 public:
     bool Init(const std::filesystem::path& projectDirectory, bool combatTest = false, bool turretTest = false, bool droneTest = true, bool bossTest = false, bool campaign = true);
-    void Update(double deltaTime);
+    void Update(double realDt,double baseGameDt);
+    double PreviewTimeScale() const { return testScene.PreviewTimeScale(); }
     void Draw(int width, int height) const;
     void Reset();
     void Clear();

@@ -68,6 +68,10 @@ bool KoreanUi::Rasterize(const UiPage& page,int width,int height,int hover) {
         text(page.body,218,235,590,225,23,false,RGB(197,212,229));
         text(page.footer,218,624,590,36,16,false,RGB(139,170,192));
     } else {
+        if(!page.timeStatus.empty()) {
+            fill(24,560,976,34,RGB(12,21,34));
+            text(page.timeStatus,42,565,944,26,16,false,RGB(167,211,234));
+        }
         if(!page.status.empty()) {
             const auto accent=page.danger ? RGB(255,120,95):RGB(100,235,205);
             fill(24,20,976,112,RGB(12,21,34));
@@ -95,7 +99,7 @@ bool KoreanUi::Rasterize(const UiPage& page,int width,int height,int hover) {
 }
 void KoreanUi::Draw(const UiPage& page,int width,int height,float mouseX,float mouseY) {
     if (!program || width<=0 || height<=0) return;
-    int hover=-1; std::wstring key=page.title+page.body+page.footer+page.status+page.warning+std::to_wstring(page.health)+(page.danger?L"D":L"S")+std::to_wstring(width)+L"/"+std::to_wstring(height)+(page.panel?L"P":L"H");
+    int hover=-1; std::wstring key=page.title+page.body+page.footer+page.status+page.warning+page.timeStatus+std::to_wstring(page.health)+(page.danger?L"D":L"S")+std::to_wstring(width)+L"/"+std::to_wstring(height)+(page.panel?L"P":L"H");
     for(std::size_t i=0;i<page.buttons.size();++i) {
         const auto& b=page.buttons[i]; if(b.Contains(mouseX,mouseY)) hover=static_cast<int>(i);
         key+=b.label+(b.enabled?L"Y":L"N");

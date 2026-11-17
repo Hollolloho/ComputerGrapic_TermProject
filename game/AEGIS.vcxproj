@@ -78,6 +78,7 @@
     <ClInclude Include="src\campaign_layout.generated.h" />
     <ClInclude Include="src\campaign_flow.h" />
     <ClInclude Include="src\combat_feedback.h" />
+    <ClInclude Include="src\combat_time.h" />
     <ClCompile Include="src\boss_geometry.cpp" />
     <ClCompile Include="src\boss_encounter.cpp" />
     <ClInclude Include="src\boss_geometry.h" />

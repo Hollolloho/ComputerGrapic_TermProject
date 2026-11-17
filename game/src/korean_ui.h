@@ -13,7 +13,7 @@ struct UiButton {
 };
 struct UiPage {
     std::wstring title,body,footer;
-    std::wstring status,warning;
+    std::wstring status,warning,timeStatus;
     int health{100};
     bool danger{};
     bool panel{true};

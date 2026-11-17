@@ -9,6 +9,7 @@
 #include "boss_view.h"
 #include "korean_ui.h"
 #include "combat_feedback.h"
+#include "combat_time.h"
 #include <GL/glew.h>
 #include <filesystem>
 #include <string>
@@ -40,6 +41,10 @@ public:
     void CampaignSmokeFrame(int frame);
     void PopulateHud(UiPage& page) const;
     const combat::CombatFeedback& Feedback() const { return feedback; }
+    double PreviewTimeScale() const { return slowPreview ? 0.05:1.0; }
+    std::wstring TimeStatus() const;
+    std::string TimeDebug() const;
+    const combat::CombatTime& TimeState() const { return time; }
     int BossCoreHits() const { return boss.CoreHits(); }
     bool IsBossMode() const { return bossMode; }
     bool IsDroneMode() const { return !bossMode && turretMode && encounter.IsDroneMode(); }
@@ -69,6 +74,8 @@ private:
     void DrawHud(int width,int height) const;
     void DrawBox(const glm::mat4& viewProjection, const glm::vec3& minimum,
         const glm::vec3& maximum, const glm::vec3& color) const;
+    combat::CombatTime time;
+    bool slowPreview{},previewHeld{},forceNormal{};
     combat::CombatFeedback feedback;
     combat::BossEncounter boss;
     BossView bossView;

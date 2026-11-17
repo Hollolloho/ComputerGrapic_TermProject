@@ -137,7 +137,19 @@ void CombatTestScene::DrawBossHud(int width,int height) const {
     Label(debugControls ? "LMB FIRE  RMB AIM  B COVER  E USE  R RESET  F4 CORRIDOR" : "LMB FIRE  RMB AIM  B COVER  E USE  R RESET  ESC MENU",24,24,2,{0.8f,0.9f,1});
 }
 
+std::wstring CombatTestScene::TimeStatus() const {
+    const auto current=std::to_wstring(static_cast<int>(time.Scale()*100+0.5));
+    return std::wstring(L"수동 시간 시험 · F5: ")+(slowPreview ? L"0.05배":L"1배")
+        +L"  /  현재 "+current+L"%  /  Shift: 정상 진행  /  사격 후 0.25초 정상 진행 · 이동 연동 전";
+}
+std::string CombatTestScene::TimeDebug() const {
+    return std::string(" | TimeBase: ")+(slowPreview ? "0.05":"1.00")
+        +" | TimeScale: "+std::to_string(time.Scale())
+        +" | ShotWindow: "+std::to_string(time.ShotRemaining());
+}
+
 void CombatTestScene::PopulateHud(UiPage& page) const {
+    page.timeStatus=TimeStatus();
     const auto& inventory=Inventory();
     page.health=bossMode ? boss.Health():encounter.Health();
     page.status=L"체력 "+std::to_wstring(page.health)+L" / 100  |  ";

@@ -90,7 +90,7 @@ bool CombatTestScene::InitTerminal(const std::filesystem::path& root) {
 
 void CombatTestScene::Reset()
 {
-    analysis.Reset(); feedback.Reset();
+    analysis.Reset(); feedback.Reset(); time.Reset(); slowPreview=false; forceNormal=false;
     range.Reset(); encounter.Reset(); weapon.Reset(); drone.Reset(); boss.Reset(); bossCovered=false; yaw = pitch = 0;
     if (bossMode) { const auto d=glm::normalize(boss.CoreCenter()-(CameraRoot()+glm::vec3(0,1.65f,0))); pitch=glm::degrees(std::asin(d.y)); }
     camera.SetPose(CameraRoot(), yaw, pitch);
@@ -134,9 +134,10 @@ void CombatTestScene::ToggleBossCover() {
 
 bool CombatTestScene::Fire(const glm::vec3& direction)
 {
+    if(!time.CanFire()) return false;
     const bool fired=bossMode ? boss.Fire(camera.EyePosition(),direction):turretMode ? encounter.Fire(camera.EyePosition(),direction)
         : range.Fire(camera.EyePosition(),direction);
-    if (fired) weapon.OnShot();
+    if (fired) { time.RequestShot(); weapon.OnShot(); }
     return fired;
 }
 
@@ -161,6 +162,11 @@ combat::WeaponInteraction CombatTestScene::InteractionHint() const {
 
 void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
 {
+    const bool preview=glfwGetKey(window,GLFW_KEY_F5)==GLFW_PRESS;
+    forceNormal=active && !analysis.Active() && (glfwGetKey(window,GLFW_KEY_LEFT_SHIFT)==GLFW_PRESS
+        || glfwGetKey(window,GLFW_KEY_RIGHT_SHIFT)==GLFW_PRESS);
+    if(active && !analysis.Active() && preview && !previewHeld) slowPreview=!slowPreview;
+    previewHeld=preview;
     const bool left = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
     const bool right = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
     const bool cover = glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS;
@@ -209,6 +215,9 @@ void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
 void CombatTestScene::Update(double realDt, double gameDt)
 {
     if (analysis.Active()) return;
+    const auto frame=time.Advance(realDt,gameDt,forceNormal);
+    realDt=frame.realDt; gameDt=frame.gameDt;
+    if(realDt<=0) return;
     if (bossMode) boss.Update(static_cast<float>(realDt),static_cast<float>(gameDt),camera.EyePosition(),camera.ViewDirection());
     else if (turretMode) encounter.Update(static_cast<float>(realDt),static_cast<float>(gameDt),camera.EyePosition(),camera.ViewDirection());
     else range.Update(static_cast<float>(realDt), static_cast<float>(gameDt));
