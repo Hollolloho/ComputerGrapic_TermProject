@@ -1,4 +1,4 @@
-#include "game_framework.h"
+#include "FrameWork.h"
 #include "model_loader.h"
 
 #include <iostream>
@@ -40,7 +40,7 @@ int InspectModel(const std::filesystem::path& path)
 int wmain(int argc, wchar_t* argv[])
 {
     if (argc == 1) {
-        aegis::GameFramework game;
+        GameFrameWork game;
         return game.Run();
     }
     if (argc >= 2 && (std::wstring_view(argv[1]) == L"--player-view-test" || std::wstring_view(argv[1]) == L"--combat-map-test" || std::wstring_view(argv[1]) == L"--campaign-test" || std::wstring_view(argv[1]) == L"--boss-test" || std::wstring_view(argv[1]) == L"--drone-test" || std::wstring_view(argv[1]) == L"--corridor-test" || std::wstring_view(argv[1]) == L"--combat-test" || std::wstring_view(argv[1]) == L"--turret-test")) {
@@ -48,10 +48,10 @@ int wmain(int argc, wchar_t* argv[])
             std::cerr << "Usage: AEGIS.exe --player-view-test|--combat-map-test|--campaign-test|--boss-test|--drone-test|--corridor-test|--combat-test|--turret-test [--smoke-test]\n";
             return 2;
         }
-        aegis::GameFramework game;
+        GameFrameWork game;
         const auto mode=std::wstring_view(argv[1]);
-        return game.Run(mode==L"--combat-test" || mode==L"--turret-test",argc==3,mode==L"--turret-test",
-            mode==L"--drone-test" || mode==L"--campaign-test" || mode==L"--combat-map-test",mode==L"--boss-test",mode==L"--campaign-test",mode==L"--combat-map-test",mode==L"--player-view-test");
+        return game.Run({mode==L"--combat-test" || mode==L"--turret-test",argc==3,mode==L"--turret-test",
+            mode==L"--drone-test" || mode==L"--campaign-test" || mode==L"--combat-map-test",mode==L"--boss-test",mode==L"--campaign-test",mode==L"--combat-map-test",mode==L"--player-view-test"});
     }
     if (argc == 3 && std::wstring_view(argv[1]) == L"--inspect-obj") {
         return InspectModel(argv[2]);
