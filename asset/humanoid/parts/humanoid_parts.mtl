@@ -1,0 +1,15 @@
+newmtl Humanoid_PBR
+Kd 1.0 1.0 1.0
+Pm 0.000000
+Pr 0.800000
+d 1.0
+illum 2
+map_Kd ../textures/humanoid_basecolor.png
+norm ../textures/humanoid_normal.png
+
+newmtl Humanoid_Joint
+Kd 0.047 0.060 0.071
+Pm 0.28
+Pr 0.65
+d 1.0
+illum 2

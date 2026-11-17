@@ -1,0 +1,216 @@
+{
+  "units": "metres",
+  "up": "+Y",
+  "front": "+Z",
+  "groups": {
+    "body": {
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    "sensor": {
+      "position": [
+        0,
+        -0.015,
+        0.49
+      ],
+      "pivot": "yaw"
+    },
+    "rotor_left": {
+      "position": [
+        -1.02,
+        0.04,
+        -0.02
+      ],
+      "pivot": "yaw"
+    },
+    "rotor_right": {
+      "position": [
+        1.02,
+        0.04,
+        -0.02
+      ],
+      "pivot": "yaw"
+    },
+    "weapon": {
+      "position": [
+        0,
+        -0.35,
+        0.13
+      ],
+      "pivot": "pitch"
+    }
+  },
+  "materials": {
+    "shell": {
+      "color": "#dfe6e8",
+      "roughness": 0.32,
+      "metalness": 0.18
+    },
+    "white": {
+      "color": "#f1f3ef",
+      "roughness": 0.42,
+      "metalness": 0.08
+    },
+    "dark": {
+      "color": "#171f27",
+      "roughness": 0.38,
+      "metalness": 0.38
+    },
+    "rubber": {
+      "color": "#080f15",
+      "roughness": 0.75,
+      "metalness": 0.05
+    },
+    "steel": {
+      "color": "#566673",
+      "roughness": 0.32,
+      "metalness": 0.55
+    },
+    "wall": {
+      "color": "#cbd5d9",
+      "roughness": 0.62,
+      "metalness": 0.08
+    },
+    "floor": {
+      "color": "#84939e",
+      "roughness": 0.48,
+      "metalness": 0.22
+    },
+    "recess": {
+      "color": "#394953",
+      "roughness": 0.6,
+      "metalness": 0.2
+    },
+    "red": {
+      "color": "#d82c32",
+      "roughness": 0.3,
+      "metalness": 0.2,
+      "emissive": "#ef141f",
+      "intensity": 1.2
+    },
+    "lens": {
+      "color": "#410d14",
+      "roughness": 0.16,
+      "metalness": 0.25,
+      "emissive": "#a20a14",
+      "intensity": 0.6
+    },
+    "light": {
+      "color": "#e0f4ff",
+      "roughness": 0.3,
+      "metalness": 0,
+      "emissive": "#c7eaff",
+      "intensity": 2.2
+    },
+    "amber": {
+      "color": "#c88f35",
+      "roughness": 0.55,
+      "metalness": 0.1
+    }
+  },
+  "files": [
+    {
+      "file": "drone_body_shell.obj",
+      "group": "body",
+      "material": "shell"
+    },
+    {
+      "file": "drone_body_white.obj",
+      "group": "body",
+      "material": "white"
+    },
+    {
+      "file": "drone_body_dark.obj",
+      "group": "body",
+      "material": "dark"
+    },
+    {
+      "file": "drone_body_steel.obj",
+      "group": "body",
+      "material": "steel"
+    },
+    {
+      "file": "drone_body_red.obj",
+      "group": "body",
+      "material": "red"
+    },
+    {
+      "file": "drone_sensor_rubber.obj",
+      "group": "sensor",
+      "material": "rubber"
+    },
+    {
+      "file": "drone_sensor_steel.obj",
+      "group": "sensor",
+      "material": "steel"
+    },
+    {
+      "file": "drone_sensor_red.obj",
+      "group": "sensor",
+      "material": "red"
+    },
+    {
+      "file": "drone_sensor_lens.obj",
+      "group": "sensor",
+      "material": "lens"
+    },
+    {
+      "file": "drone_rotor_left_dark.obj",
+      "group": "rotor_left",
+      "material": "dark"
+    },
+    {
+      "file": "drone_rotor_left_rubber.obj",
+      "group": "rotor_left",
+      "material": "rubber"
+    },
+    {
+      "file": "drone_rotor_left_steel.obj",
+      "group": "rotor_left",
+      "material": "steel"
+    },
+    {
+      "file": "drone_rotor_right_dark.obj",
+      "group": "rotor_right",
+      "material": "dark"
+    },
+    {
+      "file": "drone_rotor_right_rubber.obj",
+      "group": "rotor_right",
+      "material": "rubber"
+    },
+    {
+      "file": "drone_rotor_right_steel.obj",
+      "group": "rotor_right",
+      "material": "steel"
+    },
+    {
+      "file": "drone_weapon_shell.obj",
+      "group": "weapon",
+      "material": "shell"
+    },
+    {
+      "file": "drone_weapon_dark.obj",
+      "group": "weapon",
+      "material": "dark"
+    },
+    {
+      "file": "drone_weapon_rubber.obj",
+      "group": "weapon",
+      "material": "rubber"
+    },
+    {
+      "file": "drone_weapon_steel.obj",
+      "group": "weapon",
+      "material": "steel"
+    },
+    {
+      "file": "drone_weapon_red.obj",
+      "group": "weapon",
+      "material": "red"
+    }
+  ]
+}

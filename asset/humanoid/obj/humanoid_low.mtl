@@ -1,0 +1,9 @@
+# Original humanoid GLB material values
+newmtl Humanoid_PBR
+Kd 1.0 1.0 1.0
+Pm 0.0
+Pr 0.8
+d 1.0
+illum 2
+map_Kd ../textures/humanoid_basecolor.png
+norm ../textures/humanoid_normal.png

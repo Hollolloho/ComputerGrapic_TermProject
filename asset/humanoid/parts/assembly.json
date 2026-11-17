@@ -1,0 +1,251 @@
+{
+  "units": "metres",
+  "up": "+Y",
+  "front": "+Z",
+  "root": "pelvis",
+  "left_right_reference": "character",
+  "material": "humanoid_parts.mtl",
+  "root_offset_reference": "model origin at floor",
+  "parts": {
+    "pelvis": {
+      "obj": "pelvis.obj",
+      "parent": null,
+      "joint": "pelvis",
+      "pivot_model": [
+        0.0,
+        1.066,
+        -0.002
+      ],
+      "offset_from_parent": [
+        0.0,
+        1.066,
+        -0.002
+      ]
+    },
+    "torso": {
+      "obj": "torso.obj",
+      "parent": "pelvis",
+      "joint": "waist",
+      "pivot_model": [
+        0.0,
+        1.252,
+        0.024
+      ],
+      "offset_from_parent": [
+        0.0,
+        0.186,
+        0.026
+      ]
+    },
+    "neck": {
+      "obj": "neck.obj",
+      "parent": "torso",
+      "joint": "neck",
+      "pivot_model": [
+        0.0,
+        1.638,
+        -0.024
+      ],
+      "offset_from_parent": [
+        0.0,
+        0.386,
+        -0.048
+      ]
+    },
+    "head": {
+      "obj": "head.obj",
+      "parent": "neck",
+      "joint": "head",
+      "pivot_model": [
+        0.0,
+        1.706,
+        -0.035
+      ],
+      "offset_from_parent": [
+        0.0,
+        0.068,
+        -0.011
+      ]
+    },
+    "left_upper_arm": {
+      "obj": "left_upper_arm.obj",
+      "parent": "torso",
+      "joint": "shoulder",
+      "pivot_model": [
+        0.205,
+        1.572,
+        -0.05
+      ],
+      "offset_from_parent": [
+        0.205,
+        0.32,
+        -0.074
+      ]
+    },
+    "left_forearm": {
+      "obj": "left_forearm.obj",
+      "parent": "left_upper_arm",
+      "joint": "elbow",
+      "pivot_model": [
+        0.342,
+        1.3,
+        -0.052
+      ],
+      "offset_from_parent": [
+        0.137,
+        -0.272,
+        -0.002
+      ]
+    },
+    "left_hand": {
+      "obj": "left_hand.obj",
+      "parent": "left_forearm",
+      "joint": "wrist",
+      "pivot_model": [
+        0.394,
+        1.006,
+        0.019
+      ],
+      "offset_from_parent": [
+        0.052,
+        -0.294,
+        0.071
+      ]
+    },
+    "right_upper_arm": {
+      "obj": "right_upper_arm.obj",
+      "parent": "torso",
+      "joint": "shoulder",
+      "pivot_model": [
+        -0.205,
+        1.572,
+        -0.05
+      ],
+      "offset_from_parent": [
+        -0.205,
+        0.32,
+        -0.074
+      ]
+    },
+    "right_forearm": {
+      "obj": "right_forearm.obj",
+      "parent": "right_upper_arm",
+      "joint": "elbow",
+      "pivot_model": [
+        -0.342,
+        1.3,
+        -0.052
+      ],
+      "offset_from_parent": [
+        -0.137,
+        -0.272,
+        -0.002
+      ]
+    },
+    "right_hand": {
+      "obj": "right_hand.obj",
+      "parent": "right_forearm",
+      "joint": "wrist",
+      "pivot_model": [
+        -0.394,
+        1.006,
+        0.019
+      ],
+      "offset_from_parent": [
+        -0.052,
+        -0.294,
+        0.071
+      ]
+    },
+    "left_thigh": {
+      "obj": "left_thigh.obj",
+      "parent": "pelvis",
+      "joint": "hip",
+      "pivot_model": [
+        0.164,
+        1.06,
+        -0.04
+      ],
+      "offset_from_parent": [
+        0.164,
+        -0.006,
+        -0.038
+      ]
+    },
+    "left_shin": {
+      "obj": "left_shin.obj",
+      "parent": "left_thigh",
+      "joint": "knee",
+      "pivot_model": [
+        0.156,
+        0.592,
+        -0.0
+      ],
+      "offset_from_parent": [
+        -0.008,
+        -0.468,
+        0.04
+      ]
+    },
+    "left_foot": {
+      "obj": "left_foot.obj",
+      "parent": "left_shin",
+      "joint": "ankle",
+      "pivot_model": [
+        0.171,
+        0.132,
+        -0.056
+      ],
+      "offset_from_parent": [
+        0.015,
+        -0.46,
+        -0.056
+      ]
+    },
+    "right_thigh": {
+      "obj": "right_thigh.obj",
+      "parent": "pelvis",
+      "joint": "hip",
+      "pivot_model": [
+        -0.164,
+        1.06,
+        -0.04
+      ],
+      "offset_from_parent": [
+        -0.164,
+        -0.006,
+        -0.038
+      ]
+    },
+    "right_shin": {
+      "obj": "right_shin.obj",
+      "parent": "right_thigh",
+      "joint": "knee",
+      "pivot_model": [
+        -0.156,
+        0.592,
+        -0.0
+      ],
+      "offset_from_parent": [
+        0.008,
+        -0.468,
+        0.04
+      ]
+    },
+    "right_foot": {
+      "obj": "right_foot.obj",
+      "parent": "right_shin",
+      "joint": "ankle",
+      "pivot_model": [
+        -0.171,
+        0.132,
+        -0.056
+      ],
+      "offset_from_parent": [
+        -0.015,
+        -0.46,
+        -0.056
+      ]
+    }
+  }
+}

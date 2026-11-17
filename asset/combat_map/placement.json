@@ -1,0 +1,350 @@
+{
+  "units": "metres",
+  "up": "+Y",
+  "forward_travel": "-Z",
+  "mesh": "obj/combat_map.obj",
+  "doorways": [
+    {
+      "center": [
+        0,
+        0,
+        0
+      ],
+      "width": 2.9,
+      "height": 3.0
+    },
+    {
+      "center": [
+        0,
+        0,
+        -18
+      ],
+      "width": 2.9,
+      "height": 3.0
+    },
+    {
+      "center": [
+        2.6,
+        0,
+        -31
+      ],
+      "width": 2.9,
+      "height": 3.0
+    },
+    {
+      "center": [
+        7.8,
+        0,
+        -48.2
+      ],
+      "width": 2.9,
+      "height": 3.0
+    }
+  ],
+  "player_start": [
+    0,
+    0,
+    -1.5
+  ],
+  "core": {
+    "center": [
+      7.8,
+      0,
+      -56.0675
+    ],
+    "room_radius": 8,
+    "height": 6.4,
+    "reserved_core_radius": 2.05
+  },
+  "encounters": {
+    "corridor_a": [
+      {
+        "id": "corridor_a_drone",
+        "type": "drone",
+        "position": [
+          0.65,
+          1.95,
+          -11.4
+        ],
+        "yaw_degrees": -4.42
+      }
+    ],
+    "rect_room": [
+      {
+        "id": "security_humanoid",
+        "type": "humanoid",
+        "position": [
+          0.8,
+          0,
+          -26.35
+        ],
+        "yaw_degrees": -6.21
+      },
+      {
+        "id": "security_turret_l",
+        "type": "turret",
+        "position": [
+          -4.55,
+          0,
+          -23.2
+        ],
+        "yaw_degrees": 51.34
+      },
+      {
+        "id": "security_turret_r",
+        "type": "turret",
+        "position": [
+          4.55,
+          0,
+          -26.0
+        ],
+        "yaw_degrees": -43.48
+      },
+      {
+        "id": "security_turret_rear",
+        "type": "turret",
+        "position": [
+          -3.8,
+          0,
+          -29.3
+        ],
+        "yaw_degrees": 48.62
+      }
+    ],
+    "dogleg": [
+      {
+        "id": "dogleg_drone",
+        "type": "drone",
+        "position": [
+          1.56,
+          2.3,
+          -40.69
+        ],
+        "yaw_degrees": 12.38
+      },
+      {
+        "id": "dogleg_turret",
+        "type": "turret",
+        "position": [
+          9.15,
+          0,
+          -38.4
+        ],
+        "yaw_degrees": -86.33
+      }
+    ],
+    "core_room": [
+      {
+        "id": "core_humanoid_l",
+        "type": "humanoid",
+        "position": [
+          4.0,
+          0,
+          -56.4
+        ],
+        "yaw_degrees": 23.09
+      },
+      {
+        "id": "core_humanoid_r",
+        "type": "humanoid",
+        "position": [
+          11.8,
+          0,
+          -57.3
+        ],
+        "yaw_degrees": -23.3
+      },
+      {
+        "id": "core_drone_l",
+        "type": "drone",
+        "position": [
+          2.55,
+          2.3,
+          -58.8
+        ],
+        "yaw_degrees": 19.95
+      },
+      {
+        "id": "core_drone_r",
+        "type": "drone",
+        "position": [
+          12.5,
+          2.4,
+          -54
+        ],
+        "yaw_degrees": -41.82
+      },
+      {
+        "id": "core_turret_l",
+        "type": "turret",
+        "position": [
+          3.95,
+          0,
+          -61.5
+        ],
+        "yaw_degrees": 3.28
+      },
+      {
+        "id": "core_turret_r",
+        "type": "turret",
+        "position": [
+          11.6,
+          0,
+          -61.2
+        ],
+        "yaw_degrees": -3.81
+      },
+      {
+        "id": "ai_core",
+        "type": "core",
+        "position": [
+          7.8,
+          0,
+          -56.0675
+        ],
+        "yaw_degrees": 0
+      }
+    ]
+  },
+  "encounter_links": [
+    {
+      "zone": "dogleg",
+      "detector_id": "dogleg_drone",
+      "receiver_id": "dogleg_turret",
+      "detector_role": "detection_only",
+      "detection_range_m": 4.4,
+      "horizontal_fov_degrees": 100,
+      "detection_requires_clear_sight": true,
+      "receiver_state_on_detection": "armed_waiting",
+      "receiver_armed_until_encounter_reset": true,
+      "receiver_fire_gate": {
+        "axis": "Z",
+        "at_or_below": -37.0
+      },
+      "receiver_fire_requires_clear_sight": true
+    }
+  ],
+  "cover_footprints": [
+    {
+      "id": "A01",
+      "center": [
+        -1.9,
+        0,
+        -7.45
+      ],
+      "width": 1.08,
+      "depth": 2.35,
+      "height": 1.83
+    },
+    {
+      "id": "A02",
+      "center": [
+        1.83,
+        0,
+        -14.6
+      ],
+      "width": 1.08,
+      "depth": 1.85,
+      "height": 1.83
+    },
+    {
+      "id": "B01",
+      "center": [
+        0.15,
+        0,
+        -21.8
+      ],
+      "width": 2.54,
+      "depth": 1.13,
+      "height": 1.87
+    },
+    {
+      "id": "B02",
+      "center": [
+        -2.05,
+        0,
+        -26.2
+      ],
+      "width": 1.75,
+      "depth": 1.31,
+      "height": 1.89
+    },
+    {
+      "id": "B03",
+      "center": [
+        3.88,
+        0,
+        -28.55
+      ],
+      "width": 1.35,
+      "depth": 1.5,
+      "height": 1.77
+    },
+    {
+      "id": "C01",
+      "center": [
+        1.01,
+        0,
+        -35.14
+      ],
+      "width": 1.12,
+      "depth": 1.49,
+      "height": 1.83
+    },
+    {
+      "id": "C02",
+      "center": [
+        5.72,
+        0,
+        -40.91
+      ],
+      "width": 1.38,
+      "depth": 1.14,
+      "height": 1.83
+    },
+    {
+      "id": "D01",
+      "center": [
+        5.92,
+        0,
+        -51.3
+      ],
+      "width": 1.72,
+      "depth": 1.13,
+      "height": 1.84
+    },
+    {
+      "id": "D02",
+      "center": [
+        3.52,
+        0,
+        -54.54
+      ],
+      "width": 1.57,
+      "depth": 1.06,
+      "height": 1.82
+    },
+    {
+      "id": "D03",
+      "center": [
+        12.8,
+        0,
+        -59.2
+      ],
+      "width": 1.48,
+      "depth": 1.06,
+      "height": 1.84
+    },
+    {
+      "id": "D04",
+      "center": [
+        7.8,
+        0,
+        -61.73
+      ],
+      "width": 2.05,
+      "depth": 1.02,
+      "height": 1.84
+    }
+  ]
+}
