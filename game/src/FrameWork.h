@@ -1,6 +1,7 @@
 #pragma once
 #include "game_scene.h"
 #include "Camera.h"
+#include "player_motion.h"
 #include <filesystem>
 
 struct GameRunOptions {
@@ -27,6 +28,8 @@ private:
     GLFWwindow* window{};
     aegis::GameScene scene;
     Camera camera;
+    double movementTimeScale{0.05};
+    float actualTravel{};
     std::uint64_t cameraSpawnRevision{};
     bool cameraSynced{},cursorCaptured{},firstMouse{true};
     double lastMouseX{},lastMouseY{},mouseDeltaX{},mouseDeltaY{};

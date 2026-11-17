@@ -139,13 +139,17 @@ void CombatTestScene::DrawBossHud(int width,int height) const {
 
 std::wstring CombatTestScene::TimeStatus() const {
     const auto current=std::to_wstring(static_cast<int>(time.Scale()*100+0.5));
+    if(movementTimeAvailable) return std::wstring(manualNormalTime ? L"시간: 1배 시험":L"시간: 실제 이동에 연동")
+        +L"  /  기본 "+std::to_wstring(static_cast<int>(PreviewTimeScale()*100+0.5))+L"%  /  현재 "+current
+        +L"%  /  Shift: 정상 진행  /  사격 후 0.25초 정상 진행  /  F5: 자동·1배 전환";
     return std::wstring(L"수동 시간 시험 · F5: ")+(slowPreview ? L"0.05배":L"1배")
         +L"  /  현재 "+current+L"%  /  Shift: 정상 진행  /  사격 후 0.25초 정상 진행 · 이동 연동 전";
 }
 std::string CombatTestScene::TimeDebug() const {
-    return std::string(" | TimeBase: ")+(slowPreview ? "0.05":"1.00")
+    return std::string(" | TimeBase: ")+(movementTimeAvailable ? std::to_string(PreviewTimeScale()):slowPreview ? "0.05":"1.00")
         +" | TimeScale: "+std::to_string(time.Scale())
-        +" | ShotWindow: "+std::to_string(time.ShotRemaining());
+        +" | ShotWindow: "+std::to_string(time.ShotRemaining())
+        +" | TimeMode: "+(movementTimeAvailable ? manualNormalTime ? "NORMAL":"AUTO":"PREVIEW");
 }
 
 void CombatTestScene::PopulateHud(UiPage& page) const {

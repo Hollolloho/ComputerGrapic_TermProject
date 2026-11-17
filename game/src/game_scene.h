@@ -25,6 +25,8 @@ public:
     std::uint64_t PlayerSpawnRevision() const { return playerSpawnRevision; }
     bool HasExternalPlayerView() const { return testScene.HasExternalPlayerView(); }
     PlayerView CurrentPlayerView() const { return testScene.CurrentPlayerView(); }
+    void SetMovementTimeScale(double scale) { testScene.SetMovementTimeScale(scale); }
+    std::vector<combat::Collider> PlayerObstacles() const { return testScene.PlayerObstacles(); }
     double PreviewTimeScale() const { return testScene.PreviewTimeScale(); }
     void Draw(int width, int height) const;
     void Reset();

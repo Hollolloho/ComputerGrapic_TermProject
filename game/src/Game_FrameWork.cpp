@@ -110,7 +110,7 @@ bool GameFrameWork::Init() {
     std::cout<<"OpenGL "<<glGetString(GL_VERSION)<<'\n'
         <<(options.campaign ? "Campaign: WASD move | mouse aim | LMB fire | E use | Enter next area | R checkpoint | Esc/Space menu\n"
             :"F2: corridor/range | F3: drone/turret | F4: boss | T: range/turret | LMB: fire | RMB drag: aim | B: cover | Space: pause | R: reset | Esc: exit\n")
-        <<"F5: manual 1x/0.05x time preview | Shift: hold normal speed. Movement-based time is not connected yet."<<std::endl;
+        <<(options.campaign || options.combatMapTest ? "Movement controls world time (0.05x..1x); Shift: normal speed; F5: auto/normal test.":"F5: manual 1x/0.05x time preview | Shift: hold normal speed.")<<std::endl;
     return true;
 }
 
@@ -155,11 +155,15 @@ void GameFrameWork::SyncPlayerCamera(bool inputActive) {
         camera.rotX=glm::degrees(std::asin(std::clamp(view.forward.y,-1.0f,1.0f)));
         camera.rotY=glm::degrees(std::atan2(-view.forward.x,-view.forward.z));
         camera.Rotate(0,0); camera.UpdateView();
+        movementTimeScale=0.05; actualTravel=0;
         cameraSpawnRevision=scene.PlayerSpawnRevision(); cameraSynced=true;
         firstMouse=true; mouseDeltaX=mouseDeltaY=0;
     }
     SetCursorCapture(playing && inputActive);
-    if(playing && inputActive) scene.SetPlayerView({camera.camPos,camera.camTarget-camera.camPos,camera.camUp,camera.fovy});
+    if(playing && inputActive) {
+        scene.SetPlayerView({camera.camPos,camera.camTarget-camera.camPos,camera.camUp,camera.fovy});
+        scene.SetMovementTimeScale(movementTimeScale);
+    }
 }
 glm::vec3 GameFrameWork::CalculateCameraMovement(float deltaTime) const {
     return camera.Movement(deltaTime,glfwGetKey(window,GLFW_KEY_W)==GLFW_PRESS,
@@ -167,12 +171,18 @@ glm::vec3 GameFrameWork::CalculateCameraMovement(float deltaTime) const {
         glfwGetKey(window,GLFW_KEY_D)==GLFW_PRESS);
 }
 void GameFrameWork::UpdatePlayerCamera(float deltaTime,bool inputActive) {
+    actualTravel=0; movementTimeScale=0.05;
     SyncPlayerCamera(inputActive);
     if(!cursorCaptured) { firstMouse=true; mouseDeltaX=mouseDeltaY=0; return; }
     camera.Rotate(-static_cast<float>(mouseDeltaY)*0.1f,-static_cast<float>(mouseDeltaX)*0.1f);
     mouseDeltaX=mouseDeltaY=0;
-    const auto movement=CalculateCameraMovement(deltaTime);
-    camera.camPos+=movement; camera.camTarget+=movement; camera.UpdateView();
+    const auto desired=CalculateCameraMovement(deltaTime);
+    const auto walls=scene.PlayerObstacles();
+    const auto movement=aegis::combat::MovePlayer(camera.camPos,desired,walls);
+    camera.camPos=movement.eye; camera.camTarget+=movement.displacement; camera.UpdateView();
+    actualTravel=glm::length(glm::vec2(movement.displacement.x,movement.displacement.z));
+    movementTimeScale=aegis::combat::MovementTimeScale(movement.displacement,deltaTime);
+    scene.SetMovementTimeScale(movementTimeScale);
     camera.UpdateProjection(width,height);
     scene.SetPlayerView({camera.camPos,camera.camTarget-camera.camPos,camera.camUp,camera.fovy});
 }
@@ -240,7 +250,8 @@ void GameFrameWork::Draw() {
     if(!options.smokeTest && (options.campaign || options.combatMapTest)) {
         title+=" | Player: "+std::to_string(camera.camPos.x)+","+std::to_string(camera.camPos.y)+","+std::to_string(camera.camPos.z)
             +" | Look: "+std::to_string(camera.rotX)+","+std::to_string(camera.rotY)
-            +" | Cursor: "+(cursorCaptured ? "CAPTURED":"FREE");
+            +" | Cursor: "+(cursorCaptured ? "CAPTURED":"FREE")
+            +" | Travel: "+std::to_string(actualTravel)+" | MoveScale: "+std::to_string(movementTimeScale);
     }
     glfwSetWindowTitle(window,title.c_str());
 }

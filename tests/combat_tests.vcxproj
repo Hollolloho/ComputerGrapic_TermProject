@@ -44,6 +44,8 @@
     <ClInclude Include="..\game\src\combat_feedback.h" />
     <ClInclude Include="..\game\src\combat_time.h" />
     <ClInclude Include="..\game\src\player_view.h" />
+    <ClCompile Include="..\game\src\player_motion.cpp" />
+    <ClInclude Include="..\game\src\player_motion.h" />
     <ClCompile Include="..\game\src\Camera.cpp" />
     <ClInclude Include="..\game\src\Camera.h" />
     <ClInclude Include="..\game\src\Common.h" />

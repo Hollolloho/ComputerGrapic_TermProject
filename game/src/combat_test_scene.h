@@ -51,7 +51,11 @@ public:
     void CampaignSmokeFrame(int frame);
     void PopulateHud(UiPage& page) const;
     const combat::CombatFeedback& Feedback() const { return feedback; }
-    double PreviewTimeScale() const { return slowPreview ? 0.05:1.0; }
+    double PreviewTimeScale() const { return movementTimeAvailable ? (manualNormalTime ? 1.0:movementScale):(slowPreview ? 0.05:1.0); }
+    void SetMovementTimeScale(double scale) {
+        if(std::isfinite(scale) && scale>=0.05 && scale<=1) { movementScale=scale;movementTimeAvailable=true; }
+    }
+    std::vector<combat::Collider> PlayerObstacles() const;
     std::wstring TimeStatus() const;
     std::string TimeDebug() const;
     const combat::CombatTime& TimeState() const { return time; }
@@ -92,6 +96,8 @@ private:
         const glm::vec3& maximum, const glm::vec3& color) const;
     combat::CombatTime time;
     bool slowPreview{},previewHeld{},forceNormal{};
+    bool movementTimeAvailable{},manualNormalTime{};
+    double movementScale{0.05};
     combat::CombatFeedback feedback;
     combat::BossEncounter boss;
     BossView bossView;

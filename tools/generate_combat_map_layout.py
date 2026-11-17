@@ -52,6 +52,11 @@ def generate():
         'inline const std::array<combat::Collider,'+str(len(walls))+'> walls={{']
     for i,(name,low,high) in enumerate(walls):
         out.append('    {'+str(30000+i)+',combat::HitKind::Wall,'+v(low)+','+v(high)+'}, // '+name)
+    out+=['}};']
+    player_walls=[(name,*bounds([name])) for name in objects]
+    out+=['inline const std::array<combat::Collider,'+str(len(player_walls))+'> playerWalls={{']
+    for i,(name,low,high) in enumerate(player_walls):
+        out.append('    {'+str(40000+i)+',combat::HitKind::Wall,'+v(low)+','+v(high)+'}, // '+name)
     out+=['}};','}']
     return '\n'.join(out)+'\n'
 if __name__=='__main__':

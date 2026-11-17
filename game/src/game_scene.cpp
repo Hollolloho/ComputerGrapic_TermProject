@@ -255,7 +255,7 @@ UiPage GameScene::Page() const {
         page.footer=L"Enter: 게임 시작  ·  마우스로 버튼을 선택할 수 있습니다."; break;
     case CampaignScreen::Help:
         page.title=L"조작 안내";
-        page.body=L"WASD: 이동  /  마우스: 조준  /  왼쪽 클릭: 사격\nE: 가까운 무기 회수·보급·안전한 분석 단말 사용\nG: 무기 내려놓기  /  Enter: 다음 구역 진입\nR: 현재 구역 다시 시작  /  Esc·Space: 일시정지\nF5: 수동 1배·0.05배 시험  /  Shift: 정상 진행\n열린 보스 코어를 세 번 맞히면 승리합니다.";
+        page.body=L"WASD: 이동  /  마우스: 조준  /  왼쪽 클릭: 사격\nE: 가까운 무기 회수·보급·안전한 분석 단말 사용\nG: 무기 내려놓기  /  Enter: 다음 구역 진입\nR: 현재 구역 다시 시작  /  Esc·Space: 일시정지\n움직이면 시간이 흐릅니다. Shift: 정상 진행 / F5: 1배 시험\n열린 보스 코어를 세 번 맞히면 승리합니다.";
         add(UiAction::Title,L"시작 화면으로",2);
         page.footer=L"현재 구역 이동은 진입 버튼으로 진행합니다."; break;
     case CampaignScreen::Paused:

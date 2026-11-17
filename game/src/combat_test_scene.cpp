@@ -10,6 +10,7 @@
 #include <iostream>
 #include <vector>
 #include <array>
+#include <limits>
 
 namespace aegis {
 namespace {
@@ -101,6 +102,7 @@ PlayerView CombatTestScene::CurrentPlayerView() const {
 void CombatTestScene::Reset()
 {
     analysis.Reset(); ClearPlayerView(); feedback.Reset(); time.Reset(); slowPreview=false; forceNormal=false;
+    movementTimeAvailable=manualNormalTime=false; movementScale=0.05;
     range.Reset(); encounter.Reset(); weapon.Reset(); drone.Reset(); boss.Reset(); bossCovered=false; yaw = pitch = 0;
     if (bossMode) { const auto d=glm::normalize(boss.CoreCenter()-(CameraRoot()+glm::vec3(0,1.65f,0))); pitch=glm::degrees(std::asin(d.y)); }
     camera.SetPose(CameraRoot(), yaw, pitch);
@@ -176,6 +178,26 @@ combat::Collider CombatTestScene::TerminalCollider() const {
     box.minimum+=offset; box.maximum+=offset; return box;
 }
 glm::vec3 CombatTestScene::SupplyPosition() const { return combatMapMode ? combat_map_asset::supply:combat::WeaponInventory::SupplyPosition(); }
+std::vector<combat::Collider> CombatTestScene::PlayerObstacles() const {
+    if(bossMode) {
+        std::vector<combat::Collider> walls(boss_asset::walls.begin(),boss_asset::walls.end());
+        glm::vec3 low(std::numeric_limits<float>::max()),high(std::numeric_limits<float>::lowest());
+        for(int i=0;i<boss_asset::partCount;++i) {
+            const auto& part=boss_asset::parts[i];
+            for(int corner=0;corner<8;++corner) {
+                const auto point=glm::vec3(boss.Pose().parts[i]*glm::vec4(corner&1 ? part.high.x:part.low.x,
+                    corner&2 ? part.high.y:part.low.y,corner&4 ? part.high.z:part.low.z,1));
+                low=glm::min(low,point); high=glm::max(high,point);
+            }
+        }
+        walls.push_back({29000,combat::HitKind::Armor,low,high}); return walls;
+    }
+    if(combatMapMode) {
+        std::vector<combat::Collider> walls(combat_map_asset::playerWalls.begin(),combat_map_asset::playerWalls.end());
+        walls.push_back(TerminalCollider()); return walls;
+    }
+    return turretMode ? encounter.Colliders():std::vector<combat::Collider>(range.Colliders().begin(),range.Colliders().end());
+}
 bool CombatTestScene::TerminalTarget() const { return TerminalTarget(PlayerForward()); }
 bool CombatTestScene::TerminalTarget(const glm::vec3& direction) const {
     if (!corridorMode || bossMode) return false;
@@ -194,7 +216,10 @@ void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
     const bool preview=glfwGetKey(window,GLFW_KEY_F5)==GLFW_PRESS;
     forceNormal=active && !analysis.Active() && (glfwGetKey(window,GLFW_KEY_LEFT_SHIFT)==GLFW_PRESS
         || glfwGetKey(window,GLFW_KEY_RIGHT_SHIFT)==GLFW_PRESS);
-    if(active && !analysis.Active() && preview && !previewHeld) slowPreview=!slowPreview;
+    if(active && !analysis.Active() && preview && !previewHeld) {
+        if(movementTimeAvailable) manualNormalTime=!manualNormalTime;
+        else slowPreview=!slowPreview;
+    }
     previewHeld=preview;
     const bool left = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
     const bool right = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;

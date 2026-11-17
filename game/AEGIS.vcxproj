@@ -80,6 +80,8 @@
     <ClInclude Include="src\combat_feedback.h" />
     <ClInclude Include="src\combat_time.h" />
     <ClInclude Include="src\player_view.h" />
+    <ClCompile Include="src\player_motion.cpp" />
+    <ClInclude Include="src\player_motion.h" />
     <ClCompile Include="src\Camera.cpp" />
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\Common.h" />

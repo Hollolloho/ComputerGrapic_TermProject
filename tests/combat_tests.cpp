@@ -1,3 +1,4 @@
+#include "player_motion.h"
 #include "Camera.h"
 #include "player_view.h"
 #include "combat_map_layout.generated.h"
@@ -789,6 +790,66 @@ int main()
     sampledCamera.UpdateProjection(1600,900); const auto validProjection=sampledCamera.projection;
     sampledCamera.UpdateProjection(0,900); sampledCamera.UpdateProjection(1600,0);
     check(sampledCamera.projection==validProjection,"zero framebuffer size preserves valid camera projection");
+    const glm::vec3 stand(0,1.65f,0);
+    std::vector<Collider> motionWalls{{91000,HitKind::Wall,{1,0,-10},{1.01f,3,10}}};
+    auto movement=MovePlayer(stand,{5,0,0},motionWalls);
+    check(movement.blocked && movement.eye.x<0.701f && movement.eye.x>0.69f,
+        "player swept footprint stops before thin wall even across a large frame");
+    check(movement.eye.y==stand.y && movement.displacement.y==0,"grounded collision never changes player eye height");
+    movement=MovePlayer(stand,{2,0,-2},motionWalls);
+    check(std::abs(movement.eye.z+2)<0.001f && movement.eye.x<0.701f,"diagonal wall contact slides along free axis");
+    movement=MovePlayer({0.699f,1.65f,0},{0,0,-2},motionWalls);
+    check(std::abs(movement.eye.z+2)<0.001f,"player touching wall can move tangentially without sticking");
+    movement=MovePlayer({0.699f,1.65f,0},{-1,0,0},motionWalls);
+    check(movement.eye.x<0,"player touching wall can move away immediately");
+    movement=MovePlayer({0.699f,1.65f,0},{1,0,0},motionWalls);
+    check(glm::length(movement.displacement)<0.001f,"holding movement directly into wall produces no real travel");
+    motionWalls.push_back({91001,HitKind::Wall,{-10,0,1},{10,3,1.01f}});
+    movement=MovePlayer(stand,{10,0,10},motionWalls);
+    check(movement.eye.x<0.701f && movement.eye.z<0.701f,"simultaneous corner collision blocks both axes");
+    const auto wholeMove=MovePlayer(stand,{2,0,-2},std::span<const Collider>(motionWalls.data(),1));
+    auto dividedEye=stand;
+    for(int i=0;i<100;++i) dividedEye=MovePlayer(dividedEye,{0.02f,0,-0.02f},std::span<const Collider>(motionWalls.data(),1)).eye;
+    check(glm::length(wholeMove.eye-dividedEye)<0.002f,"wall sliding remains consistent across frame subdivisions");
+    movement=MovePlayer({1.05f,1.65f,0},{0.1f,0,0},std::span<const Collider>(motionWalls.data(),1));
+    check(movement.eye.x>1.31f && std::isfinite(movement.eye.x),"small initial overlap is recovered without an infinite collision loop");
+    std::vector<Collider> floorTrim{{91002,HitKind::Wall,{-2,-0.2f,-2},{2,0,2}},
+        {91003,HitKind::Wall,{-2,0,-2},{2,0.08f,2}},
+        {91004,HitKind::Wall,{-2,2.5f,-2},{2,3,2}}};
+    movement=MovePlayer(stand,{0,0,-1},floorTrim);
+    check(!movement.blocked && movement.eye.z==-1,"floor trim and overhead ceiling do not block grounded travel");
+    motionWalls[0].enabled=false; motionWalls.resize(1);
+    check(MovePlayer(stand,{2,0,0},motionWalls).eye.x==2,"disabled wall does not block player");
+    motionWalls[0].enabled=true;motionWalls[0].kind=HitKind::Body;
+    check(MovePlayer(stand,{2,0,0},motionWalls).eye.x==2,"enemy body proxy is not accidentally treated as scenery wall");
+    check(MovePlayer(stand,{std::numeric_limits<float>::quiet_NaN(),0,0},{}).eye==stand,
+        "invalid requested movement preserves valid player position");
+    check(MovementTimeScale({0,0,0},1.0/60)==0.05,"standing still progresses world at 0.05 speed");
+    check(MovementTimeScale({0,0,-0.05f},1.0/60)>0.999,"normal player travel progresses world at full speed");
+    check(std::abs(MovementTimeScale({0.025f,0,0},1.0/60)-0.5)<0.0001,"partial resolved travel produces proportional world time");
+    check(MovementTimeScale({0,10,0},1.0/60)==0.05,"vertical or camera-only changes do not advance movement time");
+    check(MovementTimeScale({100,0,0},1.0/60)==1,"large correction cannot accelerate world beyond normal speed");
+    check(MovementTimeScale({0.05f,0,0},0)==0.05,"invalid frame duration cannot corrupt movement time");
+    const auto blockedMove=MovePlayer({0.699f,1.65f,0},{0.05f,0,0},std::span<const Collider>(std::array<Collider,1>{{{91000,HitKind::Wall,{1,0,-10},{1.01f,3,10}}}}));
+    check(MovementTimeScale(blockedMove.displacement,1.0/60)==0.05,"actual wall blockage keeps slow time despite requested movement");
+    auto mapWalk=map::playerStart+glm::vec3(0,1.65f,0);
+    mapWalk=MovePlayer(mapWalk,{-20,0,0},map::playerWalls).eye;
+    check(mapWalk.x>-3 && mapWalk.x<-2.5f,"rendered new-map side wall stops full player footprint");
+    const auto coverWalk=MovePlayer({-1.9f,1.65f,-5},{0,0,-5},map::playerWalls);
+    check(coverWalk.eye.z>-6 && coverWalk.eye.z<-5.8f,"new-map cover blocks player before rendered cabinet face");
+    const auto doorWalk=MovePlayer({0,1.65f,-17},{0,0,-2},map::playerWalls);
+    check(std::abs(doorWalk.eye.z+19)<0.001f,"doorway centre admits player body without an oversized wall proxy");
+    const auto roomWalk=MovePlayer({0,1.65f,-23},{20,0,0},map::playerWalls);
+    check(roomWalk.eye.x<5.8f,"later static room wall remains solid when player walks beyond first corridor");
+    const auto reactorWalk=MovePlayer({9.7f,1.65f,-56},{0,0,-20},map::playerWalls);
+    check(reactorWalk.eye.z>-64 && reactorWalk.eye.z<-62,"segmented curved reactor walls stop player without covering room centre");
+    const auto bossCover=MovePlayer({2.7f,1.65f,-2.4f},{0,0,-5},aegis::boss_asset::walls);
+    check(bossCover.eye.z>-3.1f,"boss supply bench and cover are solid to moving player");
+    for(int fps:{30,60,144}) {
+        double elapsed{};
+        for(int i=0;i<fps;++i) elapsed+=(1.0/fps)*MovementTimeScale({0,0,-3.0f/fps},1.0/fps);
+        check(std::abs(elapsed-1)<0.0001,"full movement world-time integral agrees across 30/60/144 fps");
+    }
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

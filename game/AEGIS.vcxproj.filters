@@ -200,4 +200,12 @@
       <Filter>FrameWork</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\player_motion.cpp">
+      <Filter>FrameWork</Filter>
+    </ClCompile>
+    <ClInclude Include="src\player_motion.h">
+      <Filter>FrameWork</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
