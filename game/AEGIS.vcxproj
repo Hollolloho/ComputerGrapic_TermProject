@@ -60,13 +60,14 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Game_FrameWork.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\model_loader.cpp" />
+    <ClInclude Include="src\FrameWork.h" />
     <ClInclude Include="src\model_loader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Target Name="CopyRuntimeLibraries" AfterTargets="Build">
-    <Copy SourceFiles="$(SolutionDir)external\glew-2.3.1\bin\Release\x64\glew32.dll;$(SolutionDir)external\assimp\bin\x64\assimp-vc145-mt.dll"
-          DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(SolutionDir)external\glew-2.3.1\bin\Release\x64\glew32.dll;$(SolutionDir)external\assimp\bin\x64\assimp-vc145-mt.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
   </Target>
 </Project>
