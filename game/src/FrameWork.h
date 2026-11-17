@@ -1,5 +1,6 @@
 #pragma once
 #include "game_scene.h"
+#include "Camera.h"
 #include <filesystem>
 
 struct GameRunOptions {
@@ -15,11 +16,20 @@ private:
     void Update(float deltaTime);
     void Draw();
     void Clear();
+    void UpdatePlayerCamera(float deltaTime,bool inputActive);
+    void SyncPlayerCamera(bool inputActive);
+    void SetCursorCapture(bool captured);
+    glm::vec3 CalculateCameraMovement(float deltaTime) const;
+    static void CursorPosCallback(GLFWwindow* window,double x,double y);
     static void KeyCallback(GLFWwindow* window,int key,int scan,int action,int mods);
     static void RestartFrameTimeCallback(GLFWwindow* window,int value);
 
     GLFWwindow* window{};
     aegis::GameScene scene;
+    Camera camera;
+    std::uint64_t cameraSpawnRevision{};
+    bool cameraSynced{},cursorCaptured{},firstMouse{true};
+    double lastMouseX{},lastMouseY{},mouseDeltaX{},mouseDeltaY{};
     GameRunOptions options;
     std::filesystem::path projectDirectory;
     bool glfwReady{},sceneAttempted{};

@@ -8,6 +8,7 @@
 
 #include <array>
 #include <filesystem>
+#include <cstdint>
 
 namespace aegis {
 
@@ -20,6 +21,8 @@ public:
         return testScene.SetPlayerView(view);
     }
     void ClearPlayerView() { testScene.ClearPlayerView(); }
+    bool PlayerControlsActive() const { return (!campaignMode || flow.WorldRuns()) && !AnalysisActive(); }
+    std::uint64_t PlayerSpawnRevision() const { return playerSpawnRevision; }
     bool HasExternalPlayerView() const { return testScene.HasExternalPlayerView(); }
     PlayerView CurrentPlayerView() const { return testScene.CurrentPlayerView(); }
     double PreviewTimeScale() const { return testScene.PreviewTimeScale(); }
@@ -57,6 +60,7 @@ private:
     bool ReadyToAdvance() const;
     bool InitCorridor(const std::filesystem::path& projectDirectory);
 
+    std::uint64_t playerSpawnRevision{};
     CampaignFlow flow;
     bool playerViewTestMode{};
     bool campaignMode{},quitRequested{},mouseHeld{},enterHeld{},escapeHeld{};

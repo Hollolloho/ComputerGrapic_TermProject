@@ -111,6 +111,7 @@ void GameScene::Reset()
         if (reset) LoadStage();
         return;
     }
+    ++playerSpawnRevision;
     drone.Reset();
     camera.Reset();
     testScene.Reset();
@@ -132,6 +133,7 @@ void GameScene::Clear()
 
 void GameScene::ToggleMode() {
     if (campaignMode) return;
+    ++playerSpawnRevision;
     legacyTest=!legacyTest;
     testScene.SetCorridorMode(!legacyTest);
     if (legacyTest) testScene.SetTurretMode(false);
@@ -140,6 +142,7 @@ void GameScene::SampleInput(GLFWwindow* window,bool active) {
     if (!campaignMode) { testScene.SampleInput(window,active); return; }
     double x{},y{}; int width{},height{}; glfwGetCursorPos(window,&x,&y); glfwGetWindowSize(window,&width,&height);
     mouseX=width>0 ? static_cast<float>(x)*1024/width:0; mouseY=height>0 ? static_cast<float>(y)*768/height:0;
+    if(glfwGetInputMode(window,GLFW_CURSOR)==GLFW_CURSOR_DISABLED) mouseX=mouseY=-1;
     const bool left=glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT)==GLFW_PRESS;
     const bool enter=glfwGetKey(window,GLFW_KEY_ENTER)==GLFW_PRESS;
     bool consumed=false;
@@ -209,6 +212,7 @@ void GameScene::Draw(int width,int height) const {
     if (!AnalysisActive()) ui.Draw(Page(),width,height,mouseX,mouseY);
 }
 void GameScene::LoadStage() {
+    ++playerSpawnRevision;
     stageSmokeFrame=failedSmokeFrame=victorySmokeFrame=0;
     testScene.CloseAnalysis();
     testScene.SetCorridorMode(true); testScene.SetDroneMode(true);
@@ -251,7 +255,7 @@ UiPage GameScene::Page() const {
         page.footer=L"Enter: 게임 시작  ·  마우스로 버튼을 선택할 수 있습니다."; break;
     case CampaignScreen::Help:
         page.title=L"조작 안내";
-        page.body=L"왼쪽 클릭: 한 발 사격  /  오른쪽 드래그: 조준\nE: 무기 회수·보급·안전한 분석 단말 사용\nB: 보스전 엄폐·사격 위치 전환\nR: 현재 구역 다시 시작  /  Esc·Space: 일시정지\nF5: 수동 1배·0.05배 시험  /  Shift: 정상 진행\n열린 보스 코어를 세 번 맞히면 승리합니다.";
+        page.body=L"WASD: 이동  /  마우스: 조준  /  왼쪽 클릭: 사격\nE: 가까운 무기 회수·보급·안전한 분석 단말 사용\nG: 무기 내려놓기  /  Enter: 다음 구역 진입\nR: 현재 구역 다시 시작  /  Esc·Space: 일시정지\nF5: 수동 1배·0.05배 시험  /  Shift: 정상 진행\n열린 보스 코어를 세 번 맞히면 승리합니다.";
         add(UiAction::Title,L"시작 화면으로",2);
         page.footer=L"현재 구역 이동은 진입 버튼으로 진행합니다."; break;
     case CampaignScreen::Paused:
@@ -273,12 +277,12 @@ UiPage GameScene::Page() const {
         page.panel=false;
         if(flow.Stage()==CampaignStage::Entry) {
             page.title=L"1 / 3  안전 진입실";
-            page.body=L"시설 진입을 준비합니다. 조준은 오른쪽 드래그, 사격은 왼쪽 클릭입니다.\n버튼 또는 Enter로 전투 복도에 진입하세요.";
+            page.body=L"전투에서는 WASD로 이동하고 마우스로 조준합니다. 왼쪽 클릭으로 사격합니다.\n버튼 또는 Enter로 전투 복도에 진입하세요.";
             page.buttons.push_back({UiAction::Advance,L"복도로 진입",744,640,232,54,true});
         } else if(flow.Stage()==CampaignStage::Corridor) {
             page.title=L"2 / 3  새 전투 맵 · 첫 복도";
             page.body=ReadyToAdvance() ? L"복도가 안전해졌습니다. 오른쪽 단말에서 분석하거나 코어실로 진행하세요.":L"드론을 제거하고 남은 적탄을 피하세요. 모든 위험이 사라지면 문이 열립니다.";
-            page.buttons.push_back({UiAction::Advance,L"코어실로 이동",744,640,232,54,ReadyToAdvance()});
+            page.buttons.push_back({UiAction::Advance,L"Enter · 코어실로 이동",744,640,232,54,ReadyToAdvance()});
         } else {
             page.title=L"3 / 3  코어실 보스전";
             page.body=L"장갑이 완전히 열렸을 때만 코어를 공격하세요. 세 번의 유효타가 필요합니다.\nB로 엄폐·사격 위치 전환  /  빈손일 때 E로 보급  /  Esc로 메뉴";

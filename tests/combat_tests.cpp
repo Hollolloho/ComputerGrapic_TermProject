@@ -1,3 +1,4 @@
+#include "Camera.h"
 #include "player_view.h"
 #include "combat_map_layout.generated.h"
 #include "combat_time.h"
@@ -758,6 +759,36 @@ int main()
     check(!playerInput.Active() && playerInput.Selected(fallbackView).eye==fallbackView.eye
         && playerInput.Selected(fallbackView).verticalFovDegrees==55,
         "clearing external player restores existing camera pose and FOV without stale state");
+    Camera movingCamera; movingCamera.Init();
+    check(movingCamera.camPos==glm::vec3(0,1.65f,-1.5f),"friend camera initializes at new-map player eye height");
+    const auto straight=movingCamera.Movement(1,true,false,false,false);
+    const auto diagonal=movingCamera.Movement(1,true,false,false,true);
+    check(glm::length(straight-glm::vec3(0,0,-3))<0.0001f,"W moves horizontally at three metres per real second");
+    check(std::abs(glm::length(straight)-glm::length(diagonal))<0.0001f,"W plus D does not increase movement speed");
+    check(movingCamera.Movement(1,true,true,true,true)==glm::vec3(0),"opposite movement inputs cancel");
+    movingCamera.Rotate(70,90);
+    const auto rotatedMove=movingCamera.Movement(0.5f,true,false,false,false);
+    check(std::abs(rotatedMove.x+1.5f)<0.0001f && rotatedMove.y==0 && std::abs(rotatedMove.z)<0.0001f,
+        "movement follows camera yaw but never camera pitch");
+    const auto directionBefore=movingCamera.camTarget-movingCamera.camPos;
+    movingCamera.camPos+=rotatedMove; movingCamera.camTarget+=rotatedMove; movingCamera.UpdateView();
+    check(glm::length((movingCamera.camTarget-movingCamera.camPos)-directionBefore)<0.0001f,
+        "translating camera position and target preserves aim");
+    movingCamera.Rotate(1000,0);
+    check(movingCamera.rotX==89,"friend camera clamps upward pitch before singularity");
+    check(movingCamera.Movement(1,true,false,false,false).y==0,"looking nearly straight up still moves on ground plane");
+    movingCamera.Rotate(-2000,0);
+    check(movingCamera.rotX==-89,"friend camera clamps downward pitch before singularity");
+    check(movingCamera.Movement(0,true,false,false,false)==glm::vec3(0)
+        && movingCamera.Movement(-1,true,false,false,false)==glm::vec3(0)
+        && movingCamera.Movement(std::numeric_limits<float>::infinity(),true,false,false,false)==glm::vec3(0),
+        "stopped or invalid frame time cannot move player");
+    Camera sampledCamera; sampledCamera.Init(); glm::vec3 sum(0);
+    for(int i=0;i<144;++i) sum+=sampledCamera.Movement(1.0f/144,true,false,false,true);
+    check(glm::length(sum-diagonal)<0.0001f,"camera movement agrees across frame subdivisions");
+    sampledCamera.UpdateProjection(1600,900); const auto validProjection=sampledCamera.projection;
+    sampledCamera.UpdateProjection(0,900); sampledCamera.UpdateProjection(1600,0);
+    check(sampledCamera.projection==validProjection,"zero framebuffer size preserves valid camera projection");
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

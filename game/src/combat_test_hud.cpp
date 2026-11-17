@@ -164,7 +164,7 @@ void CombatTestScene::PopulateHud(UiPage& page) const {
         page.danger=true;
     } else if(result==combat::EncounterResult::Cleared) {
         page.warning=L"구역 안전 확보 완료";
-        page.body=(combatMapMode || DoorProgress()>=1) ? L"코어실로 진행하세요. 오른쪽 분석 단말도 사용할 수 있습니다.":L"출구 문이 열리고 있습니다. 잠시 기다리세요.";
+        page.body=(combatMapMode || DoorProgress()>=1) ? L"Enter: 코어실로 진행  /  오른쪽 단말을 가까이서 조준하고 E: 분석":L"출구 문이 열리고 있습니다. 잠시 기다리세요.";
     } else if(bossMode) {
         switch(boss.Phase()) {
         case combat::BossPhase::Warning:
@@ -186,6 +186,8 @@ void CombatTestScene::PopulateHud(UiPage& page) const {
         }
         page.body=L"왼쪽 클릭: 사격  /  오른쪽 드래그: 조준  /  G: 무기 내려놓기  /  Esc: 메뉴";
     }
+    if(!bossMode && HasExternalPlayerView() && result==combat::EncounterResult::Running)
+        page.body=L"WASD: 이동  /  마우스: 조준  /  왼쪽 클릭: 사격  /  G: 내려놓기  /  Esc: 메뉴";
     if(bossMode && HasExternalPlayerView() && result==combat::EncounterResult::Running) {
         page.warning=boss.Phase()==combat::BossPhase::Exposed ? L"약점 노출! 열린 코어를 조준해 사격하세요."
             : boss.Phase()==combat::BossPhase::Warning || boss.Phase()==combat::BossPhase::Attack
@@ -197,11 +199,11 @@ void CombatTestScene::PopulateHud(UiPage& page) const {
         page.body=hint==combat::WeaponInteraction::Supply ? L"E: 보급대에서 무기 획득"
             : hint==combat::WeaponInteraction::Pickup ? L"E: 떨어진 무기 회수"
             : bossMode ? (bossCovered ? L"보급대의 무기를 조준하고 E를 눌러 재무장하세요.":L"빈손입니다. B로 엄폐한 뒤 보급대의 무기를 조준하고 E를 누르세요.")
-            : L"빈손입니다. 왼쪽 아래 보급 무기 또는 떨어진 무기를 조준하고 E를 누르세요.";
+            : L"빈손입니다. 보급 무기나 떨어진 총에 가까이 가서 조준하고 E를 누르세요.";
         if(bossMode && HasExternalPlayerView() && hint==combat::WeaponInteraction::None)
             page.body=L"빈손입니다. 보급대에 접근해 무기를 조준하고 E를 누르세요.";
     } else if(result==combat::EncounterResult::Cleared && TerminalTarget()) {
-        page.body=L"E: 드론 분석 열기  /  버튼 또는 Enter: 코어실로 진행";
+        page.body=L"E: 드론 분석 열기  /  Enter: 코어실로 진행";
     }
 }
 

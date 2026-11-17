@@ -5,6 +5,7 @@
 #include "game_framework.h"
 #include <GLFW/glfw3.h>
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 
 namespace {
@@ -45,7 +46,11 @@ void GameFrameWork::KeyCallback(GLFWwindow* window,int key,int,int action,int) {
     }
 }
 void GameFrameWork::RestartFrameTimeCallback(GLFWwindow* window,int) {
-    static_cast<GameFrameWork*>(glfwGetWindowUserPointer(window))->restartFrameTime=true;
+    auto& game=*static_cast<GameFrameWork*>(glfwGetWindowUserPointer(window));
+    game.restartFrameTime=true;
+    game.firstMouse=true; game.mouseDeltaX=game.mouseDeltaY=0;
+    if(!glfwGetWindowAttrib(window,GLFW_FOCUSED) || glfwGetWindowAttrib(window,GLFW_ICONIFIED))
+        game.SetCursorCapture(false);
 }
 
 int GameFrameWork::Run(const GameRunOptions& runOptions) {
@@ -97,11 +102,13 @@ bool GameFrameWork::Init() {
         options.campaign,options.combatMapTest,options.playerViewTest)) return false;
     glfwSetWindowUserPointer(window,this);
     glfwSetKeyCallback(window,KeyCallback);
+    glfwSetCursorPosCallback(window,CursorPosCallback);
+    camera.Init();
     glfwSetWindowFocusCallback(window,RestartFrameTimeCallback);
     glfwSetWindowIconifyCallback(window,RestartFrameTimeCallback);
     glfwSwapInterval(options.smokeTest ? 0:1);
     std::cout<<"OpenGL "<<glGetString(GL_VERSION)<<'\n'
-        <<(options.campaign ? "Campaign: mouse/Enter menus | LMB fire | RMB aim | B boss cover | E use | R checkpoint | Esc/Space menu\n"
+        <<(options.campaign ? "Campaign: WASD move | mouse aim | LMB fire | E use | Enter next area | R checkpoint | Esc/Space menu\n"
             :"F2: corridor/range | F3: drone/turret | F4: boss | T: range/turret | LMB: fire | RMB drag: aim | B: cover | Space: pause | R: reset | Esc: exit\n")
         <<"F5: manual 1x/0.05x time preview | Shift: hold normal speed. Movement-based time is not connected yet."<<std::endl;
     return true;
@@ -113,7 +120,10 @@ void GameFrameWork::Update(float deltaTime) {
     bool active=drawable && !paused && glfwGetWindowAttrib(window,GLFW_FOCUSED);
     if(toggleModeRequested) { scene.ToggleMode(); toggleModeRequested=false; paused=false; }
     if(resetRequested) { scene.Reset(); resetRequested=false; }
-    scene.SampleInput(window,active && wasActive && !restartFrameTime && !options.smokeTest);
+    const bool inputActive=active && wasActive && !restartFrameTime && !options.smokeTest;
+    UpdatePlayerCamera(deltaTime,inputActive);
+    scene.SampleInput(window,inputActive);
+    SyncPlayerCamera(inputActive);
     if(scene.QuitRequested()) { glfwSetWindowShouldClose(window,GLFW_TRUE); return; }
     if(options.smokeTest) {
         active=true; scene.SmokeFrame(++smokeFrame);
@@ -121,7 +131,50 @@ void GameFrameWork::Update(float deltaTime) {
     } else if(active && wasActive && !restartFrameTime) {
         scene.Update(deltaTime,deltaTime*scene.PreviewTimeScale());
     }
+    SyncPlayerCamera(inputActive);
     wasActive=active; restartFrameTime=false;
+}
+
+void GameFrameWork::SetCursorCapture(bool captured) {
+    if(cursorCaptured==captured) return;
+    cursorCaptured=captured; firstMouse=true; mouseDeltaX=mouseDeltaY=0;
+    glfwSetInputMode(window,GLFW_CURSOR,captured ? GLFW_CURSOR_DISABLED:GLFW_CURSOR_NORMAL);
+}
+void GameFrameWork::CursorPosCallback(GLFWwindow* window,double x,double y) {
+    auto& game=*static_cast<GameFrameWork*>(glfwGetWindowUserPointer(window));
+    if(!game.cursorCaptured) return;
+    if(!game.firstMouse) { game.mouseDeltaX+=x-game.lastMouseX; game.mouseDeltaY+=y-game.lastMouseY; }
+    game.lastMouseX=x; game.lastMouseY=y; game.firstMouse=false;
+}
+void GameFrameWork::SyncPlayerCamera(bool inputActive) {
+    if(options.smokeTest || !(options.campaign || options.combatMapTest)) return;
+    const bool playing=scene.PlayerControlsActive();
+    if(playing && (!cameraSynced || cameraSpawnRevision!=scene.PlayerSpawnRevision() || !scene.HasExternalPlayerView())) {
+        const auto view=scene.CurrentPlayerView();
+        camera.camPos=view.eye; camera.camUp=view.up; camera.fovy=view.verticalFovDegrees;
+        camera.rotX=glm::degrees(std::asin(std::clamp(view.forward.y,-1.0f,1.0f)));
+        camera.rotY=glm::degrees(std::atan2(-view.forward.x,-view.forward.z));
+        camera.Rotate(0,0); camera.UpdateView();
+        cameraSpawnRevision=scene.PlayerSpawnRevision(); cameraSynced=true;
+        firstMouse=true; mouseDeltaX=mouseDeltaY=0;
+    }
+    SetCursorCapture(playing && inputActive);
+    if(playing && inputActive) scene.SetPlayerView({camera.camPos,camera.camTarget-camera.camPos,camera.camUp,camera.fovy});
+}
+glm::vec3 GameFrameWork::CalculateCameraMovement(float deltaTime) const {
+    return camera.Movement(deltaTime,glfwGetKey(window,GLFW_KEY_W)==GLFW_PRESS,
+        glfwGetKey(window,GLFW_KEY_S)==GLFW_PRESS,glfwGetKey(window,GLFW_KEY_A)==GLFW_PRESS,
+        glfwGetKey(window,GLFW_KEY_D)==GLFW_PRESS);
+}
+void GameFrameWork::UpdatePlayerCamera(float deltaTime,bool inputActive) {
+    SyncPlayerCamera(inputActive);
+    if(!cursorCaptured) { firstMouse=true; mouseDeltaX=mouseDeltaY=0; return; }
+    camera.Rotate(-static_cast<float>(mouseDeltaY)*0.1f,-static_cast<float>(mouseDeltaX)*0.1f);
+    mouseDeltaX=mouseDeltaY=0;
+    const auto movement=CalculateCameraMovement(deltaTime);
+    camera.camPos+=movement; camera.camTarget+=movement; camera.UpdateView();
+    camera.UpdateProjection(width,height);
+    scene.SetPlayerView({camera.camPos,camera.camTarget-camera.camPos,camera.camUp,camera.fovy});
 }
 
 void GameFrameWork::Draw() {
@@ -183,7 +236,12 @@ void GameFrameWork::Draw() {
                 }
         glfwSwapBuffers(window);
     } else glfwWaitEventsTimeout(0.1);
-    const auto title=scene.StatusTitle(paused);
+    auto title=scene.StatusTitle(paused);
+    if(!options.smokeTest && (options.campaign || options.combatMapTest)) {
+        title+=" | Player: "+std::to_string(camera.camPos.x)+","+std::to_string(camera.camPos.y)+","+std::to_string(camera.camPos.z)
+            +" | Look: "+std::to_string(camera.rotX)+","+std::to_string(camera.rotY)
+            +" | Cursor: "+(cursorCaptured ? "CAPTURED":"FREE");
+    }
     glfwSetWindowTitle(window,title.c_str());
 }
 

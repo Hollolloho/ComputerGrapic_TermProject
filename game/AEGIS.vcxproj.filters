@@ -189,4 +189,15 @@
       <UniqueIdentifier>{f95e1b2d-b98b-5a75-9132-f19e52f3eb29}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Camera.cpp">
+      <Filter>FrameWork</Filter>
+    </ClCompile>
+    <ClInclude Include="src\Camera.h">
+      <Filter>FrameWork</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Common.h">
+      <Filter>FrameWork</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
