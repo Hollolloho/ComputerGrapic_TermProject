@@ -8,6 +8,12 @@ namespace
 	bool moveBackward = false;
 	bool moveLeft = false;
 	bool moveRight = false;
+	bool mouseFocused = false;
+	bool firstMouse = true;
+	double lastMouseX = 0.0;
+	double lastMouseY = 0.0;
+	double mouseDeltaX = 0.0;
+	double mouseDeltaY = 0.0;
 }
 
 int GameFrameWork::Run()
@@ -61,6 +67,9 @@ bool GameFrameWork::Init()
 	glfwSetWindowUserPointer(window, this);
 	glfwSetKeyCallback(window, KeyCallBack);
 	glfwSetCursorPosCallback(window, CursorPosCallback);
+	glfwSetWindowFocusCallback(window, WindowFocusCallback);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	WindowFocusCallback(window, glfwGetWindowAttrib(window, GLFW_FOCUSED));
 	return true;
 }
 
@@ -69,8 +78,18 @@ void GameFrameWork::Update(float deltaTime)
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
 
+	const bool mouseMoved = mouseDeltaX != 0.0 || mouseDeltaY != 0.0;
+	if (mouseMoved)
+	{
+		const float sensitivity = 0.1f;
+		camera.Rotate(-static_cast<float>(mouseDeltaY) * sensitivity,
+			-static_cast<float>(mouseDeltaX) * sensitivity);
+		mouseDeltaX = 0.0;
+		mouseDeltaY = 0.0;
+	}
+
 	const glm::vec3 movement = CalculateCameraMovement(deltaTime);
-	if (glm::length(movement) == 0.f)
+	if (!mouseMoved && glm::length(movement) == 0.f)
 		return;
 
 	camera.camPos += movement;
@@ -86,12 +105,12 @@ glm::vec3 GameFrameWork::CalculateCameraMovement(float deltaTime) const
 	if (glm::length(forward) < 0.001f)
 		return glm::vec3(0.f);
 
-	//normalize -> Á¤±ÔÈ­(¹æÇâÀº À¯Áö, ±æÀÌ¸¸ 1·Î ¸¸µë), cross -> ¿ÜÀû
-	// yÃàÀÌ¶û ¿ÜÀûÇØ¼­ ¹æÇâÀ» ÁÂ, ¿ì·Î º¯°æÇÔ
+	//normalize -> ì •ê·œí™”(ë°©í–¥ì€ ìœ ì§€, ê¸¸ì´ë§Œ 1ë¡œ ë§Œë“¬), cross -> ì™¸ì 
+	// yì¶•ì´ë‘ ì™¸ì í•´ì„œ ë°©í–¥ì„ ì¢Œ, ìš°ë¡œ ë³€ê²½í•¨
 	forward = glm::normalize(forward); 
 	const glm::vec3 right = glm::cross(forward, glm::vec3(0.f, 1.f, 0.f));
 
-	// ¿òÁ÷ÀÏ ¹æÇâ, forward¶û ´õÇÏ°Å³ª »©¼­ ¿òÁ÷ÀÌ´Â ¹æÇâÀ» ±¸ÇÔ
+	// ì›€ì§ì¼ ë°©í–¥, forwardë‘ ë”í•˜ê±°ë‚˜ ë¹¼ì„œ ì›€ì§ì´ëŠ” ë°©í–¥ì„ êµ¬í•¨
 	glm::vec3 direction(0.f);
 
 	if (moveForward) direction += forward;
@@ -139,10 +158,27 @@ void GameFrameWork::Clear()
 	glfwTerminate();
 }
 
-void GameFrameWork::CursorPosCallback(GLFWwindow* window, double x, double y)
+void GameFrameWork::CursorPosCallback(GLFWwindow*, double x, double y)
 {
+	if (!mouseFocused)
+		return;
 
+	if (!firstMouse)
+	{
+		mouseDeltaX += x - lastMouseX;
+		mouseDeltaY += y - lastMouseY;
+	}
+	lastMouseX = x;
+	lastMouseY = y;
+	firstMouse = false;
+}
 
+void GameFrameWork::WindowFocusCallback(GLFWwindow*, int focused)
+{
+	mouseFocused = focused == GLFW_TRUE;
+	firstMouse = true;
+	mouseDeltaX = 0.0;
+	mouseDeltaY = 0.0;
 }
 
 void GameFrameWork::KeyCallBack(GLFWwindow* window, int key, int scancode, int action, int mods)

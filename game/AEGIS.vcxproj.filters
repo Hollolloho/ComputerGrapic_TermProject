@@ -1,6 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="src\Camera.cpp">
+      <Filter>Camera</Filter>
+    </ClCompile>
     <ClCompile Include="src\main.cpp">
       <Filter>main</Filter>
     </ClCompile>
@@ -21,6 +24,9 @@
     <Filter Include="FrameWork">
       <UniqueIdentifier>{10e43bd9-befe-44ca-8605-f756d89cff39}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Camera">
+      <UniqueIdentifier>{f61aa301-a224-4980-b365-53fa84082028}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\model_loader.h">
@@ -28,6 +34,12 @@
     </ClInclude>
     <ClInclude Include="src\FrameWork.h">
       <Filter>FrameWork</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Camera.h">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Common.h">
+      <Filter>main</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

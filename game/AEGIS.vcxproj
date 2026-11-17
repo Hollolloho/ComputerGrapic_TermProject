@@ -64,6 +64,8 @@
     <ClCompile Include="src\Game_FrameWork.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\model_loader.cpp" />
+    <ClInclude Include="src\Camera.h" />
+    <ClInclude Include="src\Common.h" />
     <ClInclude Include="src\FrameWork.h" />
     <ClInclude Include="src\model_loader.h" />
   </ItemGroup>
