@@ -13,6 +13,7 @@ public:
 private:
 	Camera camera;
 	CombatMap combatMap;
+
 	GLFWwindow* window = nullptr;
 	
 	bool Init();

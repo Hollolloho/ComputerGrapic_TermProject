@@ -10,6 +10,7 @@ namespace
 	bool moveRight = false;
 	bool mouseFocused = false;
 	bool firstMouse = true;
+
 	double lastMouseX = 0.0;
 	double lastMouseY = 0.0;
 	double mouseDeltaX = 0.0;
@@ -79,20 +80,20 @@ bool GameFrameWork::Init()
 
 void GameFrameWork::Update(float deltaTime)
 {
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, GLFW_TRUE);
-
+	// 마우스 이동
 	const bool mouseMoved = mouseDeltaX != 0.0 || mouseDeltaY != 0.0;
 	if (mouseMoved)
 	{
-		const float sensitivity = 0.1f;
-		camera.Rotate(-static_cast<float>(mouseDeltaY) * sensitivity,
-			-static_cast<float>(mouseDeltaX) * sensitivity);
+		const float sensitivity = 10.f;
+		camera.Rotate(-static_cast<float>(mouseDeltaY) * sensitivity * deltaTime,
+			-static_cast<float>(mouseDeltaX) * sensitivity * deltaTime);
 		mouseDeltaX = 0.0;
 		mouseDeltaY = 0.0;
 	}
 
+	// 키보드 이동
 	const glm::vec3 movement = CalculateCameraMovement(deltaTime);
+
 	if (!mouseMoved && glm::length(movement) == 0.f)
 		return;
 
@@ -146,8 +147,8 @@ void GameFrameWork::Draw()
 	camera.UpdateProjection(width, height);
 
 	const glm::mat4 scene = camera.projection * camera.view;
-
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 	combatMap.Draw(scene);
 	glfwSwapBuffers(window);
 }

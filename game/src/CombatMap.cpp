@@ -78,8 +78,11 @@ bool CombatMap::Init()
 	Clear();
 
 	aegis::ModelData model;
+
 	std::string error;
+	// 실행 작업 폴더를 기준으로 한 상대 경로.
 	const std::filesystem::path path = "asset/combat_map/obj/combat_map.obj";
+
 	if (!aegis::LoadModel(path, model, error))
 	{
 		std::cerr << error << '\n';
@@ -87,6 +90,7 @@ bool CombatMap::Init()
 	}
 
 	shaderProgram = MakeShaderProgram();
+
 	if (!shaderProgram)
 		return false;
 
@@ -104,22 +108,28 @@ bool CombatMap::Init()
 		glGenVertexArrays(1, &mesh.vao);
 		glGenBuffers(1, &mesh.vbo);
 		glGenBuffers(1, &mesh.ebo);
-		glBindVertexArray(mesh.vao);
 
+		glBindVertexArray(mesh.vao);
 		glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
+
 		glBufferData(GL_ARRAY_BUFFER, source.vertices.size() * sizeof(aegis::ModelVertex),
 			source.vertices.data(), GL_STATIC_DRAW);
+
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(aegis::ModelVertex),
 			reinterpret_cast<const void*>(offsetof(aegis::ModelVertex, position)));
+
 		glEnableVertexAttribArray(0);
+
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(aegis::ModelVertex),
 			reinterpret_cast<const void*>(offsetof(aegis::ModelVertex, normal)));
+
 		glEnableVertexAttribArray(1);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ebo);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, source.indices.size() * sizeof(unsigned int),
 			source.indices.data(), GL_STATIC_DRAW);
 	}
+
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	return true;

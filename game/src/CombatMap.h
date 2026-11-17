@@ -18,6 +18,7 @@ private:
 		GLuint vao = 0;
 		GLuint vbo = 0;
 		GLuint ebo = 0;
+
 		GLsizei indexCount = 0;
 		glm::vec3 color{1.f};
 		glm::vec3 emission{0.f};
