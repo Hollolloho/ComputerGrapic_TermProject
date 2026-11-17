@@ -1,7 +1,14 @@
 #include "FrameWork.h"
-
 #include <GL/glew.h>
 #include <glfw/glfw3.h>
+
+namespace
+{
+	bool moveForward = false;
+	bool moveBackward = false;
+	bool moveLeft = false;
+	bool moveRight = false;
+}
 
 int GameFrameWork::Run()
 {
@@ -38,7 +45,7 @@ bool GameFrameWork::Init()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	window = glfwCreateWindow(960, 540, "AEGIS - OpenGL", nullptr, nullptr);
+	window = glfwCreateWindow(1920, 1080, "AEGIS - OpenGL", nullptr, nullptr);
 	if (!window)
 		return false;
 
@@ -49,6 +56,11 @@ bool GameFrameWork::Init()
 
 	glfwSwapInterval(1);
 	glClearColor(0.08f, 0.11f, 0.15f, 1.0f);
+
+	camera.Init();
+	glfwSetWindowUserPointer(window, this);
+	glfwSetKeyCallback(window, KeyCallBack);
+	glfwSetCursorPosCallback(window, CursorPosCallback);
 	return true;
 }
 
@@ -56,12 +68,49 @@ void GameFrameWork::Update(float deltaTime)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
+
+	const glm::vec3 movement = CalculateCameraMovement(deltaTime);
+	if (glm::length(movement) == 0.f)
+		return;
+
+	camera.camPos += movement;
+	camera.camTarget += movement;
+	camera.UpdateView();
+}
+
+glm::vec3 GameFrameWork::CalculateCameraMovement(float deltaTime) const
+{
+	glm::vec3 forward = camera.camTarget - camera.camPos;
+	forward.y = 0.f;
+
+	if (glm::length(forward) < 0.001f)
+		return glm::vec3(0.f);
+
+	//normalize -> 정규화(방향은 유지, 길이만 1로 만듬), cross -> 외적
+	// y축이랑 외적해서 방향을 좌, 우로 변경함
+	forward = glm::normalize(forward); 
+	const glm::vec3 right = glm::cross(forward, glm::vec3(0.f, 1.f, 0.f));
+
+	// 움직일 방향, forward랑 더하거나 빼서 움직이는 방향을 구함
+	glm::vec3 direction(0.f);
+
+	if (moveForward) direction += forward;
+	if (moveBackward) direction -= forward;
+	if (moveLeft) direction -= right;
+	if (moveRight) direction += right;
+
+	if (glm::length(direction) < 0.001f)
+		return glm::vec3(0.f);
+
+	const float moveSpeed = 3.f;
+	return glm::normalize(direction) * moveSpeed * deltaTime;
 }
 
 void GameFrameWork::Draw()
 {
 	int width = 1920;
 	int height = 1080;
+
 	glfwGetFramebufferSize(window, &width, &height);
 
 	if (width <= 0 || height <= 0)
@@ -71,6 +120,10 @@ void GameFrameWork::Draw()
 	}
 
 	glViewport(0, 0, width, height);
+	camera.UpdateProjection(width, height);
+
+	const glm::mat4 scene = camera.projection * camera.view;
+
 	glClear(GL_COLOR_BUFFER_BIT);
 	glfwSwapBuffers(window);
 }
@@ -84,4 +137,26 @@ void GameFrameWork::Clear()
 	}
 
 	glfwTerminate();
+}
+
+void GameFrameWork::CursorPosCallback(GLFWwindow* window, double x, double y)
+{
+
+
+}
+
+void GameFrameWork::KeyCallBack(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if (action != GLFW_PRESS && action != GLFW_RELEASE)
+		return;
+
+	if (key == GLFW_KEY_Q)
+	{
+		if (action == GLFW_RELEASE)
+			glfwSetWindowShouldClose(window, GLFW_TRUE);
+	}
+	else if (key == GLFW_KEY_W) moveForward = (action == GLFW_PRESS);
+	else if (key == GLFW_KEY_S) moveBackward = (action == GLFW_PRESS);
+	else if (key == GLFW_KEY_A) moveLeft = (action == GLFW_PRESS);
+	else if (key == GLFW_KEY_D) moveRight = (action == GLFW_PRESS);
 }
