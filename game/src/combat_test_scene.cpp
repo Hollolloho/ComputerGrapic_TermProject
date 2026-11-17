@@ -42,11 +42,12 @@ void main() { localPosition=position; gl_Position=transform*vec4(position,1); }
     const char* fragment = R"(#version 330 core
 in vec3 localPosition;
 uniform vec3 color;
+uniform float opacity;
 out vec4 outColor;
 void main() {
     vec3 normal=normalize(cross(dFdx(localPosition),dFdy(localPosition)));
     float light=0.65+0.35*abs(dot(normal,normalize(vec3(0.4,0.8,0.5))));
-    outColor=vec4(color*light,1);
+    outColor=vec4(color*light,opacity);
 })";
     const GLuint vs = Compile(GL_VERTEX_SHADER, vertex);
     const GLuint fs = Compile(GL_FRAGMENT_SHADER, fragment);
@@ -58,6 +59,7 @@ void main() {
     if (!linked) { Clear(); return false; }
     transformLocation = glGetUniformLocation(program, "transform");
     colorLocation = glGetUniformLocation(program, "color");
+    opacityLocation = glGetUniformLocation(program, "opacity");
     const glm::vec3 corners[] = {
         {-0.5f,-0.5f,-0.5f},{0.5f,-0.5f,-0.5f},{0.5f,0.5f,-0.5f},{-0.5f,0.5f,-0.5f},
         {-0.5f,-0.5f,0.5f},{0.5f,-0.5f,0.5f},{0.5f,0.5f,0.5f},{-0.5f,0.5f,0.5f}};
@@ -88,7 +90,7 @@ bool CombatTestScene::InitTerminal(const std::filesystem::path& root) {
 
 void CombatTestScene::Reset()
 {
-    analysis.Reset();
+    analysis.Reset(); feedback.Reset();
     range.Reset(); encounter.Reset(); weapon.Reset(); drone.Reset(); boss.Reset(); bossCovered=false; yaw = pitch = 0;
     if (bossMode) { const auto d=glm::normalize(boss.CoreCenter()-(CameraRoot()+glm::vec3(0,1.65f,0))); pitch=glm::degrees(std::asin(d.y)); }
     camera.SetPose(CameraRoot(), yaw, pitch);
@@ -212,6 +214,12 @@ void CombatTestScene::Update(double realDt, double gameDt)
     else range.Update(static_cast<float>(realDt), static_cast<float>(gameDt));
     if (IsDroneMode() && encounter.Result()==combat::EncounterResult::Running) drone.UpdateCombat(gameDt);
     weapon.Update(realDt);
+    feedback.Update(static_cast<float>(gameDt));
+    const auto forward=camera.ViewDirection();
+    const auto right=glm::normalize(glm::cross(forward,glm::vec3(0,1,0)));
+    const auto origin=camera.EyePosition()+forward*0.8f+right*0.22f+glm::vec3(0,-0.14f,0);
+    feedback.Observe(bossMode ? boss.Health():turretMode ? encounter.Health():100,
+        Inventory().Breaks(),origin,right,forward);
 }
 
 void CombatTestScene::DrawBox(const glm::mat4& vp, const glm::vec3& minimum,
@@ -247,7 +255,7 @@ void CombatTestScene::Draw(int width, int height,
         droneRenderer.Begin(camera.EyePosition(),{0.45f,0.9f,0.7f},{1,1,1},4,0.25f);
         drone.Draw(droneRenderer,vp,world,state.Phase()==combat::DronePhase::Warning,state.Armed());
     }
-    glUseProgram(program); glBindVertexArray(vao);
+    glUseProgram(program); glUniform1f(opacityLocation,1); glBindVertexArray(vao);
     const std::span<const combat::Collider> boxes=bossMode ? std::span<const combat::Collider>() : turretMode
         ? std::span<const combat::Collider>(encounter.Colliders())
         : std::span<const combat::Collider>(range.Colliders());
@@ -282,6 +290,15 @@ void CombatTestScene::Draw(int width, int height,
         const auto p=range.LastHit()->position;
         DrawBox(vp,p-glm::vec3(0.07f),p+glm::vec3(0.07f),{1,1,1});
     }
+    for(const auto& shard:feedback.Shards()) {
+        const float scale=shard.size*(1-shard.age/shard.lifetime);
+        const auto transform=vp*glm::rotate(glm::translate(glm::mat4(1),shard.position),
+            shard.size*93+shard.age*9,glm::normalize(glm::vec3(1,0.6f,0.3f)))*glm::scale(glm::mat4(1),glm::vec3(scale*2,scale,scale));
+        glUniformMatrix4fv(transformLocation,1,GL_FALSE,glm::value_ptr(transform));
+        const glm::vec3 color=shard.size<0.017f ? glm::vec3(0.65f,0.69f,0.74f)
+            :shard.size<0.022f ? glm::vec3(0.76f,0.66f,0.48f):glm::vec3(0.23f,0.28f,0.33f);
+        glUniform3fv(colorLocation,1,glm::value_ptr(color)); glDrawArrays(GL_TRIANGLES,0,36);
+    }
     const auto supply=bossMode ? boss_asset::supplyWeapon:combat::WeaponInventory::SupplyPosition();
     if (!bossMode) DrawBox(vp,supply+glm::vec3(-0.32f,-0.5f,-0.27f),supply+glm::vec3(0.32f,-0.15f,0.27f),{0.1f,0.55f,0.38f});
     glBindVertexArray(0); glUseProgram(0);
@@ -295,6 +312,30 @@ void CombatTestScene::Draw(int width, int height,
     glScissor(width/2-1,height/2-8,3,17); glClear(GL_COLOR_BUFFER_BIT);
     if (showHud) DrawHud(width,height);
     glDisable(GL_SCISSOR_TEST);
+    DrawDamageFeedback(width,height);
+}
+
+void CombatTestScene::DrawDamageFeedback(int width,int height) const {
+    if(feedback.DamageStrength()<=0 || width<=0 || height<=0) return;
+    glDisable(GL_DEPTH_TEST); glDepthMask(GL_FALSE); glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+    glUseProgram(program); glBindVertexArray(vao);
+    const glm::vec3 red(1,0.025f,0.045f); glUniform3fv(colorLocation,1,glm::value_ptr(red));
+    const auto rectangle=[&](float x,float y,float w,float h) {
+        const auto transform=glm::scale(glm::translate(glm::mat4(1),glm::vec3(x,y,0)),glm::vec3(w,h,1));
+        glUniformMatrix4fv(transformLocation,1,GL_FALSE,glm::value_ptr(transform));
+        glDrawArrays(GL_TRIANGLES,0,6);
+    };
+    for(int band=0;band<6;++band) {
+        const float inset=static_cast<float>(band)*0.018f,span=2-2*inset;
+        glUniform1f(opacityLocation,feedback.DamageStrength()*(0.7f-static_cast<float>(band)*0.1f));
+        rectangle(-1+inset+0.009f,0,0.018f,span);
+        rectangle(1-inset-0.009f,0,0.018f,span);
+        rectangle(0,-1+inset+0.009f,span-0.036f,0.018f);
+        rectangle(0,1-inset-0.009f,span-0.036f,0.018f);
+    }
+    glUniform1f(opacityLocation,1); glBindVertexArray(0); glUseProgram(0);
+    glDisable(GL_BLEND); glDepthMask(GL_TRUE); glEnable(GL_DEPTH_TEST);
 }
 
 void CombatTestScene::DrawAnalysis(int width,int height) const {
@@ -311,7 +352,7 @@ void CombatTestScene::DrawAnalysis(int width,int height) const {
 
 void CombatTestScene::Clear()
 {
-    analysis.Reset(); bossView.Clear();
+    analysis.Reset(); feedback.Reset(); bossView.Clear();
     for (auto& mesh:terminalMeshes) mesh.Clear();
     terminalMeshes.clear();
     drone.Clear(); droneRenderer.Clear();
@@ -384,6 +425,7 @@ void CombatTestScene::SetSmokeFrame(int frame)
 
 bool CombatTestScene::SmokePassed() const
 {
+    if(feedback.BreakBursts()!=Inventory().Breaks()) return false;
     if (bossMode) return smokeBossFailureSeen && boss.Result()==combat::EncounterResult::Cleared
         && boss.CoreHits()==3 && boss.Health()==100 && boss.PlayerShots()==4 && boss.BlockedShots()>=1
         && Inventory().Breaks()==3 && Inventory().Supplies()==2 && !Inventory().Armed()

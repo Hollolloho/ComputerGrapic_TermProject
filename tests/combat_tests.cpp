@@ -1,3 +1,4 @@
+#include "combat_feedback.h"
 #include "combat.h"
 #include "combat_range.h"
 #include "turret_encounter.h"
@@ -592,6 +593,39 @@ int main()
     check(flow.Restart() && flow.Stage()==Stage::Entry && flow.Screen()==Screen::Playing,"victory restart returns to entry room");
     flow.ToTitle();
     check(flow.Screen()==Screen::Title && flow.Stage()==Stage::Entry && !flow.WorldRuns(),"return to title clears progression checkpoint");
+    CombatFeedback feedback;
+    const glm::vec3 fxOrigin(0.2f,1.4f,-0.6f),fxRight(1,0,0),fxForward(0,0,-1);
+    feedback.Observe(100,0,fxOrigin,fxRight,fxForward);
+    check(feedback.Shards().empty() && feedback.DamageStrength()==0,"fresh feedback does not invent damage or broken guns");
+    feedback.Observe(75,0,fxOrigin,fxRight,fxForward);
+    check(feedback.DamageStrength()==1 && feedback.DamageEvents()==1 && feedback.Shards().empty(),"body damage produces one full flash without weapon fragments");
+    feedback.Update(0.14f); feedback.Observe(75,0,fxOrigin,fxRight,fxForward);
+    check(std::abs(feedback.DamageStrength()-0.5f)<0.001f && feedback.DamageEvents()==1,"polling unchanged damage cannot restart flash");
+    feedback.Observe(75,1,fxOrigin,fxRight,fxForward);
+    check(feedback.BreakBursts()==1 && feedback.Shards().size()==18,"committed weapon break produces one bounded fragment burst");
+    const auto frozen=feedback.Shards()[0].position;
+    const auto strength=feedback.DamageStrength();
+    feedback.Update(0); feedback.Observe(75,1,fxOrigin,fxRight,fxForward);
+    check(feedback.Shards()[0].position==frozen && feedback.DamageStrength()==strength && feedback.BreakBursts()==1,
+        "paused feedback freezes particles and flash without duplicate break events");
+    CombatFeedback slow=feedback,fast=feedback;
+    slow.Update(0.01f); fast.Update(0.1f);
+    check(slow.Shards()[0].age<fast.Shards()[0].age && slow.DamageStrength()>fast.DamageStrength(),"slow game time slows fragment motion and flash decay");
+    CombatFeedback whole=feedback,split=feedback;
+    whole.Update(0.1f); for(int i=0;i<10;++i) split.Update(0.01f);
+    check(glm::length(whole.Shards()[0].position-split.Shards()[0].position)<0.0001f,"ballistic fragments agree across frame subdivisions");
+    feedback.Update(-1); feedback.Update(std::numeric_limits<float>::quiet_NaN());
+    check(feedback.Shards()[0].position==frozen && feedback.DamageStrength()==strength,"invalid effect time cannot corrupt particles or flash");
+    feedback.Update(2);
+    check(feedback.Shards().empty() && feedback.DamageStrength()==0,"expired fragments are removed and flash fully fades");
+    feedback.Observe(75,1,fxOrigin,fxRight,fxForward);
+    check(feedback.Shards().empty() && feedback.BreakBursts()==1,"expired fragments do not respawn from unchanged break counter");
+    feedback.Observe(50,2,fxOrigin,fxRight,fxForward);
+    check(feedback.DamageEvents()==2 && feedback.BreakBursts()==2 && feedback.Shards().size()==18,"second hit and weapon break create new effects once");
+    feedback.Reset();
+    check(feedback.Shards().empty() && feedback.DamageStrength()==0 && feedback.BreakBursts()==0 && feedback.DamageEvents()==0,"restart removes particles, flash and observed event counters");
+    feedback.Observe(100,0,fxOrigin,fxRight,fxForward);
+    check(feedback.Shards().empty() && feedback.DamageStrength()==0,"restart snapshot does not replay old damage or weapon break");
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

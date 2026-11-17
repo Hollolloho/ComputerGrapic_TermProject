@@ -130,7 +130,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
         double previousTime = glfwGetTime();
         bool wasActive = false;
         int smokeFrame = 0;
-        bool savedEntry{},savedFailure{},savedVictory{},savedPause{},savedBossHud{},savedEmptyHud{};
+        bool savedEntry{},savedFailure{},savedVictory{},savedPause{},savedBossHud{},savedEmptyHud{},savedDamageEffect{},savedBreakEffect{};
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
             if (glfwWindowShouldClose(window)) {
@@ -179,6 +179,10 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
                     if(smokeFrame==10) save("build/campaign-title-smoke.ppm");
                     if(smokeFrame==30) save("build/campaign-help-smoke.ppm");
                     if(smokeFrame==160) save("build/campaign-corridor-hud.ppm");
+                    const auto& feedback=scene.TestScene().Feedback();
+                    if(!savedDamageEffect && feedback.DamageStrength()>0.5f) { save("build/campaign-damage-effect.ppm"); savedDamageEffect=true; }
+                    if(!savedBreakEffect && !feedback.Shards().empty()) { save("build/campaign-weapon-break.ppm"); savedBreakEffect=true; }
+
                     if(!savedBossHud && title.find("PLAYING | BOSS")!=std::string::npos) { save("build/campaign-boss-hud.ppm"); savedBossHud=true; }
                     if(!savedEmptyHud && title.find("PLAYING | BOSS")!=std::string::npos && scene.TestScene().BossCoreHits()==1) { save("build/campaign-empty-hud.ppm"); savedEmptyHud=true; }
 

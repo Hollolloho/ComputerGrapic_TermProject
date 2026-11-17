@@ -8,6 +8,7 @@
 #include "analysis_session.h"
 #include "boss_view.h"
 #include "korean_ui.h"
+#include "combat_feedback.h"
 #include <GL/glew.h>
 #include <filesystem>
 #include <string>
@@ -38,6 +39,7 @@ public:
     combat::EncounterResult BattleResult() const { return bossMode ? boss.Result():encounter.Result(); }
     void CampaignSmokeFrame(int frame);
     void PopulateHud(UiPage& page) const;
+    const combat::CombatFeedback& Feedback() const { return feedback; }
     int BossCoreHits() const { return boss.CoreHits(); }
     bool IsBossMode() const { return bossMode; }
     bool IsDroneMode() const { return !bossMode && turretMode && encounter.IsDroneMode(); }
@@ -56,6 +58,7 @@ private:
     glm::vec3 CameraRoot() const;
     void ToggleBossCover();
     void DrawBossHud(int width,int height) const;
+    void DrawDamageFeedback(int width,int height) const;
     bool InitTerminal(const std::filesystem::path& root);
     bool TerminalTarget() const;
     bool TerminalTarget(const glm::vec3& direction) const;
@@ -66,6 +69,7 @@ private:
     void DrawHud(int width,int height) const;
     void DrawBox(const glm::mat4& viewProjection, const glm::vec3& minimum,
         const glm::vec3& maximum, const glm::vec3& color) const;
+    combat::CombatFeedback feedback;
     combat::BossEncounter boss;
     BossView bossView;
     bool debugControls{true};
@@ -83,6 +87,7 @@ private:
     GLuint vbo{};
     GLint transformLocation{-1};
     GLint colorLocation{-1};
+    GLint opacityLocation{-1};
     bool mouseHeld{};
     bool coverHeld{};
     bool lookHeld{};
