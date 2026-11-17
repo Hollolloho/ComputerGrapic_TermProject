@@ -3,13 +3,12 @@
 #include "Common.h"
 
 #include <GL/glew.h>
-#include <filesystem>
 #include <vector>
 
 class CombatMap
 {
 public:
-	bool Init(const std::filesystem::path& runDirectory);
+	bool Init();
 	void Draw(const glm::mat4& scene) const;
 	void Clear();
 

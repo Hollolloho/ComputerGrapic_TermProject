@@ -2,6 +2,7 @@
 #include "model_loader.h"
 
 #include <cstddef>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -38,13 +39,13 @@ namespace
 		return shader;
 	}
 
-	GLuint MakeShaderProgram(const std::filesystem::path& shaderDirectory)
+	GLuint MakeShaderProgram()
 	{
-		const GLuint vertex = CompileShader(GL_VERTEX_SHADER, shaderDirectory / "combat_map.vert");
+		const GLuint vertex = CompileShader(GL_VERTEX_SHADER, "shaders/combat_map.vert");
 		if (!vertex)
 			return 0;
 
-		const GLuint fragment = CompileShader(GL_FRAGMENT_SHADER, shaderDirectory / "combat_map.frag");
+		const GLuint fragment = CompileShader(GL_FRAGMENT_SHADER, "shaders/combat_map.frag");
 		if (!fragment)
 		{
 			glDeleteShader(vertex);
@@ -72,20 +73,20 @@ namespace
 	}
 }
 
-bool CombatMap::Init(const std::filesystem::path& runDirectory)
+bool CombatMap::Init()
 {
 	Clear();
 
 	aegis::ModelData model;
 	std::string error;
-	const auto path = runDirectory / "asset" / "combat_map" / "obj" / "combat_map.obj";
+	const std::filesystem::path path = "asset/combat_map/obj/combat_map.obj";
 	if (!aegis::LoadModel(path, model, error))
 	{
 		std::cerr << error << '\n';
 		return false;
 	}
 
-	shaderProgram = MakeShaderProgram(runDirectory / "shaders");
+	shaderProgram = MakeShaderProgram();
 	if (!shaderProgram)
 		return false;
 
