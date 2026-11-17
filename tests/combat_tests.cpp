@@ -3,6 +3,7 @@
 #include "turret_encounter.h"
 #include "analysis_session.h"
 #include "boss_encounter.h"
+#include "campaign_flow.h"
 #include "terminal_layout.generated.h"
 #include "corridor_layout.generated.h"
 
@@ -559,6 +560,38 @@ int main()
     bossTick(500,coveredEye);
     check(boss.Result()==EncounterResult::Cleared && boss.EnemyFlights().empty(),
         "boss victory waits for remaining volley to settle");
+
+    aegis::CampaignFlow flow;
+    using Stage=aegis::CampaignStage;
+    using Screen=aegis::CampaignScreen;
+    check(flow.Screen()==Screen::Title && !flow.WorldRuns(),"campaign title keeps world stopped");
+    check(!flow.Advance(true) && !flow.Retry(),"title cannot skip into battle or retry an absent checkpoint");
+    check(flow.ShowHelp() && flow.Screen()==Screen::Help && !flow.WorldRuns(),"Korean help screen does not start battle");
+    check(!flow.Start(),"help requires returning to title before start");
+    flow.ToTitle();
+    check(flow.Start() && flow.Stage()==Stage::Entry && flow.Screen()==Screen::Playing && !flow.WorldRuns(),
+        "campaign start enters safe entry room before any battle");
+    check(!flow.Start(),"repeated start cannot skip entry room");
+    check(flow.Advance(false) && flow.Stage()==Stage::Corridor && flow.WorldRuns(),
+        "entry action begins corridor checkpoint");
+    check(!flow.Advance(false) && flow.Stage()==Stage::Corridor,"unsafe corridor prevents premature core-room entry");
+    check(!flow.ObserveBattle(false,true) && flow.Screen()==Screen::Playing,
+        "corridor clear leaves time for analysis and explicit next-room choice");
+    check(flow.TogglePause() && !flow.WorldRuns() && flow.Screen()==Screen::Paused,"campaign pause stops world but preserves checkpoint");
+    check(!flow.ObserveBattle(true,true) && flow.Stage()==Stage::Corridor,"paused world cannot change battle outcome");
+    check(!flow.Advance(true),"paused menu cannot advance rooms");
+    check(flow.TogglePause() && flow.WorldRuns(),"resume restores playing state");
+    check(flow.ObserveBattle(true,false) && flow.Screen()==Screen::Failed && !flow.WorldRuns(),"corridor failure enters result screen");
+    check(flow.Retry() && flow.Stage()==Stage::Corridor && flow.WorldRuns(),"retry restarts corridor checkpoint instead of whole campaign");
+    check(flow.Advance(true) && flow.Stage()==Stage::Boss,"safe completed corridor enables boss checkpoint");
+    check(!flow.Advance(true),"boss checkpoint cannot be skipped into victory");
+    check(flow.ObserveBattle(true,true) && flow.Screen()==Screen::Failed,"simultaneous failure takes priority over victory");
+    check(flow.Retry() && flow.Stage()==Stage::Boss,"boss failure retry preserves boss checkpoint");
+    check(flow.ObserveBattle(false,true) && flow.Screen()==Screen::Victory && !flow.WorldRuns(),"boss completion enters final victory once");
+    check(!flow.ObserveBattle(false,true),"victory cannot be triggered repeatedly");
+    check(flow.Restart() && flow.Stage()==Stage::Entry && flow.Screen()==Screen::Playing,"victory restart returns to entry room");
+    flow.ToTitle();
+    check(flow.Screen()==Screen::Title && flow.Stage()==Stage::Entry && !flow.WorldRuns(),"return to title clears progression checkpoint");
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

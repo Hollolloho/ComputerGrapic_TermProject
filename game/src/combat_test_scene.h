@@ -23,7 +23,7 @@ public:
     void SampleInput(GLFWwindow* window, bool active);
     void Update(double realDt, double gameDt);
     void Draw(int width, int height,
-        const std::function<void(const glm::mat4&,const glm::vec3&)>& drawEnvironment={}) const;
+        const std::function<void(const glm::mat4&,const glm::vec3&)>& drawEnvironment={},bool showHud=true) const;
     void Clear();
     void SetSmokeFrame(int frame);
     bool SmokePassed() const;
@@ -33,6 +33,10 @@ public:
     void SetCorridorMode(bool enabled);
     void SetDroneMode(bool enabled);
     void SetBossMode(bool enabled);
+    void SetDebugControls(bool enabled) { debugControls=enabled; }
+    combat::EncounterResult BattleResult() const { return bossMode ? boss.Result():encounter.Result(); }
+    void CampaignSmokeFrame(int frame);
+    int BossCoreHits() const { return boss.CoreHits(); }
     bool IsBossMode() const { return bossMode; }
     bool IsDroneMode() const { return !bossMode && turretMode && encounter.IsDroneMode(); }
     bool AnalysisActive() const { return analysis.Active(); }
@@ -62,6 +66,7 @@ private:
         const glm::vec3& maximum, const glm::vec3& color) const;
     combat::BossEncounter boss;
     BossView bossView;
+    bool debugControls{true};
     bool bossMode{},bossCovered{},bossToggleHeld{},smokeBossFailureSeen{};
     combat::AnalysisSession analysis;
     std::vector<DrawMesh> terminalMeshes;

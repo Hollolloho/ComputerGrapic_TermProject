@@ -61,7 +61,7 @@ void CombatTestScene::DrawHud(int width,int height) const
     }
     if (TerminalTarget()) Label(CanAnalyze() ? "E ANALYZE DRONE" : "ANALYSIS LOCKED / AREA NOT SAFE",
         width/2-180,height/2-80,2,CanAnalyze()?glm::vec3(0.3f,1,0.8f):glm::vec3(1,0.45f,0.2f));
-    if (corridorMode) Label(IsDroneMode() ? "DRONE COMBAT / F3 TURRET / F2 RANGE" : "CORRIDOR COMBAT / F3 DRONE / F2 RANGE",24,height-135,2,{0.3f,0.9f,1});
+    if (corridorMode) Label(!debugControls ? "CORRIDOR COMBAT" : IsDroneMode() ? "DRONE COMBAT / F3 TURRET / F2 RANGE" : "CORRIDOR COMBAT / F3 DRONE / F2 RANGE",24,height-135,2,{0.3f,0.9f,1});
     if (CanAnalyze()) Label("SECTOR SAFE / ANALYSIS READY",24,height-165,2,{0.2f,1,0.6f});
     const auto armed=Inventory().Armed();
     Label(armed ? "CW01C READY / G DROP" : "EMPTY / LOOK LEFT DOWN FOR SUPPLY",24,height-105,2,
@@ -109,7 +109,7 @@ void CombatTestScene::DrawHud(int width,int height) const
         glScissor(0,0,6,height); glClear(GL_COLOR_BUFFER_BIT);
         glScissor(width-6,0,6,height); glClear(GL_COLOR_BUFFER_BIT);
     }
-    Label(corridorMode ? "LMB FIRE  RMB AIM  E USE  G DROP  R RESET  F2 RANGE" : "LMB FIRE  RMB AIM  E USE  G DROP  B COVER  T RANGE  R RESET",24,24,2,{0.8f,0.9f,1});
+    Label(!debugControls ? "LMB FIRE  RMB AIM  E USE  G DROP  R RESET  ESC MENU" : corridorMode ? "LMB FIRE  RMB AIM  E USE  G DROP  R RESET  F2 RANGE" : "LMB FIRE  RMB AIM  E USE  G DROP  B COVER  T RANGE  R RESET",24,24,2,{0.8f,0.9f,1});
 }
 
 
@@ -134,7 +134,7 @@ void CombatTestScene::DrawBossHud(int width,int height) const {
         glScissor(0,0,width,6); glClear(GL_COLOR_BUFFER_BIT);
         glScissor(0,height-6,width,6); glClear(GL_COLOR_BUFFER_BIT);
     }
-    Label("LMB FIRE  RMB AIM  B COVER  E USE  R RESET  F4 CORRIDOR",24,24,2,{0.8f,0.9f,1});
+    Label(debugControls ? "LMB FIRE  RMB AIM  B COVER  E USE  R RESET  F4 CORRIDOR" : "LMB FIRE  RMB AIM  B COVER  E USE  R RESET  ESC MENU",24,24,2,{0.8f,0.9f,1});
 }
 
 } // namespace aegis

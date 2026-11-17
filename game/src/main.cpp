@@ -43,17 +43,19 @@ int wmain(int argc, wchar_t* argv[])
         aegis::GameFramework game;
         return game.Run();
     }
-    if (argc >= 2 && (std::wstring_view(argv[1]) == L"--boss-test" || std::wstring_view(argv[1]) == L"--drone-test" || std::wstring_view(argv[1]) == L"--corridor-test" || std::wstring_view(argv[1]) == L"--combat-test" || std::wstring_view(argv[1]) == L"--turret-test")) {
+    if (argc >= 2 && (std::wstring_view(argv[1]) == L"--campaign-test" || std::wstring_view(argv[1]) == L"--boss-test" || std::wstring_view(argv[1]) == L"--drone-test" || std::wstring_view(argv[1]) == L"--corridor-test" || std::wstring_view(argv[1]) == L"--combat-test" || std::wstring_view(argv[1]) == L"--turret-test")) {
         if (argc > 3 || (argc == 3 && std::wstring_view(argv[2]) != L"--smoke-test")) {
-            std::cerr << "Usage: AEGIS.exe --boss-test|--drone-test|--corridor-test|--combat-test|--turret-test [--smoke-test]\n";
+            std::cerr << "Usage: AEGIS.exe --campaign-test|--boss-test|--drone-test|--corridor-test|--combat-test|--turret-test [--smoke-test]\n";
             return 2;
         }
         aegis::GameFramework game;
-        return game.Run(std::wstring_view(argv[1])!=L"--corridor-test" && std::wstring_view(argv[1])!=L"--drone-test" && std::wstring_view(argv[1])!=L"--boss-test", argc == 3, std::wstring_view(argv[1])==L"--turret-test", std::wstring_view(argv[1])==L"--drone-test", std::wstring_view(argv[1])==L"--boss-test");
+        const auto mode=std::wstring_view(argv[1]);
+        return game.Run(mode==L"--combat-test" || mode==L"--turret-test",argc==3,mode==L"--turret-test",
+            mode==L"--drone-test" || mode==L"--campaign-test",mode==L"--boss-test",mode==L"--campaign-test");
     }
     if (argc == 3 && std::wstring_view(argv[1]) == L"--inspect-obj") {
         return InspectModel(argv[2]);
     }
-    std::cerr << "Usage: AEGIS.exe [--inspect-obj <model.obj> | --boss-test|--drone-test|--corridor-test|--combat-test|--turret-test [--smoke-test]]\n";
+    std::cerr << "Usage: AEGIS.exe [--inspect-obj <model.obj> | --campaign-test|--boss-test|--drone-test|--corridor-test|--combat-test|--turret-test [--smoke-test]]\n";
     return 2;
 }

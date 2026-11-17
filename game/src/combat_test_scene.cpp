@@ -175,9 +175,9 @@ void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
         return;
     }
     if (active) {
-        if (bossToggle && !bossToggleHeld) SetBossMode(!bossMode);
-        if (!bossMode && corridorMode && droneToggle && !droneToggleHeld) SetDroneMode(!IsDroneMode());
-        if (!bossMode && !corridorMode && turret && !turretHeld) SetTurretMode(!turretMode);
+        if (debugControls && bossToggle && !bossToggleHeld) SetBossMode(!bossMode);
+        if (debugControls && !bossMode && corridorMode && droneToggle && !droneToggleHeld) SetDroneMode(!IsDroneMode());
+        if (debugControls && !bossMode && !corridorMode && turret && !turretHeld) SetTurretMode(!turretMode);
         const bool playing=bossMode ? boss.Result()==combat::EncounterResult::Running || boss.Result()==combat::EncounterResult::Securing : !turretMode || encounter.Result()==combat::EncounterResult::Running || encounter.Result()==combat::EncounterResult::Securing;
         const bool canEquip=bossMode ? boss.Result()!=combat::EncounterResult::Failed : !turretMode || encounter.Result()!=combat::EncounterResult::Failed;
         if (canEquip && right && lookHeld) {
@@ -225,7 +225,7 @@ void CombatTestScene::DrawBox(const glm::mat4& vp, const glm::vec3& minimum,
 }
 
 void CombatTestScene::Draw(int width, int height,
-    const std::function<void(const glm::mat4&,const glm::vec3&)>& drawEnvironment) const
+    const std::function<void(const glm::mat4&,const glm::vec3&)>& drawEnvironment,bool showHud) const
 {
     if (width <= 0 || height <= 0) return;
     if (analysis.Active()) { DrawAnalysis(width,height); return; }
@@ -293,7 +293,7 @@ void CombatTestScene::Draw(int width, int height,
     glClearColor(range.RemainingTargets()==0 ? 0.15f : 0.95f,1,0.7f,1);
     glScissor(width/2-8,height/2-1,17,3); glClear(GL_COLOR_BUFFER_BIT);
     glScissor(width/2-1,height/2-8,3,17); glClear(GL_COLOR_BUFFER_BIT);
-    DrawHud(width,height);
+    if (showHud) DrawHud(width,height);
     glDisable(GL_SCISSOR_TEST);
 }
 
@@ -320,6 +320,20 @@ void CombatTestScene::Clear()
     if (vao) glDeleteVertexArrays(1,&vao);
     if (program) glDeleteProgram(program);
     vbo=vao=program=0;
+}
+
+void CombatTestScene::CampaignSmokeFrame(int frame) {
+    if (bossMode) {
+        if (frame==1) { Fire(boss.CoreCenter()-camera.EyePosition()); ToggleBossCover(); }
+        if (boss.Result()!=combat::EncounterResult::Running) return;
+        if (boss.Phase()==combat::BossPhase::Exposed && Inventory().Armed()) {
+            if (bossCovered) ToggleBossCover();
+            if (boss.PlayerFlights().empty()) Fire(boss.CoreCenter()-camera.EyePosition());
+        } else {
+            if (!bossCovered) ToggleBossCover();
+            if (!Inventory().Armed()) Interact(boss_asset::supplyInteraction-camera.EyePosition());
+        }
+    } else if (frame==1) Fire(encounter.DroneState().Position()-camera.EyePosition());
 }
 
 void CombatTestScene::SetSmokeFrame(int frame)
