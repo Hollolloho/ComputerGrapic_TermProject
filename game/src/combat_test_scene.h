@@ -2,6 +2,7 @@
 
 #include "combat_range.h"
 #include "player_camera.h"
+#include "player_view.h"
 #include "turret_encounter.h"
 #include "weapon_view.h"
 #include "drone.h"
@@ -24,6 +25,12 @@ class CombatTestScene {
 public:
     bool Init(const std::filesystem::path& projectDirectory);
     void Reset();
+    bool SetPlayerView(const PlayerView& view);
+    void ClearPlayerView() { if(analysis.Active()) return; externalView.Clear(); lookHeld=false; }
+    bool HasExternalPlayerView() const { return externalView.Active(); }
+    PlayerView CurrentPlayerView() const;
+    void PlayerViewSmokeFrame(int frame);
+    bool PlayerViewSmokePassed() const;
     void SampleInput(GLFWwindow* window, bool active);
     void Update(double realDt, double gameDt);
     void Draw(int width, int height,
@@ -64,6 +71,9 @@ public:
 private:
     bool Fire(const glm::vec3& direction);
     glm::vec3 CameraRoot() const;
+    glm::vec3 PlayerEye() const { return CurrentPlayerView().eye; }
+    glm::vec3 PlayerForward() const { return CurrentPlayerView().forward; }
+    glm::mat4 PlayerViewMatrix() const { return CurrentPlayerView().ViewMatrix(); }
     void ToggleBossCover();
     void DrawBossHud(int width,int height) const;
     void DrawDamageFeedback(int width,int height) const;
@@ -93,6 +103,9 @@ private:
     combat::CombatRange range;
     combat::TurretEncounter encounter;
     PlayerCamera camera;
+    PlayerViewInput externalView;
+    bool smokeViewShot{},smokeViewSupply{},smokeViewPickup{},smokeViewAnalysis{},smokeViewRestored{},smokeViewReset{},smokeViewAim{},smokeViewDodge{},smokeViewDone{};
+    PlayerView smokeViewSnapshot;
     WeaponView weapon;
     Drone drone;
     MeshRenderer droneRenderer;

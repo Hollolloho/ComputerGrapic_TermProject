@@ -20,22 +20,22 @@ const glm::vec3 Up(0.0f, 1.0f, 0.0f);
 
 } // namespace
 
-bool GameScene::Init(const std::filesystem::path& projectDirectory, bool useCombatTest, bool turretTest, bool droneTest, bool bossTest, bool campaign,bool combatMapTest)
+bool GameScene::Init(const std::filesystem::path& projectDirectory, bool useCombatTest, bool turretTest, bool droneTest, bool bossTest, bool campaign,bool combatMapTest,bool playerViewTest)
 {
     Clear();
-    legacyTest=useCombatTest; campaignMode=campaign;
+    legacyTest=useCombatTest; campaignMode=campaign; playerViewTestMode=playerViewTest;
     glEnable(GL_DEPTH_TEST);
     // 메시 셰이더가 최종 색을 sRGB로 변환한다.
     glDisable(GL_FRAMEBUFFER_SRGB);
     glClearColor(0.16f, 0.19f, 0.24f, 1.0f);
     if (!renderer.Init(projectDirectory / "game" / "shaders") || !InitCorridor(projectDirectory)
         || !testScene.Init(projectDirectory) || !InitEntry(projectDirectory) || !ui.Init()) return false;
-    if((campaignMode || combatMapTest) && !InitCombatMap(projectDirectory)) return false;
+    if((campaignMode || combatMapTest || playerViewTest) && !InitCombatMap(projectDirectory)) return false;
     testScene.SetCorridorMode(!legacyTest);
     if (legacyTest) testScene.SetTurretMode(turretTest);
     else testScene.SetDroneMode(droneTest);
     if (bossTest) testScene.SetBossMode(true);
-    if(combatMapTest) testScene.SetCombatMapMode(true);
+    if(combatMapTest || playerViewTest) testScene.SetCombatMapMode(true);
     testScene.SetDebugControls(!campaignMode);
     flow.ToTitle();
     if (campaignMode) LoadStage();
@@ -295,6 +295,7 @@ std::string GameScene::StatusTitle(bool paused) const {
     return std::string("AEGIS CAMPAIGN | ")+screen+" | "+stage+" | "+testScene.StatusTitle(false)+testScene.TimeDebug();
 }
 void GameScene::SmokeFrame(int frame) {
+    if(playerViewTestMode) { testScene.PlayerViewSmokeFrame(frame); return; }
     if(!campaignMode) { testScene.SetSmokeFrame(frame); return; }
     if(frame==20) ApplyAction(UiAction::Help);
     if(frame==40) ApplyAction(UiAction::Title);
@@ -318,6 +319,7 @@ void GameScene::SmokeFrame(int frame) {
     }
 }
 bool GameScene::SmokePassed() const {
+    if(playerViewTestMode) return testScene.PlayerViewSmokePassed();
     return campaignMode ? smokeDone && smokeRetried && smokePaused && smokeVictory && smokeRestarted
         && flow.Screen()==CampaignScreen::Title:testScene.SmokePassed();
 }

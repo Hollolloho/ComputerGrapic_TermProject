@@ -186,12 +186,20 @@ void CombatTestScene::PopulateHud(UiPage& page) const {
         }
         page.body=L"왼쪽 클릭: 사격  /  오른쪽 드래그: 조준  /  G: 무기 내려놓기  /  Esc: 메뉴";
     }
+    if(bossMode && HasExternalPlayerView() && result==combat::EncounterResult::Running) {
+        page.warning=boss.Phase()==combat::BossPhase::Exposed ? L"약점 노출! 열린 코어를 조준해 사격하세요."
+            : boss.Phase()==combat::BossPhase::Warning || boss.Phase()==combat::BossPhase::Attack
+            ? L"보스 사격 위험! 엄폐물 뒤로 피하세요.":L"장갑이 닫혀 있습니다. 다음 약점 노출을 기다리세요.";
+        page.body=L"엄폐물을 이용하고, 장갑이 완전히 열리면 코어를 공격하세요.  /  Esc: 메뉴";
+    }
     if(result==combat::EncounterResult::Running && !inventory.Armed()) {
         const auto hint=InteractionHint();
         page.body=hint==combat::WeaponInteraction::Supply ? L"E: 보급대에서 무기 획득"
             : hint==combat::WeaponInteraction::Pickup ? L"E: 떨어진 무기 회수"
             : bossMode ? (bossCovered ? L"보급대의 무기를 조준하고 E를 눌러 재무장하세요.":L"빈손입니다. B로 엄폐한 뒤 보급대의 무기를 조준하고 E를 누르세요.")
             : L"빈손입니다. 왼쪽 아래 보급 무기 또는 떨어진 무기를 조준하고 E를 누르세요.";
+        if(bossMode && HasExternalPlayerView() && hint==combat::WeaponInteraction::None)
+            page.body=L"빈손입니다. 보급대에 접근해 무기를 조준하고 E를 누르세요.";
     } else if(result==combat::EncounterResult::Cleared && TerminalTarget()) {
         page.body=L"E: 드론 분석 열기  /  버튼 또는 Enter: 코어실로 진행";
     }

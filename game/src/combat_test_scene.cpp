@@ -88,9 +88,19 @@ bool CombatTestScene::InitTerminal(const std::filesystem::path& root) {
     return triangles==terminal_asset::triangles;
 }
 
+bool CombatTestScene::SetPlayerView(const PlayerView& view) {
+    if(analysis.Active()) return false;
+    if(!externalView.Set(view)) return false;
+    lookHeld=false; return true;
+}
+PlayerView CombatTestScene::CurrentPlayerView() const {
+    const PlayerView fallback{camera.EyePosition(),camera.ViewDirection(),{0,1,0},60};
+    return externalView.Selected(fallback);
+}
+
 void CombatTestScene::Reset()
 {
-    analysis.Reset(); feedback.Reset(); time.Reset(); slowPreview=false; forceNormal=false;
+    analysis.Reset(); ClearPlayerView(); feedback.Reset(); time.Reset(); slowPreview=false; forceNormal=false;
     range.Reset(); encounter.Reset(); weapon.Reset(); drone.Reset(); boss.Reset(); bossCovered=false; yaw = pitch = 0;
     if (bossMode) { const auto d=glm::normalize(boss.CoreCenter()-(CameraRoot()+glm::vec3(0,1.65f,0))); pitch=glm::degrees(std::asin(d.y)); }
     camera.SetPose(CameraRoot(), yaw, pitch);
@@ -147,17 +157,17 @@ void CombatTestScene::ToggleBossCover() {
 bool CombatTestScene::Fire(const glm::vec3& direction)
 {
     if(!time.CanFire()) return false;
-    const bool fired=bossMode ? boss.Fire(camera.EyePosition(),direction):turretMode ? encounter.Fire(camera.EyePosition(),direction)
-        : range.Fire(camera.EyePosition(),direction);
+    const bool fired=bossMode ? boss.Fire(PlayerEye(),direction):turretMode ? encounter.Fire(PlayerEye(),direction)
+        : range.Fire(PlayerEye(),direction);
     if (fired) { time.RequestShot(); weapon.OnShot(); }
     return fired;
 }
 
 const combat::WeaponInventory& CombatTestScene::Inventory() const { return bossMode ? boss.Inventory():turretMode ? encounter.Inventory() : range.Inventory(); }
 bool CombatTestScene::Interact(const glm::vec3& direction) {
-    if (bossMode) return boss.Interact(camera.EyePosition(),direction);
-    if (TerminalTarget(direction)) return analysis.Open(CanAnalyze(),TerminalCollider(),camera.EyePosition(),direction,encounter.Colliders());
-    return turretMode ? encounter.Interact(camera.EyePosition(),direction) : range.Interact(camera.EyePosition(),direction);
+    if (bossMode) return boss.Interact(PlayerEye(),direction);
+    if (TerminalTarget(direction)) return analysis.Open(CanAnalyze(),TerminalCollider(),PlayerEye(),direction,encounter.Colliders());
+    return turretMode ? encounter.Interact(PlayerEye(),direction) : range.Interact(PlayerEye(),direction);
 }
 glm::vec3 CombatTestScene::TerminalPosition() const { return combatMapMode ? combat_map_asset::terminal:terminal_asset::position; }
 combat::Collider CombatTestScene::TerminalCollider() const {
@@ -166,17 +176,17 @@ combat::Collider CombatTestScene::TerminalCollider() const {
     box.minimum+=offset; box.maximum+=offset; return box;
 }
 glm::vec3 CombatTestScene::SupplyPosition() const { return combatMapMode ? combat_map_asset::supply:combat::WeaponInventory::SupplyPosition(); }
-bool CombatTestScene::TerminalTarget() const { return TerminalTarget(camera.ViewDirection()); }
+bool CombatTestScene::TerminalTarget() const { return TerminalTarget(PlayerForward()); }
 bool CombatTestScene::TerminalTarget(const glm::vec3& direction) const {
     if (!corridorMode || bossMode) return false;
-    return analysis.IsFirstTarget(TerminalCollider(),camera.EyePosition(),direction,encounter.Colliders(),
-        Inventory().InteractionDistance(camera.EyePosition(),direction,encounter.Colliders()));
+    return analysis.IsFirstTarget(TerminalCollider(),PlayerEye(),direction,encounter.Colliders(),
+        Inventory().InteractionDistance(PlayerEye(),direction,encounter.Colliders()));
 }
 combat::WeaponInteraction CombatTestScene::InteractionHint() const {
-    if (bossMode) return boss.InteractionHint(camera.EyePosition(),camera.ViewDirection());
+    if (bossMode) return boss.InteractionHint(PlayerEye(),PlayerForward());
     if (TerminalTarget()) return combat::WeaponInteraction::None;
-    return turretMode ? encounter.InteractionHint(camera.EyePosition(),camera.ViewDirection())
-        : range.InteractionHint(camera.EyePosition(),camera.ViewDirection());
+    return turretMode ? encounter.InteractionHint(PlayerEye(),PlayerForward())
+        : range.InteractionHint(PlayerEye(),PlayerForward());
 }
 
 void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
@@ -207,23 +217,23 @@ void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
         if (debugControls && !bossMode && !corridorMode && turret && !turretHeld) SetTurretMode(!turretMode);
         const bool playing=bossMode ? boss.Result()==combat::EncounterResult::Running || boss.Result()==combat::EncounterResult::Securing : !turretMode || encounter.Result()==combat::EncounterResult::Running || encounter.Result()==combat::EncounterResult::Securing;
         const bool canEquip=bossMode ? boss.Result()!=combat::EncounterResult::Failed : !turretMode || encounter.Result()!=combat::EncounterResult::Failed;
-        if (canEquip && right && lookHeld) {
+        if (!HasExternalPlayerView() && canEquip && right && lookHeld) {
             yaw -= static_cast<float>(x-lastX)*0.14f;
             pitch = std::clamp(pitch-static_cast<float>(y-lastY)*0.14f, -65.0f,65.0f);
             camera.SetPose(CameraRoot(), yaw,pitch);
         }
-        if (playing && cover && !coverHeld) {
+        if (!HasExternalPlayerView() && playing && cover && !coverHeld) {
             if (bossMode) ToggleBossCover();
             else if (turretMode) encounter.ToggleCover(); else range.ToggleCover();
         }
         if (canEquip && drop && !dropHeld) {
-            if (bossMode) boss.DropWeapon(camera.EyePosition(),camera.ViewDirection());
-            else if (turretMode) encounter.DropWeapon(camera.EyePosition(),camera.ViewDirection());
-            else range.DropWeapon(camera.EyePosition(),camera.ViewDirection());
+            if (bossMode) boss.DropWeapon(PlayerEye(),PlayerForward());
+            else if (turretMode) encounter.DropWeapon(PlayerEye(),PlayerForward());
+            else range.DropWeapon(PlayerEye(),PlayerForward());
         }
-        if (canEquip && interact && !interactHeld) Interact(camera.ViewDirection());
+        if (canEquip && interact && !interactHeld) Interact(PlayerForward());
         if (playing && left && !mouseHeld) {
-            Fire(camera.ViewDirection());
+            Fire(PlayerForward());
         }
     }
     mouseHeld = left; coverHeld = cover; lookHeld = active && right;
@@ -237,15 +247,15 @@ void CombatTestScene::Update(double realDt, double gameDt)
     const auto frame=time.Advance(realDt,gameDt,forceNormal);
     realDt=frame.realDt; gameDt=frame.gameDt;
     if(realDt<=0) return;
-    if (bossMode) boss.Update(static_cast<float>(realDt),static_cast<float>(gameDt),camera.EyePosition(),camera.ViewDirection());
-    else if (turretMode) encounter.Update(static_cast<float>(realDt),static_cast<float>(gameDt),camera.EyePosition(),camera.ViewDirection());
+    if (bossMode) boss.Update(static_cast<float>(realDt),static_cast<float>(gameDt),PlayerEye(),PlayerForward());
+    else if (turretMode) encounter.Update(static_cast<float>(realDt),static_cast<float>(gameDt),PlayerEye(),PlayerForward());
     else range.Update(static_cast<float>(realDt), static_cast<float>(gameDt));
     if (IsDroneMode() && encounter.Result()==combat::EncounterResult::Running) drone.UpdateCombat(gameDt);
     weapon.Update(realDt);
     feedback.Update(static_cast<float>(gameDt));
-    const auto forward=camera.ViewDirection();
-    const auto right=glm::normalize(glm::cross(forward,glm::vec3(0,1,0)));
-    const auto origin=camera.EyePosition()+forward*0.8f+right*0.22f+glm::vec3(0,-0.14f,0);
+    const auto forward=PlayerForward();
+    const auto right=glm::normalize(glm::cross(forward,CurrentPlayerView().up));
+    const auto origin=PlayerEye()+forward*0.8f+right*0.22f+glm::vec3(0,-0.14f,0);
     feedback.Observe(bossMode ? boss.Health():turretMode ? encounter.Health():100,
         Inventory().Breaks(),origin,right,forward);
 }
@@ -269,18 +279,18 @@ void CombatTestScene::Draw(int width, int height,
     glDisable(GL_CULL_FACE); glEnable(GL_DEPTH_TEST); glDepthMask(GL_TRUE);
     glClearColor(0.025f,0.04f,0.065f,1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    const auto projection=glm::perspective(glm::radians(60.0f),static_cast<float>(width)/height,0.05f,80.0f);
-    const auto vp=projection*camera.ViewMatrix();
-    if (bossMode) bossView.Draw(projection,camera.ViewMatrix(),camera.EyePosition(),boss);
-    else if (drawEnvironment) drawEnvironment(vp,camera.EyePosition());
+    const auto projection=glm::perspective(glm::radians(CurrentPlayerView().verticalFovDegrees),static_cast<float>(width)/height,0.05f,80.0f);
+    const auto vp=projection*PlayerViewMatrix();
+    if (bossMode) bossView.Draw(projection,PlayerViewMatrix(),PlayerEye(),boss);
+    else if (drawEnvironment) drawEnvironment(vp,PlayerEye());
     if (corridorMode && !bossMode) {
-        droneRenderer.Begin(camera.EyePosition(),{0.45f,0.9f,0.7f},{1,1,1},3,0.3f);
+        droneRenderer.Begin(PlayerEye(),{0.45f,0.9f,0.7f},{1,1,1},3,0.3f);
         droneRenderer.Draw(terminalMeshes,vp,glm::translate(glm::mat4(1),TerminalPosition()));
     }
     if (IsDroneMode() && encounter.EnemyAlive()) {
         const auto& state=encounter.DroneState();
         const auto world=glm::rotate(glm::translate(glm::mat4(1),state.Position()),state.Yaw(),glm::vec3(0,1,0));
-        droneRenderer.Begin(camera.EyePosition(),{0.45f,0.9f,0.7f},{1,1,1},4,0.25f);
+        droneRenderer.Begin(PlayerEye(),{0.45f,0.9f,0.7f},{1,1,1},4,0.25f);
         drone.Draw(droneRenderer,vp,world,state.Phase()==combat::DronePhase::Warning,state.Armed());
     }
     glUseProgram(program); glUniform1f(opacityLocation,1); glBindVertexArray(vao);
@@ -330,8 +340,8 @@ void CombatTestScene::Draw(int width, int height,
     const auto supply=bossMode ? boss_asset::supplyWeapon:SupplyPosition();
     if (!bossMode) DrawBox(vp,supply+glm::vec3(-0.32f,-0.5f,-0.27f),supply+glm::vec3(0.32f,-0.15f,0.27f),{0.1f,0.55f,0.38f});
     glBindVertexArray(0); glUseProgram(0);
-    weapon.DrawWorld(projection,camera.ViewMatrix(),supply,bossMode ? 0.0f:90.0f);
-    for (const auto& drop:Inventory().Drops()) weapon.DrawWorld(projection,camera.ViewMatrix(),drop.position);
+    weapon.DrawWorld(projection,PlayerViewMatrix(),supply,bossMode ? 0.0f:90.0f);
+    for (const auto& drop:Inventory().Drops()) weapon.DrawWorld(projection,PlayerViewMatrix(),drop.position);
     if (Inventory().Armed()) weapon.Draw(static_cast<float>(width)/height);
     // Crisp centre crosshair drawn in framebuffer pixels.
     glEnable(GL_SCISSOR_TEST);
@@ -380,7 +390,7 @@ void CombatTestScene::DrawAnalysis(int width,int height) const {
 
 void CombatTestScene::Clear()
 {
-    analysis.Reset(); feedback.Reset(); bossView.Clear();
+    analysis.Reset(); ClearPlayerView(); feedback.Reset(); bossView.Clear();
     for (auto& mesh:terminalMeshes) mesh.Clear();
     terminalMeshes.clear();
     drone.Clear(); droneRenderer.Clear();
@@ -391,18 +401,72 @@ void CombatTestScene::Clear()
     vbo=vao=program=0;
 }
 
+void CombatTestScene::PlayerViewSmokeFrame(int frame) {
+    const auto aim=[&](const glm::vec3& eye,const glm::vec3& target,float fov=45) {
+        return SetPlayerView({eye,target-eye,{0,1,0},fov});
+    };
+    if(frame==1) aim(combat_map_asset::playerStart+glm::vec3(1,1.65f,-1),combat_map_asset::droneSpawn);
+    if(frame==5) Fire(PlayerForward());
+    if(frame==80) {
+        smokeViewShot=HasExternalPlayerView() && encounter.Result()==combat::EncounterResult::Cleared
+            && encounter.PlayerShots()==1 && Inventory().Breaks()==1;
+        aim({0,1.65f,2},SupplyPosition());
+        const bool far=!Interact(PlayerForward());
+        aim({-1.2f,1.65f,-2.4f},SupplyPosition());
+        smokeViewSupply=far && Interact(PlayerForward()) && Inventory().Armed();
+        encounter.DropWeapon(PlayerEye(),{1,0,0});
+        const auto drop=Inventory().Drops().back().position;
+        aim(drop+glm::vec3(0,1.65f,5),drop);
+        const bool farDrop=!Interact(PlayerForward());
+        aim({-1.2f,1.65f,-2.4f},drop);
+        smokeViewPickup=farDrop && Interact(PlayerForward()) && Inventory().Pickups()==1;
+    }
+    if(frame==100) {
+        const auto target=terminal_asset::interactionPoint+TerminalPosition()-terminal_asset::position;
+        aim({0.1f,1.65f,-2},target,40);
+        smokeViewSnapshot=CurrentPlayerView();
+        const bool opened=Interact(PlayerForward());
+        const bool rejected=!SetPlayerView({{99,99,99},{0,0,-1},{0,1,0},60});
+        ClearPlayerView();
+        smokeViewAnalysis=opened && AnalysisActive() && rejected && HasExternalPlayerView();
+    }
+    if(frame==120) {
+        analysis.Close();
+        smokeViewRestored=CurrentPlayerView().eye==smokeViewSnapshot.eye
+            && CurrentPlayerView().forward==smokeViewSnapshot.forward
+            && CurrentPlayerView().verticalFovDegrees==smokeViewSnapshot.verticalFovDegrees;
+    }
+    if(frame==130) {
+        Reset(); smokeViewReset=!HasExternalPlayerView() && encounter.Health()==100
+            && CurrentPlayerView().eye==combat_map_asset::playerStart+glm::vec3(0,1.65f,0);
+    }
+    if(frame==135) aim({2,1.65f,-4},combat_map_asset::droneSpawn);
+    if(frame==300) smokeViewAim=encounter.EnemyShots()==1
+        && glm::length(encounter.DroneState().AimPoint()-glm::vec3(2,1.65f,-4))<0.001f;
+    if(frame==310) aim({-0.5f,1.65f,-4},encounter.DroneState().Position());
+    if(frame==400) smokeViewDodge=encounter.EnemyShots()==1 && encounter.Health()==100;
+    if(frame==410) { Reset(); smokeViewDone=!HasExternalPlayerView(); }
+}
+bool CombatTestScene::PlayerViewSmokePassed() const {
+    std::cout<<"External view checks: shot="<<smokeViewShot<<" supply="<<smokeViewSupply
+        <<" pickup="<<smokeViewPickup<<" analysis="<<smokeViewAnalysis<<" restore="<<smokeViewRestored
+        <<" reset="<<smokeViewReset<<" aim="<<smokeViewAim<<" dodge="<<smokeViewDodge<<" done="<<smokeViewDone<<'\n';
+    return smokeViewShot && smokeViewSupply && smokeViewPickup && smokeViewAnalysis && smokeViewRestored
+        && smokeViewReset && smokeViewAim && smokeViewDodge && smokeViewDone;
+}
+
 void CombatTestScene::CampaignSmokeFrame(int frame) {
     if (bossMode) {
-        if (frame==1) { Fire(boss.CoreCenter()-camera.EyePosition()); ToggleBossCover(); }
+        if (frame==1) { Fire(boss.CoreCenter()-PlayerEye()); ToggleBossCover(); }
         if (boss.Result()!=combat::EncounterResult::Running) return;
         if (boss.Phase()==combat::BossPhase::Exposed && Inventory().Armed()) {
             if (bossCovered) ToggleBossCover();
-            if (boss.PlayerFlights().empty()) Fire(boss.CoreCenter()-camera.EyePosition());
+            if (boss.PlayerFlights().empty()) Fire(boss.CoreCenter()-PlayerEye());
         } else {
             if (!bossCovered) ToggleBossCover();
-            if (!Inventory().Armed()) Interact(boss_asset::supplyInteraction-camera.EyePosition());
+            if (!Inventory().Armed()) Interact(boss_asset::supplyInteraction-PlayerEye());
         }
-    } else if (frame==1) Fire(encounter.DroneState().Position()-camera.EyePosition());
+    } else if (frame==1) Fire(encounter.DroneState().Position()-PlayerEye());
 }
 
 void CombatTestScene::SetSmokeFrame(int frame)
@@ -412,22 +476,22 @@ void CombatTestScene::SetSmokeFrame(int frame)
         if(frame==180) { smokeMapSlow=encounter.Health()==100 && encounter.EnemyShots()==0
             && time.Scale()<0.051 && glm::length(encounter.DroneState().Position()-combat_map_asset::droneSpawn)<0.2f; slowPreview=false; }
         if(frame==1200) { smokeFailureSeen=encounter.Result()==combat::EncounterResult::Failed; Reset(); }
-        if(frame==1201) Fire(glm::vec3(-1.9f,1,-7.45f)-camera.EyePosition());
+        if(frame==1201) Fire(glm::vec3(-1.9f,1,-7.45f)-PlayerEye());
         if(frame==1239) smokeMapCoverBlocked=encounter.EnemyAlive() && Inventory().Armed() && encounter.PlayerFlights().empty();
-        if(frame==1240) Fire(encounter.DroneState().Position()-camera.EyePosition());
-        if(frame==1350) Interact(SupplyPosition()-camera.EyePosition());
+        if(frame==1240) Fire(encounter.DroneState().Position()-PlayerEye());
+        if(frame==1350) Interact(SupplyPosition()-PlayerEye());
         return;
     }
     if (bossMode) {
         if (frame==900) { smokeBossFailureSeen=boss.Result()==combat::EncounterResult::Failed; Reset(); }
-        if (frame==901) { Fire(boss.CoreCenter()-camera.EyePosition()); ToggleBossCover(); }
+        if (frame==901) { Fire(boss.CoreCenter()-PlayerEye()); ToggleBossCover(); }
         if (frame>901 && boss.Result()==combat::EncounterResult::Running) {
             if (boss.Phase()==combat::BossPhase::Exposed && Inventory().Armed()) {
                 if (bossCovered) ToggleBossCover();
-                if (boss.PlayerFlights().empty()) Fire(boss.CoreCenter()-camera.EyePosition());
+                if (boss.PlayerFlights().empty()) Fire(boss.CoreCenter()-PlayerEye());
             } else {
                 if (!bossCovered) ToggleBossCover();
-                if (!Inventory().Armed()) Interact(boss_asset::supplyInteraction-camera.EyePosition());
+                if (!Inventory().Armed()) Interact(boss_asset::supplyInteraction-PlayerEye());
             }
         }
         return;
@@ -438,11 +502,11 @@ void CombatTestScene::SetSmokeFrame(int frame)
         smokeShotSeen=smokeShotSeen || encounter.EnemyShots()>0;
         if (frame==900) { smokeFailureSeen=encounter.Result()==combat::EncounterResult::Failed; Reset(); }
         smokeSecuringSeen=smokeSecuringSeen || encounter.Result()==combat::EncounterResult::Securing;
-        if (frame==1150) { smokeDoorSnapshot=DoorProgress(); Interact(terminal_asset::interactionPoint-camera.EyePosition()); }
+        if (frame==1150) { smokeDoorSnapshot=DoorProgress(); Interact(terminal_asset::interactionPoint-PlayerEye()); }
         if (frame==1160) { smokeAnalysisSeen=analysis.Active(); smokeWorldFrozen=DoorProgress()==smokeDoorSnapshot && smokeDoorSnapshot<1; }
         if (frame==1190) analysis.Close();
         if (frame==1191) smokeAnalysisReturned=!analysis.Active() && analysis.Entries()>0 && analysis.Exits()>0;
-        if (frame==1060) Fire(encounter.DroneState().Position()-camera.EyePosition());
+        if (frame==1060) Fire(encounter.DroneState().Position()-PlayerEye());
         return;
     }
     if (turretMode) {
@@ -450,16 +514,16 @@ void CombatTestScene::SetSmokeFrame(int frame)
             smokeFailureSeen=encounter.Result()==combat::EncounterResult::Failed;
             Reset();
         }
-        if (frame==661) Fire(camera.ViewDirection());
+        if (frame==661) Fire(PlayerForward());
         return;
     }
     if (frame==1) Fire({0,0,-1});
-    if (frame==45) range.DropWeapon(camera.EyePosition(),camera.ViewDirection());
-    if (frame==50 && !range.Inventory().Drops().empty()) Interact(range.Inventory().Drops()[0].position-camera.EyePosition());
+    if (frame==45) range.DropWeapon(PlayerEye(),PlayerForward());
+    if (frame==50 && !range.Inventory().Drops().empty()) Interact(range.Inventory().Drops()[0].position-PlayerEye());
     if (frame==70) { range.ToggleCover(); Fire({0,0,-1}); }
-    if (frame==130 || frame==200) Interact(combat::WeaponInventory::SupplyPosition()-camera.EyePosition());
-    if (frame==140) Fire(glm::vec3(-2.1f,1.6f,-9.8f)-camera.EyePosition());
-    if (frame==210) Fire(glm::vec3(2.1f,1.6f,-9.8f)-camera.EyePosition());
+    if (frame==130 || frame==200) Interact(combat::WeaponInventory::SupplyPosition()-PlayerEye());
+    if (frame==140) Fire(glm::vec3(-2.1f,1.6f,-9.8f)-PlayerEye());
+    if (frame==210) Fire(glm::vec3(2.1f,1.6f,-9.8f)-PlayerEye());
 }
 
 bool CombatTestScene::SmokePassed() const

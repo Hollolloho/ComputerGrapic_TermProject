@@ -336,3 +336,23 @@ Pause·포커스 상실·분석에서는 세계 업데이트를 차단하므로 
 실제 입력으로 새 복도 실패/재시작·오른쪽 조준 후 드론 격파·옮긴 분석 단말 E 진입/Esc 복귀·다음 구역·보스 실패/재시작·두 번 보급 및 3회 약점 명중·승리 후 처음부터 재시작·타이틀·종료를 확인했다. `build/combat-map-slow.ppm`, `build/combat-map-clear.ppm`, `build/campaign-corridor-hud.ppm`으로 화면을 검토했다.
 
 경비실/꺾인 통로의 여러 적, 배치의 detection_only 연계, 새 코어실 전체 전투와 직접 걸어 이동하는 진행은 후속 통합 범위다. 이번 작업으로 전체 새 맵 완성을 표시하지 않는다.
+
+
+## 외부 플레이어 시점 수신 (2026-11-17)
+
+`player_view.h`에 렌더링 의존성이 없는 PlayerView/PlayerViewInput을 추가했다. 외부 입력은 월드 공간 눈 위치 eye, 전방 forward, 위쪽 up, 수직 화각 verticalFovDegrees를 한 번에 전달한다. 눈높이를 다시 더하지 않는다. 방향은 정규화하고 up을 직교화한다. 0 방향·평행한 forward/up·비정상 수치·35~70도 밖 화각은 거부하며 마지막 유효 스냅샷을 보존한다. 수신하지 않으면 기존 고정 카메라를 그대로 사용한다.
+
+공개 인터페이스는 GameScene::SetPlayerView(view), HasExternalPlayerView(), CurrentPlayerView(), ClearPlayerView()다. SetPlayerView는 bool을 반환하며 캠페인 메뉴·일시정지·분석 중에는 거부한다. 분석 중 ClearPlayerView도 무시해 기존 스냅샷을 보존한다. 분석은 별도의 미리보기 카메라를 쓰므로 복귀할 때 외부 eye/forward/up/FOV가 유지된다. 구역 변경·재시작·자원 해제는 외부 소유 상태를 비우고 기존 구역 스폰으로 돌아간다. 이동 담당은 다음 유효 프레임에서 새 스폰 기준 시점을 다시 제출한다. CurrentPlayerView는 전투 시점 조회이며 진입실/메뉴 카메라 조회 API가 아니다.
+
+연결 순서:
+1. 이동 담당이 실제 입력/realDt/시설 충돌로 PlayerRoot와 카메라를 갱신한다. Pause·포커스 상실·분석에서는 이동도 차단한다.
+2. 최종 EyeCamera의 월드 눈 위치·전방·up·FOV를 SetPlayerView로 전달한다. 검증 거부 시 반환값을 확인한다.
+3. GameScene::SampleInput으로 사격/G/E를 처리한다. 버튼 메뉴 처리 때문에 SetPlayerView가 false여도 SampleInput 호출을 생략하지 않는다.
+4. GameScene::Update(realDt, baseGameDt)로 세계를 진행한다. 실제 XZ 변위 배율과 사격 진행 시간의 규칙은 앞 절과 같다.
+5. 같은 스냅샷으로 GameScene::Draw가 그린다. 렌더 직전에 별도 eye/방향을 다시 덮어쓰지 않는다.
+
+외부 시점이 활성화되면 기존 오른쪽 드래그와 B 시험 위치 전환은 차단한다. 친구의 마우스 시점과 이동이 전투에서 다시 바뀌지 않는다. 보스의 한글 안내도 B 순간 위치 전환 대신 엄폐물 이용으로 바뀐다. UI 버튼의 사격 차단·사격 실제 시간 제한·기존 F5/Shift 시험은 유지한다. FOV는 월드 투영에만 적용하며 총의 화면 전용 뷰모델은 기존 렌더 방식을 유지한다.
+
+검증: Debug·Release 빌드와 각 구성 순수 검사 263개 통과. 눈 위치/사격 방향·직교 기저·뷰 행렬·유효하지 않은 입력의 원자적 거부·화각 범위·이동 후 보급 거리와 조준·외부 해제를 검사한다. 두 구성 `--player-view-test --smoke-test`는 서로 다른 외부 시점에서 사격·멀리/가까운 보급과 회수·분석 중 덮어쓰기/해제 거부·분석 복귀·재시작·적의 새 위치 조준·날아오는 탄환을 피해 위치 변경을 확인한다. Debug 기존 캠페인·새 맵·보스 시험과 Release 캠페인도 통과했다. external-player-view.ppm과 external-player-analysis.ppm으로 렌더링과 분석 화면을 검토했다.
+
+범위는 이동 담당의 결과를 전투가 받는 연결부다. 실제 WASD·시설의 플레이어 충돌·이동 기반 자동 배율·분석 공전/휠 확대는 이번에 구현하지 않았다. 기본 실행 조작은 유지하며 실제 이동과 합친 전체 T009~T028 완료로 표시하지 않는다.

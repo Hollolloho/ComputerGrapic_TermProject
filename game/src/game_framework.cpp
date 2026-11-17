@@ -76,7 +76,7 @@ void restartFrameTimeCallback(GLFWwindow* window, int)
 
 } // namespace
 
-int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool droneTest, bool bossTest, bool campaign,bool combatMapTest)
+int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool droneTest, bool bossTest, bool campaign,bool combatMapTest,bool playerViewTest)
 {
     const auto projectDirectory = ProjectDirectory();
     if (projectDirectory.empty()) {
@@ -113,7 +113,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
 
     FrameInput input;
     GameScene scene;
-    const bool ready = scene.Init(projectDirectory, combatTest, turretTest, droneTest, bossTest, campaign,combatMapTest);
+    const bool ready = scene.Init(projectDirectory, combatTest, turretTest, droneTest, bossTest, campaign,combatMapTest,playerViewTest);
     bool smokePassed = !smokeTest;
     if (ready) {
         input.scene=&scene;
@@ -191,6 +191,9 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
                     if(!savedPause && title.find("CAMPAIGN | PAUSED")!=std::string::npos) { save("build/campaign-paused-smoke.ppm"); savedPause=true; }
                     if(!savedVictory && title.find("CAMPAIGN | VICTORY")!=std::string::npos) { save("build/campaign-victory-smoke.ppm"); savedVictory=true; }
                 }
+                if(smokeTest && playerViewTest && (smokeFrame==20 || smokeFrame==110)) {
+                    scene.TestScene().SaveFrame(projectDirectory/(smokeFrame==20 ? "build/external-player-view.ppm":"build/external-player-analysis.ppm"),width,height);
+                }
                 if(smokeTest && combatMapTest && (smokeFrame==160 || smokeFrame==1360)) {
                     scene.TestScene().SaveFrame(projectDirectory/(smokeFrame==160 ? "build/combat-map-slow.ppm":"build/combat-map-clear.ppm"),width,height);
                 }
@@ -236,7 +239,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
             }
             if (smokeTest && smokeFrame >= scene.SmokeFrameCount()) {
                 smokePassed = scene.SmokePassed();
-                std::cout << (scene.IsCampaign() ? "Campaign smoke: ":combatMapTest ? "Combat map smoke: ":scene.TestScene().IsBossMode() ? "Boss combat smoke: ":scene.TestScene().IsDroneMode() ? "Drone combat smoke: " : scene.TestScene().IsCorridorMode() ? "Corridor combat smoke: " : scene.TestScene().IsTurretMode() ? "Turret encounter smoke: " : "Combat render smoke: ")
+                std::cout << (playerViewTest ? "External player view smoke: ":scene.IsCampaign() ? "Campaign smoke: ":combatMapTest ? "Combat map smoke: ":scene.TestScene().IsBossMode() ? "Boss combat smoke: ":scene.TestScene().IsDroneMode() ? "Drone combat smoke: " : scene.TestScene().IsCorridorMode() ? "Corridor combat smoke: " : scene.TestScene().IsTurretMode() ? "Turret encounter smoke: " : "Combat render smoke: ")
                     << (smokePassed ? "PASS" : "FAIL") << '\n';
                 glfwSetWindowShouldClose(window, GLFW_TRUE);
             }

@@ -13,8 +13,15 @@ namespace aegis {
 
 class GameScene {
 public:
-    bool Init(const std::filesystem::path& projectDirectory, bool combatTest = false, bool turretTest = false, bool droneTest = true, bool bossTest = false, bool campaign = true,bool combatMapTest=false);
+    bool Init(const std::filesystem::path& projectDirectory, bool combatTest = false, bool turretTest = false, bool droneTest = true, bool bossTest = false, bool campaign = true,bool combatMapTest=false,bool playerViewTest=false);
     void Update(double realDt,double baseGameDt);
+    bool SetPlayerView(const PlayerView& view) {
+        if((campaignMode && !flow.WorldRuns()) || AnalysisActive()) return false;
+        return testScene.SetPlayerView(view);
+    }
+    void ClearPlayerView() { testScene.ClearPlayerView(); }
+    bool HasExternalPlayerView() const { return testScene.HasExternalPlayerView(); }
+    PlayerView CurrentPlayerView() const { return testScene.CurrentPlayerView(); }
     double PreviewTimeScale() const { return testScene.PreviewTimeScale(); }
     void Draw(int width, int height) const;
     void Reset();
@@ -28,7 +35,7 @@ public:
     bool TogglePause();
     bool QuitRequested() const { return quitRequested; }
     std::string StatusTitle(bool paused) const;
-    int SmokeFrameCount() const { return campaignMode ? 3000:testScene.SmokeFrameCount(); }
+    int SmokeFrameCount() const { return playerViewTestMode ? 480:campaignMode ? 3000:testScene.SmokeFrameCount(); }
     bool SmokePassed() const;
     bool IsCombatTest() const { return true; }
     const CombatTestScene& TestScene() const { return testScene; }
@@ -51,6 +58,7 @@ private:
     bool InitCorridor(const std::filesystem::path& projectDirectory);
 
     CampaignFlow flow;
+    bool playerViewTestMode{};
     bool campaignMode{},quitRequested{},mouseHeld{},enterHeld{},escapeHeld{};
     float mouseX{},mouseY{};
     int stageSmokeFrame{},failedSmokeFrame{},victorySmokeFrame{},pausedSmokeFrame{};

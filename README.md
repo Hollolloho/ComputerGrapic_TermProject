@@ -104,3 +104,10 @@ python tools/generate_campaign_layout.py --check
 F5 수동 느린 시간, 사격·무기 파손·드롭·보급·분석·재시작은 기존 규칙을 따른다. 오른쪽 드래그로 드론 본체를 조준한다. WASD 이동·시설의 플레이어 충돌·실제 이동량 기반 시간은 계속 연결 전이다.
 
 독립 검증: `build/x64/Debug/AEGIS.exe --combat-map-test --smoke-test`. 배치 검사: `python tools/generate_combat_map_layout.py --check`. 기존 `--drone-test`는 이전 복도 시나리오를 유지한다.
+
+
+## 플레이어 이동 코드와 전투 연결 준비
+
+이동/카메라 담당은 `GameScene::SetPlayerView({eyeWorld, forwardWorld, upWorld, fovDegrees})`로 전투의 현재 시점을 전달한다. eyeWorld는 바닥 위치가 아닌 실제 눈 위치다. 사격·적 조준·피격 몸체·무기 회수/보급/분석·월드 렌더링이 같은 정보를 사용한다. 외부 시점이 활성화되면 기존 오른쪽 드래그 조준과 B 위치 전환은 덮어쓰지 않는다. 시점 수신 자체가 WASD·플레이어 벽 충돌을 구현하는 것은 아니다.
+
+`--player-view-test --smoke-test`는 외부 위치에서 사격, 멀리/가까이 이동한 뒤 보급·총 회수, 분석 중 시점 보존, 재시작, 새 위치를 겨냥하는 적탄과 위치 변경에 따른 회피를 자동 검증한다. 자세한 연결 순서와 제한은 전투 통합 문서의 외부 플레이어 시점 절을 따른다.

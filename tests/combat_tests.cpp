@@ -1,3 +1,4 @@
+#include "player_view.h"
 #include "combat_map_layout.generated.h"
 #include "combat_time.h"
 #include "combat_feedback.h"
@@ -710,6 +711,53 @@ int main()
     mapped.Reset(); mapped.DropWeapon(mapEye,{0,0,-1});
     check(mapped.DroneState().Position()==map::droneSpawn && mapped.Interact(mapEye,map::supply-mapEye),
         "encounter restart preserves new-map spawn and supply configuration");
+    aegis::PlayerViewInput playerInput;
+    const aegis::PlayerView fallbackView{{4,2,-3},{1,0,0},{0,1,0},55};
+    check(!playerInput.Active() && playerInput.Selected(fallbackView).eye==fallbackView.eye,
+        "absent external player view preserves legacy camera fallback");
+    const glm::vec3 movedEye(1,1.65f,-2.5f);
+    check(playerInput.Set({movedEye,map::droneSpawn-movedEye,{0,2,0.1f},45}),"external player accepts world eye direction up and FOV atomically");
+    auto selected=playerInput.Selected(fallbackView);
+    check(selected.eye==movedEye && std::abs(glm::length(selected.forward)-1)<0.0001f
+        && std::abs(glm::length(selected.up)-1)<0.0001f && std::abs(glm::dot(selected.forward,selected.up))<0.0001f,
+        "external direction is normalized and camera basis is orthonormal");
+    const auto eyeInView=selected.ViewMatrix()*glm::vec4(selected.eye,1);
+    const auto aheadInView=selected.ViewMatrix()*glm::vec4(selected.eye+selected.forward,1);
+    check(glm::length(glm::vec3(eyeInView))<0.0001f && std::abs(aheadInView.z+1)<0.0001f,
+        "render view puts supplied eye at origin and aiming direction down negative Z");
+    check(!playerInput.Set({{99,99,99},{0,0,0},{0,1,0},60}) && playerInput.Selected(fallbackView).eye==movedEye,
+        "invalid zero direction cannot partially overwrite a valid player snapshot");
+    check(!playerInput.Set({{0,0,0},{0,1,0},{0,2,0},60}),"parallel camera up and forward are rejected");
+    check(!playerInput.Set({{std::numeric_limits<float>::quiet_NaN(),0,0},{0,0,-1},{0,1,0},60}),
+        "non-finite player eye is rejected");
+    check(!playerInput.Set({movedEye,{0,0,-1},{0,1,0},34}) && !playerInput.Set({movedEye,{0,0,-1},{0,1,0},71}),
+        "external FOV must stay within required 35 to 70 degree range");
+    check(playerInput.Set({movedEye,{0,0,-1},{0,1,0},35}) && playerInput.Set({movedEye,{0,0,-1},{0,1,0},70}),
+        "both valid FOV endpoints are accepted without moving the eye");
+    CombatRange movedRange;
+    playerInput.Set({movedEye,map::droneSpawn-movedEye,{0,1,0},45}); selected=playerInput.Selected(fallbackView);
+    movedRange.Fire(selected.eye,selected.forward);
+    check(movedRange.Flights()[0].projectile.position==movedEye
+        && glm::length(glm::normalize(movedRange.Flights()[0].projectile.velocity)-selected.forward)<0.0001f,
+        "actual shot starts at externally supplied eye and follows supplied aim");
+    WeaponInventory movedInventory; movedInventory.SetSupplyPosition(map::supply);
+    movedInventory.Break(movedInventory.EquippedId());
+    const glm::vec3 farEye(0,1.65f,2),nearEye(-1.2f,1.65f,-2.4f);
+    playerInput.Set({farEye,map::supply-farEye,{0,1,0},60}); selected=playerInput.Selected(fallbackView);
+    check(movedInventory.Hint(selected.eye,selected.forward,map::walls)==WeaponInteraction::None,
+        "supply does not use stale near-camera position after external player moves away");
+    playerInput.Set({nearEye,map::supply-nearEye,{0,1,0},60}); selected=playerInput.Selected(fallbackView);
+    check(movedInventory.Hint(selected.eye,selected.forward,map::walls)==WeaponInteraction::Supply
+        && movedInventory.Interact(selected.eye,selected.forward,map::walls),
+        "moving external player near supply enables aimed rearm");
+    movedInventory.Break(movedInventory.EquippedId());
+    playerInput.Set({nearEye,nearEye-map::supply,{0,1,0},60}); selected=playerInput.Selected(fallbackView);
+    check(movedInventory.Hint(selected.eye,selected.forward,map::walls)==WeaponInteraction::None,
+        "external aim away from nearby supply disables interaction");
+    playerInput.Clear();
+    check(!playerInput.Active() && playerInput.Selected(fallbackView).eye==fallbackView.eye
+        && playerInput.Selected(fallbackView).verticalFovDegrees==55,
+        "clearing external player restores existing camera pose and FOV without stale state");
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures ? 1 : 0;
 }
