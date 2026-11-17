@@ -3,5 +3,5 @@
 int main()
 {
 	GameFrameWork game;
-	game.Run();
+	return game.Run();
 }

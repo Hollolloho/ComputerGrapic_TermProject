@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Camera.h"
+#include "CombatMap.h"
 
 struct GLFWwindow;
 
@@ -11,6 +12,7 @@ public:
 
 private:
 	Camera camera;
+	CombatMap combatMap;
 	GLFWwindow* window = nullptr;
 	
 	bool Init();

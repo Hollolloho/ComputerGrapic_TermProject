@@ -1,6 +1,11 @@
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+
 #include "FrameWork.h"
 #include <GL/glew.h>
 #include <glfw/glfw3.h>
+#include <iostream>
 
 namespace
 {
@@ -14,6 +19,19 @@ namespace
 	double lastMouseY = 0.0;
 	double mouseDeltaX = 0.0;
 	double mouseDeltaY = 0.0;
+
+	std::filesystem::path ExecutableDirectory()
+	{
+		std::wstring path(32768, L'\0');
+		const DWORD length = GetModuleFileNameW(nullptr, path.data(), static_cast<DWORD>(path.size()));
+		if (length == 0 || length >= path.size())
+		{
+			std::cerr << "Could not find game executable directory.\n";
+			return {};
+		}
+		path.resize(length);
+		return std::filesystem::path(path).parent_path();
+	}
 }
 
 int GameFrameWork::Run()
@@ -61,9 +79,14 @@ bool GameFrameWork::Init()
 		return false;
 
 	glfwSwapInterval(1);
+	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.08f, 0.11f, 0.15f, 1.0f);
 
 	camera.Init();
+	const auto runDirectory = ExecutableDirectory();
+	if (runDirectory.empty() || !combatMap.Init(runDirectory))
+		return false;
+
 	glfwSetWindowUserPointer(window, this);
 	glfwSetKeyCallback(window, KeyCallBack);
 	glfwSetCursorPosCallback(window, CursorPosCallback);
@@ -143,7 +166,8 @@ void GameFrameWork::Draw()
 
 	const glm::mat4 scene = camera.projection * camera.view;
 
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	combatMap.Draw(scene);
 	glfwSwapBuffers(window);
 }
 
@@ -151,6 +175,7 @@ void GameFrameWork::Clear()
 {
 	if (window)
 	{
+		combatMap.Clear();
 		glfwDestroyWindow(window);
 		window = nullptr;
 	}

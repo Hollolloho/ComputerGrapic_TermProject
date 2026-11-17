@@ -61,16 +61,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\Camera.cpp" />
+    <ClCompile Include="src\CombatMap.cpp" />
     <ClCompile Include="src\Game_FrameWork.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\model_loader.cpp" />
     <ClInclude Include="src\Camera.h" />
+    <ClInclude Include="src\CombatMap.h" />
     <ClInclude Include="src\Common.h" />
     <ClInclude Include="src\FrameWork.h" />
     <ClInclude Include="src\model_loader.h" />
+    <None Include="shaders\combat_map.vert" />
+    <None Include="shaders\combat_map.frag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Target Name="CopyRuntimeLibraries" AfterTargets="Build">
     <Copy SourceFiles="$(SolutionDir)external\glew-2.3.1\bin\Release\x64\glew32.dll;$(SolutionDir)external\assimp\bin\x64\assimp-vc145-mt.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(SolutionDir)asset\combat_map\obj\combat_map.obj;$(SolutionDir)asset\combat_map\obj\combat_map.mtl" DestinationFolder="$(OutDir)asset\combat_map\obj\" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\shaders\combat_map.vert;$(MSBuildProjectDirectory)\shaders\combat_map.frag" DestinationFolder="$(OutDir)shaders\" SkipUnchangedFiles="true" />
   </Target>
 </Project>
