@@ -1,3 +1,4 @@
+#include "combat_map_layout.generated.h"
 #include "combat_time.h"
 #include "combat_feedback.h"
 #include "combat.h"
@@ -667,6 +668,48 @@ int main()
     }
     check(timedRange.Flights().size()==1 && std::abs(timedRange.Flights()[0].projectile.position.z+3.45f)<0.001f,
         "actual projectile receives 0.25 seconds normal travel then supplied slow time");
+    namespace map=aegis::combat_map_asset;
+    check(map::playerStart==glm::vec3(0,0,-1.5f) && map::droneSpawn==glm::vec3(0.65f,1.95f,-11.4f),
+        "new map starts player and drone at manifest coordinates");
+    check(FindFirstHit({-2,1,-5},{-4,1,-5},map::walls).has_value(),"new map left wall blocks bullets");
+    check(FindFirstHit({2,1,-5},{4,1,-5},map::walls).has_value(),"new map right wall blocks bullets");
+    check(FindFirstHit({0,2,-5},{0,4,-5},map::walls).has_value(),"new map roof blocks bullets");
+    check(FindFirstHit({0,1,-5},{0,-1,-5},map::walls).has_value(),"new map floor blocks bullets");
+    check(FindFirstHit({-1.9f,1,-5},{-1.9f,1,-10},map::walls).has_value(),"new map A01 cover blocks through its rendered footprint");
+    check(FindFirstHit({1.83f,1,-12},{1.83f,1,-17},map::walls).has_value(),"new map A02 cover blocks through its rendered footprint");
+    check(!FindFirstHit({0,1,-1},{0,1,1},map::walls),"new map entry doorway is not covered by one oversized wall box");
+    check(!FindFirstHit({0,1,-17},{0,1,-19},map::walls),"new map interlock doorway remains open between jambs");
+    const auto mapEye=map::playerStart+glm::vec3(0,1.65f,0);
+    check(!FindFirstHit(mapEye,map::droneSpawn,map::walls),"new map starting player has an unobstructed drone firing line");
+    DroneBehavior placedDrone;
+    check(placedDrone.SetSpawn(map::droneSpawn,glm::radians(map::droneYawDegrees),map::droneSpawn.x),"drone accepts manifest position yaw and patrol centre");
+    check(placedDrone.Position()==map::droneSpawn && std::abs(placedDrone.Yaw()-glm::radians(map::droneYawDegrees))<0.0001f,
+        "drone renders exact initial placement before patrol update");
+    for(int i=0;i<200;++i) placedDrone.Update(0.02f,{0,1,50},map::walls);
+    check(placedDrone.Position().x>=map::droneSpawn.x-0.65f && placedDrone.Position().x<=map::droneSpawn.x+0.65f
+        && placedDrone.Position().y==map::droneSpawn.y && placedDrone.Position().z==map::droneSpawn.z,
+        "new map patrol retains manifest height depth and translated route");
+    placedDrone.Reset();
+    check(placedDrone.Position()==map::droneSpawn,"drone reset restores configured map spawn");
+    check(!placedDrone.SetSpawn({99,1,0},0,0) && placedDrone.Position()==map::droneSpawn,
+        "invalid translated patrol spawn is rejected without losing placement");
+    TurretEncounter mapped;
+    mapped.SetEnvironment(map::walls); mapped.SetDroneMode(true);
+    mapped.SetDroneSpawn(map::droneSpawn,glm::radians(map::droneYawDegrees),map::droneSpawn.x);
+    mapped.SetSupply(map::supply); mapped.Reset();
+    mapped.Fire(mapEye,glm::vec3(-1.9f,1,-7.45f)-mapEye);
+    for(int i=0;i<65;++i) mapped.Update(0.01f,0.01f,mapEye);
+    check(mapped.EnemyAlive() && mapped.Inventory().Armed() && mapped.PlayerFlights().empty(),
+        "actual new-map player projectile stops at cover without killing drone or breaking gun");
+    mapped.Reset(); mapped.Fire(mapEye,map::droneSpawn-mapEye);
+    for(int i=0;i<120;++i) mapped.Update(0.01f,0.01f,mapEye);
+    check(mapped.Result()==EncounterResult::Cleared && mapped.Inventory().Breaks()==1 && mapped.Inventory().Drops().size()==1,
+        "new-map drone kill clears safe encounter and preserves one valid break and gun drop");
+    check(mapped.Interact(mapEye,map::supply-mapEye) && mapped.Inventory().Armed(),
+        "new-map supply can rearm from manifest player start");
+    mapped.Reset(); mapped.DropWeapon(mapEye,{0,0,-1});
+    check(mapped.DroneState().Position()==map::droneSpawn && mapped.Interact(mapEye,map::supply-mapEye),
+        "encounter restart preserves new-map spawn and supply configuration");
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

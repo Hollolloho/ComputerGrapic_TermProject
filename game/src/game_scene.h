@@ -13,7 +13,7 @@ namespace aegis {
 
 class GameScene {
 public:
-    bool Init(const std::filesystem::path& projectDirectory, bool combatTest = false, bool turretTest = false, bool droneTest = true, bool bossTest = false, bool campaign = true);
+    bool Init(const std::filesystem::path& projectDirectory, bool combatTest = false, bool turretTest = false, bool droneTest = true, bool bossTest = false, bool campaign = true,bool combatMapTest=false);
     void Update(double realDt,double baseGameDt);
     double PreviewTimeScale() const { return testScene.PreviewTimeScale(); }
     void Draw(int width, int height) const;
@@ -41,6 +41,7 @@ private:
     };
 
     bool InitEntry(const std::filesystem::path& root);
+    bool InitCombatMap(const std::filesystem::path& root);
     void DrawEntry(int width,int height) const;
     void DrawBattle(int width,int height) const;
     void LoadStage();
@@ -55,7 +56,7 @@ private:
     int stageSmokeFrame{},failedSmokeFrame{},victorySmokeFrame{},pausedSmokeFrame{};
     bool smokeRetried{},smokePaused{},smokeVictory{},smokeRestarted{},smokeDone{};
     mutable KoreanUi ui;
-    std::vector<DrawMesh> entryRoom,entryTerminal;
+    std::vector<DrawMesh> entryRoom,entryTerminal,combatMap;
     MeshRenderer renderer;
     std::array<CorridorObject, 5> corridor;
     Drone drone;

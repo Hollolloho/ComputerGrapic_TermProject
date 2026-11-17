@@ -20,7 +20,7 @@ const glm::vec3 Up(0.0f, 1.0f, 0.0f);
 
 } // namespace
 
-bool GameScene::Init(const std::filesystem::path& projectDirectory, bool useCombatTest, bool turretTest, bool droneTest, bool bossTest, bool campaign)
+bool GameScene::Init(const std::filesystem::path& projectDirectory, bool useCombatTest, bool turretTest, bool droneTest, bool bossTest, bool campaign,bool combatMapTest)
 {
     Clear();
     legacyTest=useCombatTest; campaignMode=campaign;
@@ -30,10 +30,12 @@ bool GameScene::Init(const std::filesystem::path& projectDirectory, bool useComb
     glClearColor(0.16f, 0.19f, 0.24f, 1.0f);
     if (!renderer.Init(projectDirectory / "game" / "shaders") || !InitCorridor(projectDirectory)
         || !testScene.Init(projectDirectory) || !InitEntry(projectDirectory) || !ui.Init()) return false;
+    if((campaignMode || combatMapTest) && !InitCombatMap(projectDirectory)) return false;
     testScene.SetCorridorMode(!legacyTest);
     if (legacyTest) testScene.SetTurretMode(turretTest);
     else testScene.SetDroneMode(droneTest);
     if (bossTest) testScene.SetBossMode(true);
+    if(combatMapTest) testScene.SetCombatMapMode(true);
     testScene.SetDebugControls(!campaignMode);
     flow.ToTitle();
     if (campaignMode) LoadStage();
@@ -93,6 +95,7 @@ void GameScene::DrawBattle(int width, int height) const
     if (legacyTest) { testScene.Draw(width,height,{},showHud); return; }
     testScene.Draw(width,height,[this](const glm::mat4& vp,const glm::vec3& eye) {
         renderer.Begin(eye,{0.45f,0.9f,0.7f},{1,1,1},2.5f,0.45f);
+        if(testScene.IsCombatMapMode()) { renderer.Begin(eye,{0.45f,0.9f,0.7f},{1,1,1},3,0.65f); renderer.Draw(combatMap,vp,glm::mat4(1)); return; }
         for (std::size_t i=0;i<corridor.size();++i) {
             auto model=corridor[i].model;
             if (i==2 || i==3) model=glm::translate(model,glm::vec3((i==2 ? -1:1)*corridor_asset::doorTravel*testScene.DoorProgress(),0,0));
@@ -123,7 +126,7 @@ void GameScene::Clear()
         }
         object.meshes.clear();
     }
-    for(auto* meshes:{&entryRoom,&entryTerminal}) { for(auto& mesh:*meshes) mesh.Clear(); meshes->clear(); }
+    for(auto* meshes:{&entryRoom,&entryTerminal,&combatMap}) { for(auto& mesh:*meshes) mesh.Clear(); meshes->clear(); }
     ui.Clear(); renderer.Clear();
 }
 
@@ -154,6 +157,31 @@ void GameScene::SampleInput(GLFWwindow* window,bool active) {
 }
 
 
+bool GameScene::InitCombatMap(const std::filesystem::path& root) {
+    ModelData model; std::string error; bool hit{};
+    const ObjModelCache cache(root/"build/cache/models",root/"asset/combat_map/obj/combat_map.mtl");
+    if(!cache.Load(root/combat_map_asset::mesh,model,error,hit)) { std::cerr<<error<<'\n'; return false; }
+    std::size_t triangles{};
+    std::vector<ModelMesh> batches(model.materials.size());
+    for(const auto& mesh:model.meshes) {
+        triangles+=mesh.indices.size()/3;
+        auto& batch=batches.at(mesh.materialIndex);
+        const auto offset=static_cast<unsigned int>(batch.vertices.size());
+        batch.vertices.insert(batch.vertices.end(),mesh.vertices.begin(),mesh.vertices.end());
+        for(auto index:mesh.indices) batch.indices.push_back(index+offset);
+    }
+    for(std::size_t i=0;i<batches.size();++i) {
+        if(batches[i].indices.empty()) continue;
+        const auto& material=model.materials[i];
+        auto& gpu=combatMap.emplace_back(); gpu.Upload(batches[i],material);
+        // Map-specific source Kd interpretation keeps the dark surfaces readable.
+        gpu.baseColor=glm::clamp(material.diffuse,0.0f,1.0f);
+        gpu.dielectricF0=glm::clamp(material.specular,0.0f,1.0f);
+        gpu.roughness=std::sqrt(2.0f/(glm::max(material.shininess,0.0f)+2));
+    }
+    std::cout<<"Combat map: meshes="<<combatMap.size()<<" triangles="<<triangles<<" cache="<<hit<<'\n';
+    return triangles==combat_map_asset::triangles;
+}
 bool GameScene::InitEntry(const std::filesystem::path& root) {
     const auto load=[&](const std::filesystem::path& path,std::vector<DrawMesh>& meshes) {
         ModelData model; std::string error;
@@ -184,6 +212,7 @@ void GameScene::LoadStage() {
     stageSmokeFrame=failedSmokeFrame=victorySmokeFrame=0;
     testScene.CloseAnalysis();
     testScene.SetCorridorMode(true); testScene.SetDroneMode(true);
+    if(flow.Stage()==CampaignStage::Corridor) testScene.SetCombatMapMode(true);
     if(flow.Stage()==CampaignStage::Boss) testScene.SetBossMode(true);
     camera.SetPose(campaign_asset::playerStart,campaign_asset::playerYaw,campaign_asset::playerPitch);
     legacyTest=false;
@@ -191,7 +220,7 @@ void GameScene::LoadStage() {
 bool GameScene::ReadyToAdvance() const {
     return flow.Screen()==CampaignScreen::Playing && !AnalysisActive()
         && (flow.Stage()==CampaignStage::Entry || (flow.Stage()==CampaignStage::Corridor
-            && testScene.CanAnalyze() && testScene.DoorProgress()>=1));
+            && testScene.CanAnalyze() && (testScene.IsCombatMapMode() || testScene.DoorProgress()>=1)));
 }
 void GameScene::ApplyAction(UiAction action) {
     switch(action) {
@@ -247,7 +276,7 @@ UiPage GameScene::Page() const {
             page.body=L"시설 진입을 준비합니다. 조준은 오른쪽 드래그, 사격은 왼쪽 클릭입니다.\n버튼 또는 Enter로 전투 복도에 진입하세요.";
             page.buttons.push_back({UiAction::Advance,L"복도로 진입",744,640,232,54,true});
         } else if(flow.Stage()==CampaignStage::Corridor) {
-            page.title=L"2 / 3  전투 복도";
+            page.title=L"2 / 3  새 전투 맵 · 첫 복도";
             page.body=ReadyToAdvance() ? L"복도가 안전해졌습니다. 오른쪽 단말에서 분석하거나 코어실로 진행하세요.":L"드론을 제거하고 남은 적탄을 피하세요. 모든 위험이 사라지면 문이 열립니다.";
             page.buttons.push_back({UiAction::Advance,L"코어실로 이동",744,640,232,54,ReadyToAdvance()});
         } else {

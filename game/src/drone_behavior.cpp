@@ -12,9 +12,14 @@ glm::vec3 Rotate(const glm::vec3& v,float yaw) {
     return {c*v.x+s*v.z,v.y,-s*v.x+c*v.z};
 }
 }
+bool DroneBehavior::SetSpawn(const glm::vec3& point,float yawRadians,float patrolCenterX) {
+    if(!Finite(point) || !std::isfinite(yawRadians) || !std::isfinite(patrolCenterX)
+        || std::abs(point.x-patrolCenterX)>0.65f) return false;
+    spawn=point; spawnYaw=yawRadians; patrolCenter=patrolCenterX; Reset(); return true;
+}
 void DroneBehavior::Reset() {
-    position={-0.65f,1.8f,-10}; aimPoint={0,0,0};
-    phase=DronePhase::Patrol; yaw=0; timer=1.5f; destination=1;
+    position=spawn; aimPoint={0,0,0};
+    phase=DronePhase::Patrol; yaw=spawnYaw; timer=1.5f; destination=1;
 }
 Collider DroneBehavior::Bounds(ObjectId id,HitKind kind,const glm::vec3& low,const glm::vec3& high) const {
     glm::vec3 minimum(std::numeric_limits<float>::max()),maximum(std::numeric_limits<float>::lowest());
@@ -36,20 +41,20 @@ bool DroneBehavior::Visible(const glm::vec3& eye,std::span<const Collider> walls
 bool DroneBehavior::Move(float dt,std::span<const Collider> walls) {
     // Analytic ping-pong keeps speed independent of frame rate at turnarounds.
     constexpr double span=1.3,period=2.6;
-    const double progress=destination ? position.x+0.65 : span+(0.65-position.x);
+    const double progress=destination ? position.x-patrolCenter+0.65 : span+(0.65-(position.x-patrolCenter));
     const double travel=0.65*dt;
     const double p=std::fmod(progress+travel,period);
     auto next=position;
-    next.x=static_cast<float>(-0.65+(p<span ? p : period-p));
+    next.x=patrolCenter+static_cast<float>(-0.65+(p<span ? p : period-p));
     const auto body=Body(); const auto weapon=Weapon();
     const auto low=glm::min(body.minimum,weapon.minimum)-position;
     const auto high=glm::max(body.maximum,weapon.maximum)-position;
     auto start=position,end=next;
     const double boundary=destination ? span-progress : period-progress;
-    if (travel>=span) { start.x=-0.65f; end.x=0.65f; }
+    if (travel>=span) { start.x=patrolCenter-0.65f; end.x=patrolCenter+0.65f; }
     else if (travel>boundary) {
         start.x=destination ? std::min(position.x,next.x) : std::max(position.x,next.x);
-        end.x=destination ? 0.65f : -0.65f;
+        end.x=patrolCenter+(destination ? 0.65f : -0.65f);
     }
     for (const auto& wall:walls) {
         if (!wall.enabled) continue;
@@ -63,7 +68,7 @@ bool DroneBehavior::Update(float gameDt,const glm::vec3& eye,std::span<const Col
     if (!std::isfinite(gameDt)||gameDt<=0||!Finite(eye)||!Armed()) return false;
     const float dt=gameDt;
     if (phase==DronePhase::Patrol) {
-        yaw=0; Move(dt,walls); timer=std::max(0.0f,timer-dt);
+        yaw=spawnYaw; Move(dt,walls); timer=std::max(0.0f,timer-dt);
         if (timer<=0 && Visible(eye,walls)) {
             phase=DronePhase::Warning; timer=1; aimPoint=eye;
             const auto direction=eye-position; yaw=std::atan2(direction.x,direction.z);

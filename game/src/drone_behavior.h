@@ -8,6 +8,7 @@ enum class DronePhase { Patrol, Warning, Waiting, Disarmed, Destroyed };
 class DroneBehavior {
 public:
     void Reset();
+    bool SetSpawn(const glm::vec3& point,float yawRadians,float patrolCenterX);
     bool Update(float gameDt,const glm::vec3& eye,std::span<const Collider> walls);
     void Disarm();
     void Destroy();
@@ -24,6 +25,8 @@ private:
     Collider Bounds(ObjectId id,HitKind kind,const glm::vec3& low,const glm::vec3& high) const;
     bool Visible(const glm::vec3& eye,std::span<const Collider> walls) const;
     bool Move(float dt,std::span<const Collider> walls);
+    glm::vec3 spawn{-0.65f,1.8f,-10};
+    float spawnYaw{},patrolCenter{};
     glm::vec3 position{-0.65f,1.8f,-10};
     glm::vec3 aimPoint{0};
     DronePhase phase{DronePhase::Patrol};

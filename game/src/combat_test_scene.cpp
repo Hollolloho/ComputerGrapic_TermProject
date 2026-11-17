@@ -99,7 +99,9 @@ void CombatTestScene::Reset()
 }
 
 void CombatTestScene::SetCorridorMode(bool enabled) {
-    bossMode=false;
+    bossMode=false; combatMapMode=false;
+    encounter.SetDroneSpawn({-0.65f,1.8f,-10},0,0);
+    encounter.SetSupply(combat::WeaponInventory::SupplyPosition());
     corridorMode=enabled;
     std::vector<combat::Collider> walls;
     if (enabled) { walls.assign(corridor_asset::walls.begin(),corridor_asset::walls.end()); walls.push_back(terminal_asset::collider); }
@@ -109,6 +111,16 @@ void CombatTestScene::SetCorridorMode(bool enabled) {
     SetTurretMode(enabled);
 }
 
+void CombatTestScene::SetCombatMapMode(bool enabled) {
+    if(!enabled) { SetCorridorMode(true); return; }
+    combatMapMode=true; corridorMode=turretMode=true; bossMode=false;
+    std::vector<combat::Collider> walls(combat_map_asset::walls.begin(),combat_map_asset::walls.end());
+    walls.push_back(TerminalCollider());
+    encounter.SetEnvironment(walls); encounter.SetExitDoors(0,0,0);
+    encounter.SetDroneSpawn(combat_map_asset::droneSpawn,glm::radians(combat_map_asset::droneYawDegrees),combat_map_asset::droneSpawn.x);
+    encounter.SetSupply(combat_map_asset::supply); encounter.SetDroneMode(true);
+    Reset(); smokeMapSlow=smokeMapCoverBlocked=smokeFailureSeen=false;
+}
 void CombatTestScene::SetDroneMode(bool enabled) {
     encounter.SetDroneMode(enabled); Reset();
     smokeFailureSeen=smokePatrolSeen=smokeWarningSeen=smokeShotSeen=smokeSecuringSeen=smokeAnalysisSeen=smokeAnalysisReturned=smokeWorldFrozen=false;
@@ -120,9 +132,9 @@ void CombatTestScene::SetTurretMode(bool enabled)
     Reset(); smokeFailureSeen=false;
 }
 
-glm::vec3 CombatTestScene::CameraRoot() const { return bossMode ? (bossCovered ? combat::BossEncounter::CoverRoot():combat::BossEncounter::FiringRoot()):glm::vec3(0); }
+glm::vec3 CombatTestScene::CameraRoot() const { return bossMode ? (bossCovered ? combat::BossEncounter::CoverRoot():combat::BossEncounter::FiringRoot()):combatMapMode ? combat_map_asset::playerStart:glm::vec3(0); }
 void CombatTestScene::SetBossMode(bool enabled) {
-    bossMode=enabled; Reset(); smokeBossFailureSeen=false;
+    bossMode=enabled; if(enabled) combatMapMode=false; Reset(); smokeBossFailureSeen=false;
 }
 void CombatTestScene::ToggleBossCover() {
     bossCovered=!bossCovered;
@@ -144,13 +156,20 @@ bool CombatTestScene::Fire(const glm::vec3& direction)
 const combat::WeaponInventory& CombatTestScene::Inventory() const { return bossMode ? boss.Inventory():turretMode ? encounter.Inventory() : range.Inventory(); }
 bool CombatTestScene::Interact(const glm::vec3& direction) {
     if (bossMode) return boss.Interact(camera.EyePosition(),direction);
-    if (TerminalTarget(direction)) return analysis.Open(CanAnalyze(),terminal_asset::collider,camera.EyePosition(),direction,encounter.Colliders());
+    if (TerminalTarget(direction)) return analysis.Open(CanAnalyze(),TerminalCollider(),camera.EyePosition(),direction,encounter.Colliders());
     return turretMode ? encounter.Interact(camera.EyePosition(),direction) : range.Interact(camera.EyePosition(),direction);
 }
+glm::vec3 CombatTestScene::TerminalPosition() const { return combatMapMode ? combat_map_asset::terminal:terminal_asset::position; }
+combat::Collider CombatTestScene::TerminalCollider() const {
+    auto box=terminal_asset::collider;
+    const auto offset=TerminalPosition()-terminal_asset::position;
+    box.minimum+=offset; box.maximum+=offset; return box;
+}
+glm::vec3 CombatTestScene::SupplyPosition() const { return combatMapMode ? combat_map_asset::supply:combat::WeaponInventory::SupplyPosition(); }
 bool CombatTestScene::TerminalTarget() const { return TerminalTarget(camera.ViewDirection()); }
 bool CombatTestScene::TerminalTarget(const glm::vec3& direction) const {
     if (!corridorMode || bossMode) return false;
-    return analysis.IsFirstTarget(terminal_asset::collider,camera.EyePosition(),direction,encounter.Colliders(),
+    return analysis.IsFirstTarget(TerminalCollider(),camera.EyePosition(),direction,encounter.Colliders(),
         Inventory().InteractionDistance(camera.EyePosition(),direction,encounter.Colliders()));
 }
 combat::WeaponInteraction CombatTestScene::InteractionHint() const {
@@ -256,7 +275,7 @@ void CombatTestScene::Draw(int width, int height,
     else if (drawEnvironment) drawEnvironment(vp,camera.EyePosition());
     if (corridorMode && !bossMode) {
         droneRenderer.Begin(camera.EyePosition(),{0.45f,0.9f,0.7f},{1,1,1},3,0.3f);
-        droneRenderer.Draw(terminalMeshes,vp,glm::translate(glm::mat4(1),terminal_asset::position));
+        droneRenderer.Draw(terminalMeshes,vp,glm::translate(glm::mat4(1),TerminalPosition()));
     }
     if (IsDroneMode() && encounter.EnemyAlive()) {
         const auto& state=encounter.DroneState();
@@ -308,7 +327,7 @@ void CombatTestScene::Draw(int width, int height,
             :shard.size<0.022f ? glm::vec3(0.76f,0.66f,0.48f):glm::vec3(0.23f,0.28f,0.33f);
         glUniform3fv(colorLocation,1,glm::value_ptr(color)); glDrawArrays(GL_TRIANGLES,0,36);
     }
-    const auto supply=bossMode ? boss_asset::supplyWeapon:combat::WeaponInventory::SupplyPosition();
+    const auto supply=bossMode ? boss_asset::supplyWeapon:SupplyPosition();
     if (!bossMode) DrawBox(vp,supply+glm::vec3(-0.32f,-0.5f,-0.27f),supply+glm::vec3(0.32f,-0.15f,0.27f),{0.1f,0.55f,0.38f});
     glBindVertexArray(0); glUseProgram(0);
     weapon.DrawWorld(projection,camera.ViewMatrix(),supply,bossMode ? 0.0f:90.0f);
@@ -388,6 +407,17 @@ void CombatTestScene::CampaignSmokeFrame(int frame) {
 
 void CombatTestScene::SetSmokeFrame(int frame)
 {
+    if(combatMapMode) {
+        if(frame==1) slowPreview=true;
+        if(frame==180) { smokeMapSlow=encounter.Health()==100 && encounter.EnemyShots()==0
+            && time.Scale()<0.051 && glm::length(encounter.DroneState().Position()-combat_map_asset::droneSpawn)<0.2f; slowPreview=false; }
+        if(frame==1200) { smokeFailureSeen=encounter.Result()==combat::EncounterResult::Failed; Reset(); }
+        if(frame==1201) Fire(glm::vec3(-1.9f,1,-7.45f)-camera.EyePosition());
+        if(frame==1239) smokeMapCoverBlocked=encounter.EnemyAlive() && Inventory().Armed() && encounter.PlayerFlights().empty();
+        if(frame==1240) Fire(encounter.DroneState().Position()-camera.EyePosition());
+        if(frame==1350) Interact(SupplyPosition()-camera.EyePosition());
+        return;
+    }
     if (bossMode) {
         if (frame==900) { smokeBossFailureSeen=boss.Result()==combat::EncounterResult::Failed; Reset(); }
         if (frame==901) { Fire(boss.CoreCenter()-camera.EyePosition()); ToggleBossCover(); }
@@ -435,6 +465,10 @@ void CombatTestScene::SetSmokeFrame(int frame)
 bool CombatTestScene::SmokePassed() const
 {
     if(feedback.BreakBursts()!=Inventory().Breaks()) return false;
+    if(combatMapMode) return smokeMapSlow && smokeMapCoverBlocked && smokeFailureSeen
+        && encounter.Result()==combat::EncounterResult::Cleared && encounter.Health()==100
+        && encounter.PlayerShots()==2 && encounter.EnemyShots()==0 && Inventory().Armed()
+        && Inventory().Breaks()==1 && Inventory().Supplies()==1 && encounter.EnemyFlights().empty();
     if (bossMode) return smokeBossFailureSeen && boss.Result()==combat::EncounterResult::Cleared
         && boss.CoreHits()==3 && boss.Health()==100 && boss.PlayerShots()==4 && boss.BlockedShots()>=1
         && Inventory().Breaks()==3 && Inventory().Supplies()==2 && !Inventory().Armed()

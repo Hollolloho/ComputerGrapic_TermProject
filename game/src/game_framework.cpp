@@ -76,7 +76,7 @@ void restartFrameTimeCallback(GLFWwindow* window, int)
 
 } // namespace
 
-int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool droneTest, bool bossTest, bool campaign)
+int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool droneTest, bool bossTest, bool campaign,bool combatMapTest)
 {
     const auto projectDirectory = ProjectDirectory();
     if (projectDirectory.empty()) {
@@ -113,7 +113,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
 
     FrameInput input;
     GameScene scene;
-    const bool ready = scene.Init(projectDirectory, combatTest, turretTest, droneTest, bossTest, campaign);
+    const bool ready = scene.Init(projectDirectory, combatTest, turretTest, droneTest, bossTest, campaign,combatMapTest);
     bool smokePassed = !smokeTest;
     if (ready) {
         input.scene=&scene;
@@ -159,7 +159,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
             if (smokeTest) {
                 active = true;
                 scene.SmokeFrame(++smokeFrame);
-                scene.Update(1.0 / 60.0,1.0 / 60.0);
+                scene.Update(1.0 / 60.0,(1.0 / 60.0)*scene.PreviewTimeScale());
             }
 
             // 복귀한 첫 프레임에는 중단 중에 흐른 시간을 회전에 더하지 않는다.
@@ -190,6 +190,9 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
                     if(!savedFailure && title.find("CAMPAIGN | FAILED")!=std::string::npos) { save("build/campaign-failed-smoke.ppm"); savedFailure=true; }
                     if(!savedPause && title.find("CAMPAIGN | PAUSED")!=std::string::npos) { save("build/campaign-paused-smoke.ppm"); savedPause=true; }
                     if(!savedVictory && title.find("CAMPAIGN | VICTORY")!=std::string::npos) { save("build/campaign-victory-smoke.ppm"); savedVictory=true; }
+                }
+                if(smokeTest && combatMapTest && (smokeFrame==160 || smokeFrame==1360)) {
+                    scene.TestScene().SaveFrame(projectDirectory/(smokeFrame==160 ? "build/combat-map-slow.ppm":"build/combat-map-clear.ppm"),width,height);
                 }
                 if (smokeTest && !scene.IsCampaign() && scene.TestScene().IsBossMode() && (smokeFrame==180 || smokeFrame==2300)) {
                     scene.TestScene().SaveFrame(projectDirectory/(smokeFrame==180 ? "build/boss-core-open-smoke.ppm":"build/boss-victory-smoke.ppm"),width,height);
@@ -233,7 +236,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
             }
             if (smokeTest && smokeFrame >= scene.SmokeFrameCount()) {
                 smokePassed = scene.SmokePassed();
-                std::cout << (scene.IsCampaign() ? "Campaign smoke: ":scene.TestScene().IsBossMode() ? "Boss combat smoke: ":scene.TestScene().IsDroneMode() ? "Drone combat smoke: " : scene.TestScene().IsCorridorMode() ? "Corridor combat smoke: " : scene.TestScene().IsTurretMode() ? "Turret encounter smoke: " : "Combat render smoke: ")
+                std::cout << (scene.IsCampaign() ? "Campaign smoke: ":combatMapTest ? "Combat map smoke: ":scene.TestScene().IsBossMode() ? "Boss combat smoke: ":scene.TestScene().IsDroneMode() ? "Drone combat smoke: " : scene.TestScene().IsCorridorMode() ? "Corridor combat smoke: " : scene.TestScene().IsTurretMode() ? "Turret encounter smoke: " : "Combat render smoke: ")
                     << (smokePassed ? "PASS" : "FAIL") << '\n';
                 glfwSetWindowShouldClose(window, GLFW_TRUE);
             }

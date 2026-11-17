@@ -16,6 +16,8 @@ public:
     void Reset();
     void SetEnvironment(std::span<const Collider> walls);
     void SetDroneMode(bool enabled);
+    bool SetDroneSpawn(const glm::vec3& point,float yawRadians,float patrolCenterX);
+    bool SetSupply(const glm::vec3& point);
     void SetExitDoors(ObjectId left,ObjectId right,float distance);
     bool CanAnalyze() const { return result==EncounterResult::Cleared; }
     float DoorProgress() const { return doorProgress; }
@@ -48,6 +50,7 @@ private:
     void UpdateDoors(float gameDt);
     ObjectId leftDoor{},rightDoor{};
     float doorDistance{},doorProgress{};
+    glm::vec3 supplyPosition=WeaponInventory::SupplyPosition();
     DroneBehavior drone;
     bool droneMode{};
     WeaponInventory inventory;

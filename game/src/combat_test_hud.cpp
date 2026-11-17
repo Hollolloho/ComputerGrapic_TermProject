@@ -164,7 +164,7 @@ void CombatTestScene::PopulateHud(UiPage& page) const {
         page.danger=true;
     } else if(result==combat::EncounterResult::Cleared) {
         page.warning=L"구역 안전 확보 완료";
-        page.body=DoorProgress()>=1 ? L"코어실로 진행하세요. 오른쪽 분석 단말도 사용할 수 있습니다.":L"출구 문이 열리고 있습니다. 잠시 기다리세요.";
+        page.body=(combatMapMode || DoorProgress()>=1) ? L"코어실로 진행하세요. 오른쪽 분석 단말도 사용할 수 있습니다.":L"출구 문이 열리고 있습니다. 잠시 기다리세요.";
     } else if(bossMode) {
         switch(boss.Phase()) {
         case combat::BossPhase::Warning:

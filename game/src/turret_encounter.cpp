@@ -40,7 +40,7 @@ void TurretEncounter::Reset()
     }
     drone.Reset();
     if (droneMode) { colliders[0]=drone.Body(); colliders[4]=drone.Weapon(); }
-    inventory.Reset();
+    inventory.Reset(); inventory.SetSupplyPosition(supplyPosition);
     playerFlights.clear(); enemyFlights.clear();
     result=EncounterResult::Running; phase=TurretPhase::Idle;
     phaseTime=playerCooldown=damageFlash=doorProgress=0;
@@ -68,6 +68,14 @@ void TurretEncounter::UpdateDoors(float gameDt) {
     }
 }
 
+bool TurretEncounter::SetDroneSpawn(const glm::vec3& point,float yawRadians,float patrolCenterX) {
+    if(!drone.SetSpawn(point,yawRadians,patrolCenterX)) return false;
+    Reset(); return true;
+}
+bool TurretEncounter::SetSupply(const glm::vec3& point) {
+    if(!Finite(point)) return false;
+    supplyPosition=point; Reset(); return true;
+}
 void TurretEncounter::SetDroneMode(bool enabled) { droneMode=enabled; Reset(); }
 
 bool TurretEncounter::Fire(const glm::vec3& eye,const glm::vec3& direction)

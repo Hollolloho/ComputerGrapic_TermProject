@@ -43,6 +43,7 @@
     <ClInclude Include="..\game\src\campaign_flow.h" />
     <ClInclude Include="..\game\src\combat_feedback.h" />
     <ClInclude Include="..\game\src\combat_time.h" />
+    <ClInclude Include="..\game\src\combat_map_layout.generated.h" />
     <ClCompile Include="..\game\src\boss_geometry.cpp" />
     <ClCompile Include="..\game\src\boss_encounter.cpp" />
     <ClInclude Include="..\game\src\boss_geometry.h" />
