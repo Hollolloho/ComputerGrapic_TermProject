@@ -137,4 +137,52 @@ void CombatTestScene::DrawBossHud(int width,int height) const {
     Label(debugControls ? "LMB FIRE  RMB AIM  B COVER  E USE  R RESET  F4 CORRIDOR" : "LMB FIRE  RMB AIM  B COVER  E USE  R RESET  ESC MENU",24,24,2,{0.8f,0.9f,1});
 }
 
+void CombatTestScene::PopulateHud(UiPage& page) const {
+    const auto& inventory=Inventory();
+    page.health=bossMode ? boss.Health():encounter.Health();
+    page.status=L"체력 "+std::to_wstring(page.health)+L" / 100  |  ";
+    page.status+=inventory.Armed() ? L"무기: 장착 중":L"무기: 빈손";
+    page.status+=L"  |  누적 파손 "+std::to_wstring(inventory.Breaks());
+    if(bossMode) page.status+=L"  |  코어 명중 "+std::to_wstring(boss.CoreHits())+L" / 3";
+    const auto result=BattleResult();
+    page.danger=page.health<=25;
+    if(result==combat::EncounterResult::Securing) {
+        page.warning=L"적은 쓰러졌지만 날아오는 적탄이 남아 있습니다!";
+        page.body=L"남은 적탄을 피하세요. 적탄이 모두 사라져야 구역이 완료됩니다.";
+        page.danger=true;
+    } else if(result==combat::EncounterResult::Cleared) {
+        page.warning=L"구역 안전 확보 완료";
+        page.body=DoorProgress()>=1 ? L"코어실로 진행하세요. 오른쪽 분석 단말도 사용할 수 있습니다.":L"출구 문이 열리고 있습니다. 잠시 기다리세요.";
+    } else if(bossMode) {
+        switch(boss.Phase()) {
+        case combat::BossPhase::Warning:
+            page.warning=bossCovered ? L"보스 사격 준비! 엄폐 상태를 유지하세요.":L"보스 사격 준비!  B로 엄폐하세요."; page.danger=true; break;
+        case combat::BossPhase::Attack:
+            page.warning=L"보스 사격 중! 엄폐 상태를 유지하세요."; page.danger=true; break;
+        case combat::BossPhase::Opening: page.warning=L"장갑 개방 중 · 완전히 열릴 때까지 기다리세요."; break;
+        case combat::BossPhase::Exposed: page.warning=bossCovered ? L"약점 노출!  B로 사격 위치 전환 후 코어를 맞히세요.":L"약점 노출! 지금 코어를 조준해 사격하세요."; break;
+        case combat::BossPhase::Closing: page.warning=L"장갑 폐쇄 중 · 코어를 공격해도 피해를 주지 못합니다."; break;
+        default: page.warning=L"장갑 닫힘 · 다음 공격에 대비하세요."; break;
+        }
+        page.body=bossCovered ? L"현재: 엄폐 위치  /  B: 사격 위치로  /  Esc: 메뉴":L"현재: 사격 위치  /  B: 엄폐 위치로  /  Esc: 메뉴";
+    } else {
+        switch(encounter.Phase()) {
+        case combat::TurretPhase::Warning: page.warning=L"드론이 조준 중! 곧 사격합니다."; page.danger=true; break;
+        case combat::TurretPhase::Cooldown: page.warning=L"드론 사격 후 대기 중 · 본체를 조준하세요."; break;
+        case combat::TurretPhase::Disarmed: page.warning=L"드론 무기 파괴 · 본체를 맞혀 마무리하세요."; break;
+        default: page.warning=L"드론 순찰 중 · 본체를 조준해 파괴하세요."; break;
+        }
+        page.body=L"왼쪽 클릭: 사격  /  오른쪽 드래그: 조준  /  G: 무기 내려놓기  /  Esc: 메뉴";
+    }
+    if(result==combat::EncounterResult::Running && !inventory.Armed()) {
+        const auto hint=InteractionHint();
+        page.body=hint==combat::WeaponInteraction::Supply ? L"E: 보급대에서 무기 획득"
+            : hint==combat::WeaponInteraction::Pickup ? L"E: 떨어진 무기 회수"
+            : bossMode ? (bossCovered ? L"보급대의 무기를 조준하고 E를 눌러 재무장하세요.":L"빈손입니다. B로 엄폐한 뒤 보급대의 무기를 조준하고 E를 누르세요.")
+            : L"빈손입니다. 왼쪽 아래 보급 무기 또는 떨어진 무기를 조준하고 E를 누르세요.";
+    } else if(result==combat::EncounterResult::Cleared && TerminalTarget()) {
+        page.body=L"E: 드론 분석 열기  /  버튼 또는 Enter: 코어실로 진행";
+    }
+}
+
 } // namespace aegis

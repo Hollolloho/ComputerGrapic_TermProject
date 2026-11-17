@@ -7,6 +7,7 @@
 #include "drone.h"
 #include "analysis_session.h"
 #include "boss_view.h"
+#include "korean_ui.h"
 #include <GL/glew.h>
 #include <filesystem>
 #include <string>
@@ -36,6 +37,7 @@ public:
     void SetDebugControls(bool enabled) { debugControls=enabled; }
     combat::EncounterResult BattleResult() const { return bossMode ? boss.Result():encounter.Result(); }
     void CampaignSmokeFrame(int frame);
+    void PopulateHud(UiPage& page) const;
     int BossCoreHits() const { return boss.CoreHits(); }
     bool IsBossMode() const { return bossMode; }
     bool IsDroneMode() const { return !bossMode && turretMode && encounter.IsDroneMode(); }

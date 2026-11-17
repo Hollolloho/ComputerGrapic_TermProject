@@ -89,7 +89,7 @@ void GameScene::Update(double deltaTime)
 
 void GameScene::DrawBattle(int width, int height) const
 {
-    const bool showHud=!campaignMode || flow.Screen()==CampaignScreen::Playing;
+    const bool showHud=!campaignMode;
     if (legacyTest) { testScene.Draw(width,height,{},showHud); return; }
     testScene.Draw(width,height,[this](const glm::mat4& vp,const glm::vec3& eye) {
         renderer.Begin(eye,{0.45f,0.9f,0.7f},{1,1,1},2.5f,0.45f);
@@ -254,6 +254,7 @@ UiPage GameScene::Page() const {
             page.title=L"3 / 3  코어실 보스전";
             page.body=L"장갑이 완전히 열렸을 때만 코어를 공격하세요. 세 번의 유효타가 필요합니다.\nB로 엄폐·사격 위치 전환  /  빈손일 때 E로 보급  /  Esc로 메뉴";
         }
+        if(flow.Stage()!=CampaignStage::Entry) testScene.PopulateHud(page);
         break;
     }
     return page;

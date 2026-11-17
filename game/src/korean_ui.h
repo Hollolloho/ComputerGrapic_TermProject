@@ -13,6 +13,9 @@ struct UiButton {
 };
 struct UiPage {
     std::wstring title,body,footer;
+    std::wstring status,warning;
+    int health{100};
+    bool danger{};
     bool panel{true};
     std::vector<UiButton> buttons;
 };

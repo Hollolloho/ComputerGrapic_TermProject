@@ -130,7 +130,7 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
         double previousTime = glfwGetTime();
         bool wasActive = false;
         int smokeFrame = 0;
-        bool savedEntry{},savedFailure{},savedVictory{},savedPause{};
+        bool savedEntry{},savedFailure{},savedVictory{},savedPause{},savedBossHud{},savedEmptyHud{};
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
             if (glfwWindowShouldClose(window)) {
@@ -178,6 +178,10 @@ int GameFramework::Run(bool combatTest, bool smokeTest, bool turretTest, bool dr
                     const auto save=[&](const char* name) { scene.TestScene().SaveFrame(projectDirectory/name,width,height); };
                     if(smokeFrame==10) save("build/campaign-title-smoke.ppm");
                     if(smokeFrame==30) save("build/campaign-help-smoke.ppm");
+                    if(smokeFrame==160) save("build/campaign-corridor-hud.ppm");
+                    if(!savedBossHud && title.find("PLAYING | BOSS")!=std::string::npos) { save("build/campaign-boss-hud.ppm"); savedBossHud=true; }
+                    if(!savedEmptyHud && title.find("PLAYING | BOSS")!=std::string::npos && scene.TestScene().BossCoreHits()==1) { save("build/campaign-empty-hud.ppm"); savedEmptyHud=true; }
+
                     if(!savedEntry && title.find("PLAYING | ENTRY")!=std::string::npos) { save("build/campaign-entry-smoke.ppm"); savedEntry=true; }
                     if(!savedFailure && title.find("CAMPAIGN | FAILED")!=std::string::npos) { save("build/campaign-failed-smoke.ppm"); savedFailure=true; }
                     if(!savedPause && title.find("CAMPAIGN | PAUSED")!=std::string::npos) { save("build/campaign-paused-smoke.ppm"); savedPause=true; }
