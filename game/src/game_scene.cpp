@@ -227,7 +227,7 @@ UiPage GameScene::Page() const {
     UiPage page;
     if(showCredits) {
         page.title=L"제작 · 출처";
-        page.body=L"제작: 홍준호 · 윤형균\n시간 전투 참고: SUPERHOT\n라이브러리: GLEW · GLFW · GLM · Assimp\n한글: Windows 맑은 고딕 (폰트 파일 미배포)\n모델·텍스처: 원작자와 사용 조건 확인 중\n라이선스 원문: external 폴더의 각 라이브러리";
+        page.body=L"제작: 홍준호 · 윤형균\n시간 전투 참고: SUPERHOT\n라이브러리: GLEW · GLFW · GLM · Assimp\n한글: Windows 맑은 고딕 (폰트 파일 미배포)\n모델·텍스처 제작: Codex · Tripo AI 활용\n라이선스 원문: external 폴더의 각 라이브러리";
         page.buttons.push_back({UiAction::Title,L"시작 화면으로",218,558,588,52,true});
         page.footer=L"Esc: 돌아가기";return page;
     }
