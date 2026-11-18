@@ -1,4 +1,7 @@
 #include "drone.h"
+#include "Shader.h"
+#include <glm/gtc/type_ptr.hpp>
+#include <utility>
 
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -39,11 +42,18 @@ Drone::Drone()
 bool Drone::Init(const std::filesystem::path& projectDirectory)
 {
     Clear();
+    shaderProgram=LoadShaderProgram(projectDirectory/"game/shaders/drone.vert",projectDirectory/"game/shaders/drone.frag");
+    if(!shaderProgram) return false;
+    transformLocation=glGetUniformLocation(shaderProgram,"transform");
+    modelLocation=glGetUniformLocation(shaderProgram,"model");
+    colorLocation=glGetUniformLocation(shaderProgram,"baseColor");
+    emissionLocation=glGetUniformLocation(shaderProgram,"emissionColor");
+    if(transformLocation<0 || modelLocation<0 || colorLocation<0 || emissionLocation<0) { Clear();return false; }
     const auto objDirectory = projectDirectory / "asset" / "drone" / "obj";
     const auto materialPath = objDirectory / "materials.mtl";
     if (!std::ifstream(materialPath)) {
         std::cerr << "Could not read drone materials: " << materialPath << '\n';
-        return false;
+        Clear();return false;
     }
 
     // OBJ/MTL 읽기와 캐시 처리 시간을 GPU 버퍼 업로드 호출 시간과 따로 잰다.
@@ -57,6 +67,7 @@ bool Drone::Init(const std::filesystem::path& projectDirectory)
     int assimpImports{};
 
     for (auto& part : parts) {
+        ModelData partModel;
         for (const char* materialName : part.materials) {
             const auto path = objDirectory / (std::string("drone_") + part.name +
                                               '_' + materialName + ".obj");
@@ -66,7 +77,7 @@ bool Drone::Init(const std::filesystem::path& projectDirectory)
             const auto loadStart = Clock::now();
             if (!cache.Load(path, model, error, cacheHit)) {
                 std::cerr << error << '\n';
-                return false;
+                Clear();return false;
             }
             loadTime += Clock::now() - loadStart;
             if (cacheHit) {
@@ -80,14 +91,17 @@ bool Drone::Init(const std::filesystem::path& projectDirectory)
                 if (material.name != materialName) {
                     std::cerr << path << ": expected material " << materialName << " from "
                               << materialPath << ", found " << material.name << '\n';
-                    return false;
+                    Clear();return false;
                 }
-                auto& drawMesh = part.meshes.emplace_back();
-                const auto uploadStart = Clock::now();
-                drawMesh.Upload(mesh, material);
-                uploadTime += Clock::now() - uploadStart;
+                auto source=mesh;
+                source.materialIndex=static_cast<unsigned int>(partModel.materials.size());
+                partModel.materials.push_back(material);
+                partModel.meshes.push_back(std::move(source));
             }
         }
+        const auto uploadStart=Clock::now();
+        if(!UploadMeshes(partModel,part.meshes)) { Clear();return false; }
+        uploadTime+=Clock::now()-uploadStart;
     }
     std::cout << "Drone models: cache_hits=" << cacheHits
               << " assimp_imports=" << assimpImports
@@ -98,6 +112,7 @@ bool Drone::Init(const std::filesystem::path& projectDirectory)
 
 void Drone::Update(double deltaTime)
 {
+    if(!std::isfinite(deltaTime) || deltaTime<=0) return;
     elapsedTime += deltaTime;
 
     // 센서와 발사기는 정면에서 시작해 양쪽으로 왕복한다.
@@ -125,14 +140,27 @@ glm::mat4 Drone::PartTransform(const glm::mat4& world, const DronePart& part)
     return glm::rotate(position, glm::radians(part.angleDegrees), part.rotationAxis);
 }
 
-void Drone::Draw(const MeshRenderer& renderer, const glm::mat4& scene, const glm::mat4& world, bool warning, bool armed, bool staticPose) const
+void Drone::Draw(const glm::mat4& scene, const glm::mat4& world, bool warning, bool armed, bool staticPose) const
 {
+    if(!shaderProgram) return;
+    glUseProgram(shaderProgram);
     for (std::size_t i=0;i<parts.size();++i) {
         if (i==Weapon && !armed) continue;
         const auto& part=parts[i];
         const glm::vec3 red(1,0.04f,0.02f);
-        renderer.Draw(part.meshes, scene, staticPose ? glm::translate(world,part.origin) : PartTransform(world, part), i==Sensor && warning ? &red : nullptr);
+        const auto model=staticPose ? glm::translate(world,part.origin):PartTransform(world,part);
+        const auto transform=scene*model;
+        glUniformMatrix4fv(transformLocation,1,GL_FALSE,glm::value_ptr(transform));
+        glUniformMatrix4fv(modelLocation,1,GL_FALSE,glm::value_ptr(model));
+        for(const auto& mesh:part.meshes) {
+            const auto color=i==Sensor && warning ? red:mesh.color;
+            const auto emission=i==Sensor && warning ? red*0.35f:mesh.emission;
+            glUniform3fv(colorLocation,1,glm::value_ptr(color));
+            glUniform3fv(emissionLocation,1,glm::value_ptr(emission));
+            glBindVertexArray(mesh.vao);glDrawElements(GL_TRIANGLES,mesh.indexCount,GL_UNSIGNED_INT,nullptr);
+        }
     }
+    glBindVertexArray(0);glUseProgram(0);
 }
 
 void Drone::Reset()
@@ -146,11 +174,10 @@ void Drone::Reset()
 void Drone::Clear()
 {
     for (auto& part : parts) {
-        for (auto& mesh : part.meshes) {
-            mesh.Clear();
-        }
-        part.meshes.clear();
+        ClearMeshes(part.meshes);
     }
+    if(shaderProgram) { glUseProgram(0);glDeleteProgram(shaderProgram);shaderProgram=0; }
+    transformLocation=modelLocation=colorLocation=emissionLocation=-1;
     Reset();
 }
 

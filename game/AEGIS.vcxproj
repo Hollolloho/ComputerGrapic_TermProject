@@ -143,4 +143,12 @@
     <None Include="shaders\turret.vert" />
     <None Include="shaders\turret.frag" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Shader.cpp" />
+    <ClInclude Include="src\Shader.h" />
+    <ClCompile Include="src\RenderMesh.cpp" />
+    <ClInclude Include="src\RenderMesh.h" />
+    <None Include="shaders\mesh.vert" />
+    <None Include="shaders\mesh.frag" />
+  </ItemGroup>
 </Project>

@@ -320,7 +320,7 @@ void CombatTestScene::Draw(int width, int height,
         const auto& state=encounter.DroneState();
         const auto world=glm::rotate(glm::translate(glm::mat4(1),state.Position()),state.Yaw(),glm::vec3(0,1,0));
         droneRenderer.Begin(PlayerEye(),{0.45f,0.9f,0.7f},{1,1,1},4,0.25f);
-        drone.Draw(droneRenderer,vp,world,state.Phase()==combat::DronePhase::Warning,state.Armed());
+        drone.Draw(vp,world,state.Phase()==combat::DronePhase::Warning,state.Armed());
     }
     if(!bossMode && encounter.HasSupportTurret()) turretView.Draw(vp,encounter.SupportTurret());
     glUseProgram(program); glUniform1f(opacityLocation,1); glBindVertexArray(vao);
@@ -414,7 +414,7 @@ void CombatTestScene::DrawAnalysis(int width,int height) const {
     const auto vp=glm::perspective(glm::radians(45.0f),static_cast<float>(width)/height,0.05f,30.0f)
         *glm::lookAt(eye,glm::vec3(0),glm::vec3(0,1,0));
     droneRenderer.Begin(eye,{0.45f,0.9f,0.7f},{1,1,1},5,0.3f);
-    drone.Draw(droneRenderer,vp,glm::mat4(1),false,true,true);
+    drone.Draw(vp,glm::mat4(1),false,true,true);
     glEnable(GL_SCISSOR_TEST); DrawHud(width,height); glDisable(GL_SCISSOR_TEST);
 }
 

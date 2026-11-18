@@ -1,4 +1,5 @@
 #include "mesh_renderer.h"
+#include "Shader.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -8,79 +9,6 @@
 #include <sstream>
 
 namespace aegis {
-namespace {
-
-GLuint CompileShader(GLenum shaderType, const std::filesystem::path& path)
-{
-    std::ifstream file(path);
-    std::ostringstream sourceStream;
-    if (file) {
-        sourceStream << file.rdbuf();
-    }
-    if (!file || !sourceStream) {
-        std::cerr << "Could not read shader: " << path << '\n';
-        return 0;
-    }
-
-    const std::string source = sourceStream.str();
-    const char* code = source.c_str();
-    // 파일에서 읽은 GLSL 코드를 OpenGL에서 컴파일한다.
-    const GLuint shader = glCreateShader(shaderType);
-    glShaderSource(shader, 1, &code, nullptr);
-    glCompileShader(shader);
-
-    GLint compiled{};
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
-    if (!compiled) {
-        GLint logLength{};
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
-        std::string log(logLength, '\0');
-        glGetShaderInfoLog(shader, logLength, nullptr, log.data());
-        std::cerr << "Shader compile failed: " << path << '\n' << log.c_str() << '\n';
-        glDeleteShader(shader);
-        return 0;
-    }
-    return shader;
-}
-
-GLuint MakeShaderProgram(const std::filesystem::path& shaderDirectory)
-{
-    const auto vertexPath = shaderDirectory / "drone.vert";
-    const auto fragmentPath = shaderDirectory / "drone.frag";
-    const GLuint vertexShader = CompileShader(GL_VERTEX_SHADER, vertexPath);
-    if (!vertexShader) {
-        return 0;
-    }
-    const GLuint fragmentShader = CompileShader(GL_FRAGMENT_SHADER, fragmentPath);
-    if (!fragmentShader) {
-        glDeleteShader(vertexShader);
-        return 0;
-    }
-
-    const GLuint shaderProgramID = glCreateProgram();
-    glAttachShader(shaderProgramID, vertexShader);
-    glAttachShader(shaderProgramID, fragmentShader);
-    glLinkProgram(shaderProgramID);
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    GLint linked{};
-    glGetProgramiv(shaderProgramID, GL_LINK_STATUS, &linked);
-    if (!linked) {
-        GLint logLength{};
-        glGetProgramiv(shaderProgramID, GL_INFO_LOG_LENGTH, &logLength);
-        std::string log(logLength, '\0');
-        glGetProgramInfoLog(shaderProgramID, logLength, nullptr, log.data());
-        std::cerr << "Shader link failed: " << vertexPath << " and " << fragmentPath
-                  << '\n' << log.c_str() << '\n';
-        glDeleteProgram(shaderProgramID);
-        return 0;
-    }
-    return shaderProgramID;
-}
-
-} // namespace
-
 void DrawMesh::Upload(const ModelMesh& mesh, const ModelMaterial& material)
 {
     baseColor = material.baseColor;
@@ -123,7 +51,7 @@ void DrawMesh::Clear()
 bool MeshRenderer::Init(const std::filesystem::path& shaderDirectory)
 {
     Clear();
-    shaderProgramID = MakeShaderProgram(shaderDirectory);
+    shaderProgramID = LoadShaderProgram(shaderDirectory/"mesh.vert",shaderDirectory/"mesh.frag");
     if (!shaderProgramID) {
         return false;
     }
