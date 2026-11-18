@@ -4,6 +4,8 @@
 #include "combat_map_layout.generated.h"
 #include "combat_time.h"
 #include "combat_feedback.h"
+#include "destruction_effects.h"
+#include <glm/gtc/matrix_transform.hpp>
 #include "combat.h"
 #include "combat_range.h"
 #include "turret_encounter.h"
@@ -916,6 +918,44 @@ int main()
     check(mixed.Result()==EncounterResult::Failed && mixed.Health()==0 && mixed.PlayerFlights().empty() && mixed.EnemyFlights().empty(),"mixed defeat clears both projectile streams and clamps shared health");
     check(!mixed.Fire(mixedEye,{0,0,-1}) && !mixed.Interact(mixedEye,aegis::combat_map_asset::supply-mixedEye),"failed mixed encounter blocks firing and resupply");
     mixed.Reset();check(mixed.RemainingEnemies()==2 && mixed.Inventory().Breaks()==0 && mixed.Inventory().Drops().empty() && mixed.EnemyShots()==0,"retry after mixed defeat removes old drops counters and destruction state");
+    DestructionEffects destructionTest;
+    const auto deathWorld=glm::translate(glm::mat4(1),glm::vec3(2,1.95f,-10));
+    destructionTest.ObserveEnemy(0,true,deathWorld);
+    destructionTest.ObserveEnemy(1,true,glm::mat4(1));
+    destructionTest.ObserveEnemy(0,false,deathWorld);
+    check(destructionTest.Bursts()==1 && destructionTest.Debris(0).active && destructionTest.Debris(0).world==deathWorld,"drone death creates one debris burst at exact final world pose");
+    for(int n=0;n<100;++n) destructionTest.ObserveEnemy(0,false,glm::mat4(1));
+    check(destructionTest.Bursts()==1 && destructionTest.Debris(0).world==deathWorld,"polling dead drone cannot duplicate or move destruction burst");
+    destructionTest.ObserveEnemy(1,false,glm::mat4(1));
+    check(destructionTest.Bursts()==2 && destructionTest.Debris(0).active && destructionTest.Debris(1).active,"simultaneous enemy deaths keep both debris bursts");
+    destructionTest.UpdateWorld(0);destructionTest.UpdateWorld(-1);destructionTest.UpdateWorld(std::numeric_limits<float>::quiet_NaN());
+    check(destructionTest.Debris(0).age==0,"pause and invalid game time cannot advance enemy debris");
+    destructionTest.UpdateWorld(.05f);
+    check(close(destructionTest.Debris(0).age,.05f),"enemy debris follows game time rather than real time");
+    const auto pieceA=DestructionEffects::PieceTransform(deathWorld,0,.2f),pieceB=DestructionEffects::PieceTransform(deathWorld,1,.2f);
+    check(pieceA!=pieceB,"body sensor and fans follow distinct deterministic debris paths");
+    destructionTest.UpdateWorld(2);
+    check(!destructionTest.Debris(0).active && !destructionTest.Debris(1).active,"expired enemy debris disappears without leaving stale pieces");
+    destructionTest.ObserveHealth(75);check(!destructionTest.DeathStarted(),"ordinary damage does not trigger death screen fragments");
+    destructionTest.ObserveHealth(0);destructionTest.ObserveHealth(0);
+    check(destructionTest.DeathEvents()==1 && destructionTest.DeathPlaying() && destructionTest.DeathProgress()==0,"lethal damage starts death fragments exactly once");
+    destructionTest.UpdateDeath(.4f);destructionTest.ObserveHealth(0);
+    check(close(destructionTest.DeathProgress(),.5f) && destructionTest.DeathEvents()==1,"repeated dead-state observations do not restart screen animation");
+    destructionTest.UpdateDeath(0);destructionTest.UpdateDeath(-1);destructionTest.UpdateDeath(std::numeric_limits<float>::infinity());
+    check(close(destructionTest.DeathProgress(),.5f),"paused or invalid presentation time freezes death screen");
+    destructionTest.UpdateDeath(.4f);
+    check(!destructionTest.DeathPlaying() && destructionTest.DeathStarted() && destructionTest.DeathProgress()==1,"death animation ends on real-time deadline while combat stays disabled");
+    destructionTest.UpdateDeath(4);check(destructionTest.DeathEvents()==1 && destructionTest.DeathProgress()==1,"completed death animation cannot loop or overshoot");
+    destructionTest.Reset();
+    check(!destructionTest.DeathStarted() && destructionTest.Bursts()==0 && !destructionTest.Debris(0).active && !destructionTest.Debris(1).active,"checkpoint retry clears enemy pieces and death screen state");
+    destructionTest.ObserveEnemy(0,false,deathWorld);
+    check(destructionTest.Bursts()==0,"inactive enemy in another scene does not generate fake death debris");
+    destructionTest.ObserveHealth(0);check(destructionTest.DeathEvents()==1 && destructionTest.DeathProgress()==0,"retry allows exactly one fresh death animation");
+    for(int fps:{30,60,144}) {
+        DestructionEffects timedDeath;timedDeath.ObserveHealth(0);
+        for(int n=0;n<fps;++n) timedDeath.UpdateDeath(1.0f/fps);
+        check(!timedDeath.DeathPlaying(),"death menu delay finishes consistently at 30/60/144 fps");
+    }
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

@@ -1,5 +1,6 @@
 #include "drone.h"
 #include "Shader.h"
+#include "destruction_effects.h"
 #include <glm/gtc/type_ptr.hpp>
 #include <utility>
 
@@ -140,15 +141,16 @@ glm::mat4 Drone::PartTransform(const glm::mat4& world, const DronePart& part)
     return glm::rotate(position, glm::radians(part.angleDegrees), part.rotationAxis);
 }
 
-void Drone::Draw(const glm::mat4& scene, const glm::mat4& world, bool warning, bool armed, bool staticPose) const
+void Drone::Draw(const glm::mat4& scene, const glm::mat4& world, bool warning, bool armed, bool staticPose,float debrisAge) const
 {
     if(!shaderProgram) return;
     glUseProgram(shaderProgram);
     for (std::size_t i=0;i<parts.size();++i) {
-        if (i==Weapon && !armed) continue;
+        if (i==Weapon && (!armed || debrisAge>=0)) continue;
         const auto& part=parts[i];
         const glm::vec3 red(1,0.04f,0.02f);
-        const auto model=staticPose ? glm::translate(world,part.origin):PartTransform(world,part);
+        const auto parent=debrisAge>=0 ? combat::DestructionEffects::PieceTransform(world,static_cast<int>(i),debrisAge):world;
+        const auto model=staticPose ? glm::translate(parent,part.origin):PartTransform(parent,part);
         const auto transform=scene*model;
         glUniformMatrix4fv(transformLocation,1,GL_FALSE,glm::value_ptr(transform));
         glUniformMatrix4fv(modelLocation,1,GL_FALSE,glm::value_ptr(model));

@@ -17,7 +17,7 @@ public:
 
     bool Init(const std::filesystem::path& projectDirectory);
     void Update(double deltaTime);
-    void Draw(const glm::mat4& scene, const glm::mat4& world, bool warning=false, bool armed=true, bool staticPose=false) const;
+    void Draw(const glm::mat4& scene, const glm::mat4& world, bool warning=false, bool armed=true, bool staticPose=false,float debrisAge=-1) const;
     void Reset();
     void UpdateCombat(double gameDt);
     void Clear();

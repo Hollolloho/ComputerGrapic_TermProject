@@ -65,4 +65,5 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ItemGroup><ClCompile Include="..\game\src\fixed_turret.cpp" /></ItemGroup>
+  <ItemGroup><ClCompile Include="..\game\src\destruction_effects.cpp" /></ItemGroup>
 </Project>

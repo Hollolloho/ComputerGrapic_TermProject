@@ -230,4 +230,12 @@
     <None Include="shaders\mesh.vert" />
     <None Include="shaders\mesh.frag" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\destruction_effects.cpp" />
+    <ClInclude Include="src\destruction_effects.h" />
+    <ClCompile Include="src\death_view.cpp" />
+    <ClInclude Include="src\death_view.h" />
+    <None Include="shaders\death_effect.vert" />
+    <None Include="shaders\death_effect.frag" />
+  </ItemGroup>
 </Project>

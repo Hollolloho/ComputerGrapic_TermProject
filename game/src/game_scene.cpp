@@ -85,7 +85,7 @@ void GameScene::Update(double realDt,double baseGameDt)
 {
     if (campaignMode && !flow.WorldRuns()) return;
     testScene.Update(realDt,baseGameDt);
-    if (campaignMode) flow.ObserveBattle(testScene.BattleResult()==combat::EncounterResult::Failed,
+    if (campaignMode) flow.ObserveBattle(testScene.BattleResult()==combat::EncounterResult::Failed && !testScene.DeathPlaying(),
         testScene.BattleResult()==combat::EncounterResult::Cleared);
 }
 

@@ -11,6 +11,8 @@
 #include "boss_view.h"
 #include "korean_ui.h"
 #include "combat_feedback.h"
+#include "destruction_effects.h"
+#include "death_view.h"
 #include "combat_time.h"
 #include "combat_map_layout.generated.h"
 #include <GL/glew.h>
@@ -51,6 +53,9 @@ public:
     combat::EncounterResult BattleResult() const { return bossMode ? boss.Result():encounter.Result(); }
     void CampaignSmokeFrame(int frame);
     void PopulateHud(UiPage& page) const;
+    bool DeathStarted() const { return destruction.DeathStarted(); }
+    bool DeathPlaying() const { return destruction.DeathPlaying(); }
+    const combat::DestructionEffects& Destruction() const { return destruction; }
     const combat::CombatFeedback& Feedback() const { return feedback; }
     double PreviewTimeScale() const { return movementTimeAvailable ? (manualNormalTime ? 1.0:movementScale):(slowPreview ? 0.05:1.0); }
     void SetMovementTimeScale(double scale) {
@@ -100,10 +105,13 @@ private:
     bool movementTimeAvailable{},manualNormalTime{};
     double movementScale{0.05};
     combat::CombatFeedback feedback;
+    combat::DestructionEffects destruction;
+    DeathView deathView;
+    void ObserveDestruction();
     combat::BossEncounter boss;
     BossView bossView;
     bool debugControls{true};
-    bool combatMapMode{},smokeMapSlow{},smokeMapCoverBlocked{},smokeMapBoth{},smokeMapTurretShot{},smokeMapLocked{};
+    bool combatMapMode{},smokeMapSlow{},smokeMapCoverBlocked{},smokeMapDeath{},smokeMapBoth{},smokeMapTurretShot{},smokeMapLocked{};
     bool bossMode{},bossCovered{},bossToggleHeld{},smokeBossFailureSeen{};
     combat::AnalysisSession analysis;
     std::vector<DrawMesh> terminalMeshes;

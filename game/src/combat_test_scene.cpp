@@ -74,7 +74,7 @@ void main() {
     glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(glm::vec3),nullptr);
     glEnableVertexAttribArray(0); glBindVertexArray(0);
     Reset();
-    if (!turretView.Init(projectDirectory) || !weapon.Init(projectDirectory) || !droneRenderer.Init(projectDirectory/"game/shaders") || !drone.Init(projectDirectory) || !InitTerminal(projectDirectory) || !bossView.Init(projectDirectory)) { Clear(); return false; }
+    if (!deathView.Init(projectDirectory) || !turretView.Init(projectDirectory) || !weapon.Init(projectDirectory) || !droneRenderer.Init(projectDirectory/"game/shaders") || !drone.Init(projectDirectory) || !InitTerminal(projectDirectory) || !bossView.Init(projectDirectory)) { Clear(); return false; }
     return true;
 }
 
@@ -90,7 +90,7 @@ bool CombatTestScene::InitTerminal(const std::filesystem::path& root) {
 }
 
 bool CombatTestScene::SetPlayerView(const PlayerView& view) {
-    if(analysis.Active()) return false;
+    if(analysis.Active() || DeathStarted()) return false;
     if(!externalView.Set(view)) return false;
     lookHeld=false; return true;
 }
@@ -101,7 +101,7 @@ PlayerView CombatTestScene::CurrentPlayerView() const {
 
 void CombatTestScene::Reset()
 {
-    analysis.Reset(); ClearPlayerView(); feedback.Reset(); time.Reset(); slowPreview=false; forceNormal=false;
+    analysis.Reset(); ClearPlayerView(); feedback.Reset(); destruction.Reset(); time.Reset(); slowPreview=false; forceNormal=false;
     movementTimeAvailable=manualNormalTime=false; movementScale=0.05;
     range.Reset(); encounter.Reset(); weapon.Reset(); drone.Reset(); boss.Reset(); bossCovered=false; yaw = pitch = 0;
     if (bossMode) { const auto d=glm::normalize(boss.CoreCenter()-(CameraRoot()+glm::vec3(0,1.65f,0))); pitch=glm::degrees(std::asin(d.y)); }
@@ -131,7 +131,7 @@ void CombatTestScene::SetCombatMapMode(bool enabled) {
     encounter.SetEnvironment(walls); encounter.SetExitDoors(0,0,0);
     encounter.SetDroneSpawn(combat_map_asset::droneSpawn,glm::radians(combat_map_asset::droneYawDegrees),combat_map_asset::droneSpawn.x);
     encounter.SetSupply(combat_map_asset::supply); encounter.SetDroneMode(true); encounter.SetSupportTurret(true);
-    Reset(); smokeMapSlow=smokeMapCoverBlocked=smokeFailureSeen=smokeMapBoth=smokeMapTurretShot=smokeMapLocked=false;
+    Reset(); smokeMapSlow=smokeMapCoverBlocked=smokeFailureSeen=smokeMapDeath=smokeMapBoth=smokeMapTurretShot=smokeMapLocked=false;
 }
 void CombatTestScene::SetDroneMode(bool enabled) {
     encounter.SetDroneMode(enabled); Reset();
@@ -217,6 +217,7 @@ combat::WeaponInteraction CombatTestScene::InteractionHint() const {
 
 void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
 {
+    if(DeathStarted()) active=false;
     const bool preview=glfwGetKey(window,GLFW_KEY_F5)==GLFW_PRESS;
     forceNormal=active && !analysis.Active() && (glfwGetKey(window,GLFW_KEY_LEFT_SHIFT)==GLFW_PRESS
         || glfwGetKey(window,GLFW_KEY_RIGHT_SHIFT)==GLFW_PRESS);
@@ -273,13 +274,18 @@ void CombatTestScene::SampleInput(GLFWwindow* window, bool active)
 void CombatTestScene::Update(double realDt, double gameDt)
 {
     if (analysis.Active()) return;
+    if(DeathStarted()) { destruction.UpdateDeath(static_cast<float>(realDt));return; }
+    ObserveDestruction();
     const auto frame=time.Advance(realDt,gameDt,forceNormal);
     realDt=frame.realDt; gameDt=frame.gameDt;
     if(realDt<=0) return;
     if (bossMode) boss.Update(static_cast<float>(realDt),static_cast<float>(gameDt),PlayerEye(),PlayerForward());
     else if (turretMode) encounter.Update(static_cast<float>(realDt),static_cast<float>(gameDt),PlayerEye(),PlayerForward());
     else range.Update(static_cast<float>(realDt), static_cast<float>(gameDt));
-    if (IsDroneMode() && encounter.Result()==combat::EncounterResult::Running) drone.UpdateCombat(gameDt);
+    destruction.UpdateWorld(static_cast<float>(gameDt));
+    ObserveDestruction();
+    destruction.ObserveHealth(bossMode ? boss.Health():turretMode ? encounter.Health():100);
+    if (IsDroneMode() && encounter.EnemyAlive() && encounter.Result()==combat::EncounterResult::Running) drone.UpdateCombat(gameDt);
     weapon.Update(realDt);
     feedback.Update(static_cast<float>(gameDt));
     const auto forward=PlayerForward();
@@ -287,6 +293,13 @@ void CombatTestScene::Update(double realDt, double gameDt)
     const auto origin=PlayerEye()+forward*0.8f+right*0.22f+glm::vec3(0,-0.14f,0);
     feedback.Observe(bossMode ? boss.Health():turretMode ? encounter.Health():100,
         Inventory().Breaks(),origin,right,forward);
+}
+
+void CombatTestScene::ObserveDestruction() {
+    const auto& state=encounter.DroneState();
+    const auto droneWorld=glm::rotate(glm::translate(glm::mat4(1),state.Position()),state.Yaw(),glm::vec3(0,1,0));
+    destruction.ObserveEnemy(0,IsDroneMode() && encounter.EnemyAlive(),droneWorld);
+    destruction.ObserveEnemy(1,!bossMode && encounter.HasSupportTurret() && encounter.SupportTurret().Alive(),glm::translate(glm::mat4(1),encounter.SupportTurret().Position()));
 }
 
 void CombatTestScene::DrawBox(const glm::mat4& vp, const glm::vec3& minimum,
@@ -323,6 +336,10 @@ void CombatTestScene::Draw(int width, int height,
         drone.Draw(vp,world,state.Phase()==combat::DronePhase::Warning,state.Armed());
     }
     if(!bossMode && encounter.HasSupportTurret()) turretView.Draw(vp,encounter.SupportTurret());
+    const auto& droneDebris=destruction.Debris(0);
+    if(droneDebris.active) drone.Draw(vp,droneDebris.world,false,false,false,droneDebris.age);
+    const auto& turretDebris=destruction.Debris(1);
+    if(turretDebris.active) turretView.DrawDebris(vp,turretDebris.world,turretDebris.age);
     glUseProgram(program); glUniform1f(opacityLocation,1); glBindVertexArray(vao);
     const std::span<const combat::Collider> boxes=bossMode ? std::span<const combat::Collider>() : turretMode
         ? std::span<const combat::Collider>(encounter.Colliders())
@@ -381,6 +398,7 @@ void CombatTestScene::Draw(int width, int height,
     if (showHud) DrawHud(width,height);
     glDisable(GL_SCISSOR_TEST);
     DrawDamageFeedback(width,height);
+    if(DeathPlaying()) deathView.Draw(destruction.DeathProgress(),static_cast<float>(width)/height);
 }
 
 void CombatTestScene::DrawDamageFeedback(int width,int height) const {
@@ -423,7 +441,7 @@ void CombatTestScene::Clear()
     analysis.Reset(); ClearPlayerView(); feedback.Reset(); bossView.Clear();
     for (auto& mesh:terminalMeshes) mesh.Clear();
     terminalMeshes.clear();
-    turretView.Clear(); drone.Clear(); droneRenderer.Clear();
+    deathView.Clear(); turretView.Clear(); drone.Clear(); droneRenderer.Clear();
     weapon.Clear();
     if (vbo) glDeleteBuffers(1,&vbo);
     if (vao) glDeleteVertexArrays(1,&vao);
@@ -509,6 +527,7 @@ void CombatTestScene::CampaignSmokeFrame(int frame) {
 void CombatTestScene::SetSmokeFrame(int frame)
 {
     if(combatMapMode) {
+        smokeMapDeath=smokeMapDeath || DeathPlaying();
         smokeMapBoth=smokeMapBoth || encounter.RemainingEnemies()==2;
         smokeMapTurretShot=smokeMapTurretShot || std::any_of(encounter.EnemyFlights().begin(),encounter.EnemyFlights().end(),[](const combat::Flight& f){ return f.projectile.sourceWeaponId==combat::FixedTurret::ShotId; });
         if(frame==1) slowPreview=true;
@@ -573,7 +592,7 @@ bool CombatTestScene::SmokePassed() const
     if(feedback.BreakBursts()!=Inventory().Breaks()) return false;
     if(combatMapMode) {
         std::cout<<"Mixed map checks: both="<<smokeMapBoth<<" turretShot="<<smokeMapTurretShot<<" locked="<<smokeMapLocked<<" slow="<<smokeMapSlow<<" cover="<<smokeMapCoverBlocked<<" failure="<<smokeFailureSeen<<" remaining="<<encounter.RemainingEnemies()<<" hp="<<encounter.Health()<<" breaks="<<Inventory().Breaks()<<'\n';
-        return smokeMapBoth && smokeMapTurretShot && smokeMapLocked && smokeMapSlow && smokeMapCoverBlocked && smokeFailureSeen
+        return smokeMapDeath && destruction.Bursts()==2 && smokeMapBoth && smokeMapTurretShot && smokeMapLocked && smokeMapSlow && smokeMapCoverBlocked && smokeFailureSeen
             && encounter.Result()==combat::EncounterResult::Cleared && encounter.Health()>0
             && encounter.RemainingEnemies()==0 && encounter.PlayerShots()==3 && Inventory().Armed()
             && Inventory().Breaks()==2 && Inventory().Supplies()==2 && encounter.EnemyFlights().empty();

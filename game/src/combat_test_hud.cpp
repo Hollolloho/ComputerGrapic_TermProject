@@ -138,6 +138,7 @@ void CombatTestScene::DrawBossHud(int width,int height) const {
 }
 
 std::wstring CombatTestScene::TimeStatus() const {
+    if(DeathStarted()) return L"전투 정지 · 재시작하면 시간과 효과가 초기화됩니다.";
     const auto current=std::to_wstring(static_cast<int>(time.Scale()*100+0.5));
     if(movementTimeAvailable) return std::wstring(manualNormalTime ? L"시간: 1배 시험":L"시간: 실제 이동에 연동")
         +L"  /  기본 "+std::to_wstring(static_cast<int>(PreviewTimeScale()*100+0.5))+L"%  /  현재 "+current
@@ -147,8 +148,9 @@ std::wstring CombatTestScene::TimeStatus() const {
 }
 std::string CombatTestScene::TimeDebug() const {
     return std::string(" | TimeBase: ")+(movementTimeAvailable ? std::to_string(PreviewTimeScale()):slowPreview ? "0.05":"1.00")
-        +" | TimeScale: "+std::to_string(time.Scale())
+        +" | TimeScale: "+std::to_string(DeathStarted()?0.0:time.Scale())
         +" | ShotWindow: "+std::to_string(time.ShotRemaining())
+        +" | DeathFX: "+(DeathPlaying()?"PLAYING":DeathStarted()?"DONE":"OFF")+" | Debris: "+std::to_string(destruction.Bursts())
         +" | TimeMode: "+(movementTimeAvailable ? manualNormalTime ? "NORMAL":"AUTO":"PREVIEW");
 }
 
@@ -205,6 +207,7 @@ void CombatTestScene::PopulateHud(UiPage& page) const {
             ? L"보스 사격 위험! 엄폐물 뒤로 피하세요.":L"장갑이 닫혀 있습니다. 다음 약점 노출을 기다리세요.";
         page.body=L"엄폐물을 이용하고, 장갑이 완전히 열리면 코어를 공격하세요.  /  Esc: 메뉴";
     }
+    if(DeathPlaying()) { page.warning=L"치명상 · 전투 불능";page.body=L"잠시 후 재시작 메뉴가 열립니다.";page.danger=true; }
     if(result==combat::EncounterResult::Running && !inventory.Armed()) {
         const auto hint=InteractionHint();
         page.body=hint==combat::WeaponInteraction::Supply ? L"E: 보급대에서 무기 획득"
