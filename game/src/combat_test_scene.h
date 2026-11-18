@@ -10,6 +10,7 @@
 #include "analysis_session.h"
 #include "boss_view.h"
 #include "korean_ui.h"
+#include "world_signs.h"
 #include "combat_feedback.h"
 #include "destruction_effects.h"
 #include "death_view.h"
@@ -107,6 +108,7 @@ private:
     combat::CombatFeedback feedback;
     combat::DestructionEffects destruction;
     DeathView deathView;
+    WorldSigns signs;
     void ObserveDestruction();
     combat::BossEncounter boss;
     BossView bossView;

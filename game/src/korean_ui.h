@@ -1,9 +1,10 @@
 #pragma once
 #include <GL/glew.h>
 #include <string>
+#include <glm/glm.hpp>
 #include <vector>
 namespace aegis {
-enum class UiAction { None, Start, Help, Title, Advance, Resume, Retry, Restart, Quit };
+enum class UiAction { None, Start, Help, Credits, Title, Advance, Resume, Retry, Restart, Quit };
 struct UiButton {
     UiAction action;
     std::wstring label;
@@ -17,12 +18,14 @@ struct UiPage {
     int health{100};
     bool danger{};
     bool panel{true};
+    bool sign{};
     std::vector<UiButton> buttons;
 };
 class KoreanUi {
 public:
     bool Init();
     void Draw(const UiPage& page,int width,int height,float mouseX,float mouseY);
+    void DrawWorld(const std::wstring& title,const std::wstring& body,const glm::mat4& vp,const glm::vec3& position,const glm::vec2& size);
     void Clear();
     static UiAction Hit(const UiPage& page,float x,float y,bool& consumed);
 private:

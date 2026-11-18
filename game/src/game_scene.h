@@ -65,6 +65,7 @@ private:
     std::uint64_t playerSpawnRevision{};
     CampaignFlow flow;
     bool playerViewTestMode{};
+    bool showCredits{};
     bool campaignMode{},quitRequested{},mouseHeld{},enterHeld{},escapeHeld{};
     float mouseX{},mouseY{};
     int stageSmokeFrame{},failedSmokeFrame{},victorySmokeFrame{},pausedSmokeFrame{};

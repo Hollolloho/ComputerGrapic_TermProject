@@ -74,7 +74,7 @@ void main() {
     glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(glm::vec3),nullptr);
     glEnableVertexAttribArray(0); glBindVertexArray(0);
     Reset();
-    if (!deathView.Init(projectDirectory) || !turretView.Init(projectDirectory) || !weapon.Init(projectDirectory) || !droneRenderer.Init(projectDirectory/"game/shaders") || !drone.Init(projectDirectory) || !InitTerminal(projectDirectory) || !bossView.Init(projectDirectory)) { Clear(); return false; }
+    if (!signs.Init() || !deathView.Init(projectDirectory) || !turretView.Init(projectDirectory) || !weapon.Init(projectDirectory) || !droneRenderer.Init(projectDirectory/"game/shaders") || !drone.Init(projectDirectory) || !InitTerminal(projectDirectory) || !bossView.Init(projectDirectory)) { Clear(); return false; }
     return true;
 }
 
@@ -329,6 +329,7 @@ void CombatTestScene::Draw(int width, int height,
         droneRenderer.Begin(PlayerEye(),{0.45f,0.9f,0.7f},{1,1,1},3,0.3f);
         droneRenderer.Draw(terminalMeshes,vp,glm::translate(glm::mat4(1),TerminalPosition()));
     }
+    if(combatMapMode) signs.Draw(vp,SupplyPosition(),TerminalPosition(),CanAnalyze());
     if (IsDroneMode() && encounter.EnemyAlive()) {
         const auto& state=encounter.DroneState();
         const auto world=glm::rotate(glm::translate(glm::mat4(1),state.Position()),state.Yaw(),glm::vec3(0,1,0));
@@ -441,7 +442,7 @@ void CombatTestScene::Clear()
     analysis.Reset(); ClearPlayerView(); feedback.Reset(); bossView.Clear();
     for (auto& mesh:terminalMeshes) mesh.Clear();
     terminalMeshes.clear();
-    deathView.Clear(); turretView.Clear(); drone.Clear(); droneRenderer.Clear();
+    signs.Clear(); deathView.Clear(); turretView.Clear(); drone.Clear(); droneRenderer.Clear();
     weapon.Clear();
     if (vbo) glDeleteBuffers(1,&vbo);
     if (vao) glDeleteVertexArrays(1,&vao);

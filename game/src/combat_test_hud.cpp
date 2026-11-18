@@ -167,7 +167,7 @@ void CombatTestScene::PopulateHud(UiPage& page) const {
     page.danger=page.health<=25;
     if(result==combat::EncounterResult::Securing) {
         page.warning=L"적은 쓰러졌지만 날아오는 적탄이 남아 있습니다!";
-        page.body=L"남은 적탄을 피하세요. 적탄이 모두 사라져야 구역이 완료됩니다.";
+        page.body=L"남은 적탄 "+std::to_wstring(bossMode ? boss.EnemyFlights().size():encounter.EnemyFlights().size())+L"발 · 탄환이 사라지기 전에는 분석과 구역 이동이 잠깁니다.";
         page.danger=true;
     } else if(result==combat::EncounterResult::Cleared) {
         page.warning=L"구역 안전 확보 완료";
@@ -213,7 +213,7 @@ void CombatTestScene::PopulateHud(UiPage& page) const {
         page.body=hint==combat::WeaponInteraction::Supply ? L"E: 보급대에서 무기 획득"
             : hint==combat::WeaponInteraction::Pickup ? L"E: 떨어진 무기 회수"
             : bossMode ? (bossCovered ? L"보급대의 무기를 조준하고 E를 눌러 재무장하세요.":L"빈손입니다. B로 엄폐한 뒤 보급대의 무기를 조준하고 E를 누르세요.")
-            : L"빈손입니다. 보급 무기나 떨어진 총에 가까이 가서 조준하고 E를 누르세요.";
+            : L"명중하면 내 총이 부서집니다. 보급대·떨어진 총에 접근해 조준 + E로 재무장하세요.";
         if(bossMode && HasExternalPlayerView() && hint==combat::WeaponInteraction::None)
             page.body=L"빈손입니다. 보급대에 접근해 무기를 조준하고 E를 누르세요.";
     } else if(result==combat::EncounterResult::Cleared && TerminalTarget()) {

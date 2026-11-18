@@ -159,4 +159,8 @@
     <None Include="shaders\death_effect.vert" />
     <None Include="shaders\death_effect.frag" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\world_signs.cpp" />
+    <ClInclude Include="src\world_signs.h" />
+  </ItemGroup>
 </Project>

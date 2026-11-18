@@ -203,8 +203,10 @@ bool GameScene::ReadyToAdvance() const {
             && testScene.CanAnalyze() && (testScene.IsCombatMapMode() || testScene.DoorProgress()>=1)));
 }
 void GameScene::ApplyAction(UiAction action) {
+    if(action!=UiAction::Credits && action!=UiAction::None) showCredits=false;
     switch(action) {
     case UiAction::Start: if(flow.Start()) LoadStage(); break;
+    case UiAction::Credits: showCredits=true;break;
     case UiAction::Help: flow.ShowHelp(); break;
     case UiAction::Title: flow.ToTitle(); LoadStage(); break;
     case UiAction::Advance: if(ReadyToAdvance() && flow.Advance(true)) LoadStage(); break;
@@ -217,23 +219,31 @@ void GameScene::ApplyAction(UiAction action) {
 }
 bool GameScene::TogglePause() {
     if (!campaignMode) return false;
+    if(showCredits) { showCredits=false;return true; }
     if (flow.Screen()==CampaignScreen::Help) { ApplyAction(UiAction::Title); return true; }
     return flow.TogglePause();
 }
 UiPage GameScene::Page() const {
     UiPage page;
+    if(showCredits) {
+        page.title=L"제작 · 출처";
+        page.body=L"제작: 홍준호 · 윤형균\n시간 전투 참고: SUPERHOT\n라이브러리: GLEW · GLFW · GLM · Assimp\n한글: Windows 맑은 고딕 (폰트 파일 미배포)\n모델·텍스처: 원작자와 사용 조건 확인 중\n라이선스 원문: external 폴더의 각 라이브러리";
+        page.buttons.push_back({UiAction::Title,L"시작 화면으로",218,558,588,52,true});
+        page.footer=L"Esc: 돌아가기";return page;
+    }
     const auto add=[&](UiAction action,const wchar_t* label,int row) { page.buttons.push_back({action,label,218.0f,430.0f+64*row,588,52,true}); };
     switch(flow.Screen()) {
     case CampaignScreen::Title:
         page.title=L"AEGIS  저항 작전";
         page.body=L"중앙 AI가 장악한 시설에 침투하세요.\n전투 복도를 돌파하고 코어를 파괴하는 것이 목표입니다.\n\n시작 → 안전 진입실 → 전투 복도 → 코어실";
         add(UiAction::Start,L"게임 시작",0); add(UiAction::Help,L"조작 안내",1); add(UiAction::Quit,L"게임 종료",2);
+        page.buttons.push_back({UiAction::Credits,L"제작·출처",650,155,156,42,true});
         page.footer=L"Enter: 게임 시작  ·  마우스로 버튼을 선택할 수 있습니다."; break;
     case CampaignScreen::Help:
         page.title=L"조작 안내";
-        page.body=L"WASD: 이동  /  마우스: 조준  /  왼쪽 클릭: 사격\nE: 가까운 무기 회수·보급·안전한 분석 단말 사용\nG: 무기 내려놓기  /  Enter: 다음 구역 진입\nR: 현재 구역 다시 시작  /  Esc·Space: 일시정지\n움직이면 시간이 흐릅니다. Shift: 정상 진행 / F5: 1배 시험\n열린 보스 코어를 세 번 맞히면 승리합니다.";
+        page.body=L"WASD 이동 · 마우스 조준 · 왼쪽 클릭 사격\n정지: 느린 시간 / 이동: 시간 진행\n사격 후 0.25초는 적도 정상 진행\n본체 명중 → 내 총 파손 / 빈손 + E: 재무장\n모든 적과 적탄 정리 → 다음 구역\nShift 정상 진행 · R 재시작 · Esc 메뉴\n보스: 열린 코어에 세 번 명중";
         add(UiAction::Title,L"시작 화면으로",2);
-        page.footer=L"현재 구역 이동은 진입 버튼으로 진행합니다."; break;
+        page.footer=L"G: 총 내려놓기 · E: 회수·보급·분석 · Enter: 안전 확보 후 다음 구역"; break;
     case CampaignScreen::Paused:
         page.title=L"일시정지"; page.body=L"전투와 세계 시간이 멈췄습니다.\n계속 진행하거나 현재 구역을 다시 시작할 수 있습니다.";
         for(const auto& b:std::vector<std::pair<UiAction,const wchar_t*>>{{UiAction::Resume,L"계속하기"},{UiAction::Retry,L"현재 구역 다시 시작"},{UiAction::Title,L"시작 화면으로"},{UiAction::Quit,L"게임 종료"}}) {
@@ -253,7 +263,7 @@ UiPage GameScene::Page() const {
         page.panel=false;
         if(flow.Stage()==CampaignStage::Entry) {
             page.title=L"1 / 3  안전 진입실";
-            page.body=L"전투에서는 WASD로 이동하고 마우스로 조준합니다. 왼쪽 클릭으로 사격합니다.\n버튼 또는 Enter로 전투 복도에 진입하세요.";
+            page.body=L"이동: 시간 진행 / 적 본체 명중: 내 총 파손\n빈손으로 총 조준 + E: 재무장 / Enter: 복도 진입";
             page.buttons.push_back({UiAction::Advance,L"복도로 진입",744,640,232,54,true});
         } else if(flow.Stage()==CampaignStage::Corridor) {
             page.title=L"2 / 3  새 전투 맵 · 첫 복도";
@@ -270,7 +280,7 @@ UiPage GameScene::Page() const {
 }
 std::string GameScene::StatusTitle(bool paused) const {
     if(!campaignMode) return testScene.StatusTitle(paused)+testScene.TimeDebug();
-    const char* screen=flow.Screen()==CampaignScreen::Title?"TITLE":flow.Screen()==CampaignScreen::Help?"HELP":flow.Screen()==CampaignScreen::Paused?"PAUSED":flow.Screen()==CampaignScreen::Failed?"FAILED":flow.Screen()==CampaignScreen::Victory?"VICTORY":"PLAYING";
+    const char* screen=showCredits?"CREDITS":flow.Screen()==CampaignScreen::Title?"TITLE":flow.Screen()==CampaignScreen::Help?"HELP":flow.Screen()==CampaignScreen::Paused?"PAUSED":flow.Screen()==CampaignScreen::Failed?"FAILED":flow.Screen()==CampaignScreen::Victory?"VICTORY":"PLAYING";
     const char* stage=flow.Stage()==CampaignStage::Entry?"ENTRY":flow.Stage()==CampaignStage::Corridor?"CORRIDOR":"BOSS";
     return std::string("AEGIS CAMPAIGN | ")+screen+" | "+stage+" | "+testScene.StatusTitle(false)+testScene.TimeDebug();
 }

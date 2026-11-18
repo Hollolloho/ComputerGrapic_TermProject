@@ -6,6 +6,8 @@
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace aegis {
 namespace {
@@ -19,9 +21,10 @@ bool KoreanUi::Init() {
     Clear();
     const auto vs=Shader(GL_VERTEX_SHADER,R"(#version 330 core
 out vec2 uv;
+uniform mat4 clipTransform;
 void main() {
  vec2 p[6]=vec2[6](vec2(-1,-1),vec2(1,-1),vec2(1,1),vec2(-1,-1),vec2(1,1),vec2(-1,1));
- vec2 v=p[gl_VertexID]; uv=vec2((v.x+1)*0.5,1-(v.y+1)*0.5); gl_Position=vec4(v,0,1);
+ vec2 v=p[gl_VertexID]; uv=vec2((v.x+1)*0.5,1-(v.y+1)*0.5); gl_Position=clipTransform*vec4(v,0,1);
 })");
     const auto fs=Shader(GL_FRAGMENT_SHADER,R"(#version 330 core
 in vec2 uv; out vec4 color; uniform sampler2D ui;
@@ -62,7 +65,11 @@ bool KoreanUi::Rasterize(const UiPage& page,int width,int height,int hover) {
         auto r=rect(x,y,w,h); DrawTextW(dc,value.c_str(),static_cast<int>(value.size()),&r,DT_LEFT|DT_WORDBREAK|DT_NOPREFIX);
         SelectObject(dc,oldFont); DeleteObject(font);
     };
-    if(page.panel) {
+    if(page.sign) {
+        fill(0,0,1024,768,RGB(12,24,34));fill(0,0,20,768,RGB(45,212,191));
+        text(page.title,56,70,920,250,132,true,RGB(167,243,208));
+        text(page.body,56,360,920,350,76,false,RGB(228,242,249));
+    } else if(page.panel) {
         fill(170,100,684,570,RGB(12,21,34)); fill(170,100,8,570,RGB(45,212,191));
         text(page.title,218,145,590,70,38,true,RGB(226,245,249));
         text(page.body,218,235,590,225,23,false,RGB(197,212,229));
@@ -107,8 +114,19 @@ void KoreanUi::Draw(const UiPage& page,int width,int height,float mouseX,float m
     key+=std::to_wstring(hover);
     if(key!=cacheKey) { if(!Rasterize(page,width,height,hover)) return; cacheKey=key; }
     glDisable(GL_SCISSOR_TEST); glDisable(GL_DEPTH_TEST); glDepthMask(GL_FALSE); glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-    glUseProgram(program); glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D,texture); glBindVertexArray(vao); glDrawArrays(GL_TRIANGLES,0,6);
+    glUseProgram(program); const glm::mat4 identity(1);glUniformMatrix4fv(glGetUniformLocation(program,"clipTransform"),1,GL_FALSE,glm::value_ptr(identity)); glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D,texture); glBindVertexArray(vao); glDrawArrays(GL_TRIANGLES,0,6);
     glBindVertexArray(0); glBindTexture(GL_TEXTURE_2D,0); glUseProgram(0); glDisable(GL_BLEND); glDepthMask(GL_TRUE); glEnable(GL_DEPTH_TEST);
+}
+void KoreanUi::DrawWorld(const std::wstring& title,const std::wstring& body,const glm::mat4& vp,const glm::vec3& position,const glm::vec2& size) {
+    if(!program) return;
+    UiPage page;page.sign=true;page.title=title;page.body=body;
+    const auto key=L"WORLD SIGN:"+title+L"/"+body;
+    if(key!=cacheKey) { if(!Rasterize(page,512,256,-1)) return;cacheKey=key; }
+    const auto transform=vp*glm::scale(glm::translate(glm::mat4(1),position),glm::vec3(size.x*.5f,size.y*.5f,1));
+    glDisable(GL_SCISSOR_TEST);glEnable(GL_DEPTH_TEST);glDepthMask(GL_TRUE);glDisable(GL_BLEND);glDisable(GL_CULL_FACE);
+    glUseProgram(program);glUniformMatrix4fv(glGetUniformLocation(program,"clipTransform"),1,GL_FALSE,glm::value_ptr(transform));
+    glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,texture);glBindVertexArray(vao);glDrawArrays(GL_TRIANGLES,0,6);
+    glBindVertexArray(0);glBindTexture(GL_TEXTURE_2D,0);glUseProgram(0);
 }
 void KoreanUi::Clear() {
     if(program) glDeleteProgram(program); if(texture) glDeleteTextures(1,&texture); if(vao) glDeleteVertexArrays(1,&vao);
