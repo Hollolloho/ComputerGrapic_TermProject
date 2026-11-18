@@ -6,6 +6,7 @@
 #include "turret_encounter.h"
 #include "weapon_view.h"
 #include "drone.h"
+#include "turret_view.h"
 #include "analysis_session.h"
 #include "boss_view.h"
 #include "korean_ui.h"
@@ -102,7 +103,7 @@ private:
     combat::BossEncounter boss;
     BossView bossView;
     bool debugControls{true};
-    bool combatMapMode{},smokeMapSlow{},smokeMapCoverBlocked{};
+    bool combatMapMode{},smokeMapSlow{},smokeMapCoverBlocked{},smokeMapBoth{},smokeMapTurretShot{},smokeMapLocked{};
     bool bossMode{},bossCovered{},bossToggleHeld{},smokeBossFailureSeen{};
     combat::AnalysisSession analysis;
     std::vector<DrawMesh> terminalMeshes;
@@ -114,6 +115,7 @@ private:
     PlayerView smokeViewSnapshot;
     WeaponView weapon;
     Drone drone;
+    TurretView turretView;
     MeshRenderer droneRenderer;
     GLuint program{};
     GLuint vao{};

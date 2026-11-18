@@ -135,4 +135,12 @@
     <None Include="shaders\combat_map.vert" />
     <None Include="shaders\combat_map.frag" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\fixed_turret.cpp" />
+    <ClInclude Include="src\fixed_turret.h" />
+    <ClCompile Include="src\turret_view.cpp" />
+    <ClInclude Include="src\turret_view.h" />
+    <None Include="shaders\turret.vert" />
+    <None Include="shaders\turret.frag" />
+  </ItemGroup>
 </Project>

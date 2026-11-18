@@ -34,6 +34,8 @@ void TurretEncounter::Reset()
         {301,HitKind::Wall,{-6,0,-13},{6,4,-12.8f}},
         {turretWeaponId,HitKind::Weapon,{0.65f,1.45f,-9.5f},{1.05f,1.85f,-9.05f}}
     }};
+    support.Reset();
+    if(supportEnabled) { colliders.push_back(support.Body()); colliders.push_back(support.Weapon()); }
     if (!environment.empty()) {
         colliders[1].enabled=colliders[2].enabled=colliders[3].enabled=false;
         colliders.insert(colliders.end(),environment.begin(),environment.end());
@@ -47,6 +49,8 @@ void TurretEncounter::Reset()
     health=100; playerShots=enemyShots=hitsTaken=blockedEnemyShots=0;
     aimPoint=glm::vec3(0);
 }
+
+void TurretEncounter::SetSupportTurret(bool enabled) { supportEnabled=enabled; Reset(); }
 
 void TurretEncounter::SetEnvironment(std::span<const Collider> walls) {
     environment.assign(walls.begin(),walls.end()); Reset();
@@ -123,10 +127,24 @@ void TurretEncounter::Update(float realDt,float gameDt,const glm::vec3& eye,cons
             : drone.Phase()==DronePhase::Disarmed ? TurretPhase::Disarmed : TurretPhase::Idle;
     }
 
+    // Both enemies use the same world clock and shared scenery.
+    bool supportShot=false;
+    if(supportEnabled) {
+        std::vector<Collider> walls;
+        for(const auto& box:colliders) if(box.enabled && (box.kind==HitKind::Wall || box.kind==HitKind::Armor)) walls.push_back(box);
+        supportShot=support.Update(gameDt,eye,walls);
+        colliders[5]=support.Body(); colliders[6]=support.Weapon();
+    }
     // Player shots never collide with the shooter's body. One impact per bullet.
     for (auto& flight:playerFlights) {
         if (auto hit=AdvanceProjectile(flight.projectile,gameDt,colliders)) {
-            if (hit->objectId==turretWeaponId) {
+            if(supportEnabled && hit->objectId==FixedTurret::WeaponId) {
+                support.Disarm(); colliders[6]=support.Weapon();
+            } else if(supportEnabled && hit->objectId==FixedTurret::BodyId) {
+                inventory.Break(flight.projectile.sourceWeaponId);
+                if(support.Armed()) inventory.SpawnDrop(support.Position()+glm::vec3(0,0.12f,0.9f));
+                support.Destroy(); colliders[5]=support.Body();colliders[6]=support.Weapon();
+            } else if (hit->objectId==turretWeaponId) {
                 colliders[4].enabled=false; phase=TurretPhase::Disarmed;
                 if (droneMode) drone.Disarm();
             } else if (hit->objectId==turretId) {
@@ -139,12 +157,13 @@ void TurretEncounter::Update(float realDt,float gameDt,const glm::vec3& eye,cons
                 colliders[4].enabled=false;
                 colliders[0].enabled=false;
                 phase=TurretPhase::Destroyed;
-                result=EncounterResult::Securing;
+                if(RemainingEnemies()==0) result=EncounterResult::Securing;
             }
         }
         flight.age+=gameDt;
     }
     RemoveExpired(playerFlights);
+    if(RemainingEnemies()==0) result=EncounterResult::Securing;
 
     // Same environment proxies, but enemy shots ignore their source turret.
     auto enemyColliders=colliders;
@@ -155,6 +174,14 @@ void TurretEncounter::Update(float realDt,float gameDt,const glm::vec3& eye,cons
     enemyColliders[bodyIndex]={playerId,HitKind::Body,eye+glm::vec3(-0.3f,-1.65f,-0.3f),
         eye+glm::vec3(0.3f,0.15f,0.3f)};
     for (auto& flight:enemyFlights) {
+        // A projectile ignores only the enemy that fired it.
+        const bool fromSupport=flight.projectile.sourceWeaponId==FixedTurret::ShotId;
+        enemyColliders[0].enabled=fromSupport && colliders[0].enabled;
+        enemyColliders[4].enabled=fromSupport && colliders[4].enabled;
+        if(supportEnabled) {
+            enemyColliders[5].enabled=!fromSupport && colliders[5].enabled;
+            enemyColliders[6].enabled=!fromSupport && colliders[6].enabled;
+        }
         enemyColliders[bodyIndex+1]=inventory.HeldCollider(eye,forward);
         if (auto hit=AdvanceProjectile(flight.projectile,gameDt,enemyColliders)) {
             if (hit->kind==HitKind::Body && hit->objectId==playerId) {
@@ -172,12 +199,20 @@ void TurretEncounter::Update(float realDt,float gameDt,const glm::vec3& eye,cons
         playerFlights.clear(); enemyFlights.clear(); return;
     }
 
-    if (!EnemyAlive()) {
+    if(supportEnabled && supportShot && support.Armed()) {
+        if(auto shot=MakeProjectile(support.Muzzle(),support.AimPoint()-support.Muzzle(),7.0f,FixedTurret::ShotId)) {
+            enemyFlights.push_back({*shot,0}); ++enemyShots;
+        }
+    }
+    if (RemainingEnemies()==0) {
         phase=TurretPhase::Destroyed;
         if (enemyFlights.empty()) { result=EncounterResult::Cleared; playerFlights.clear(); }
         return;
     }
+    if(!EnemyAlive()) return;
     if (!colliders[4].enabled) { phase=TurretPhase::Disarmed; return; }
+    enemyColliders[0].enabled=enemyColliders[4].enabled=false;
+    if(supportEnabled) { enemyColliders[5]=colliders[5]; enemyColliders[6]=colliders[6]; }
     enemyColliders[bodyIndex+1].enabled=false; // Own held gun must not hide the player from AI sight.
     if (droneMode) {
         if (droneShot && drone.Armed()) {

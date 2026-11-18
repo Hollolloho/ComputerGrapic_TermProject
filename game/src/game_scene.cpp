@@ -257,7 +257,7 @@ UiPage GameScene::Page() const {
             page.buttons.push_back({UiAction::Advance,L"복도로 진입",744,640,232,54,true});
         } else if(flow.Stage()==CampaignStage::Corridor) {
             page.title=L"2 / 3  새 전투 맵 · 첫 복도";
-            page.body=ReadyToAdvance() ? L"복도가 안전해졌습니다. 오른쪽 단말에서 분석하거나 코어실로 진행하세요.":L"드론을 제거하고 남은 적탄을 피하세요. 모든 위험이 사라지면 문이 열립니다.";
+            page.body=ReadyToAdvance() ? L"복도가 안전해졌습니다. 오른쪽 단말에서 분석하거나 코어실로 진행하세요.":L"드론과 포탑을 제거하고 남은 적탄을 피하세요. 모든 위험이 사라지면 진행할 수 있습니다.";
             page.buttons.push_back({UiAction::Advance,L"Enter · 코어실로 이동",744,640,232,54,ReadyToAdvance()});
         } else {
             page.title=L"3 / 3  코어실 보스전";

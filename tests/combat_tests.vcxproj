@@ -64,4 +64,5 @@
     <ClInclude Include="..\game\src\combat.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ItemGroup><ClCompile Include="..\game\src\fixed_turret.cpp" /></ItemGroup>
 </Project>

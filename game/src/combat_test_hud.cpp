@@ -159,6 +159,7 @@ void CombatTestScene::PopulateHud(UiPage& page) const {
     page.status=L"체력 "+std::to_wstring(page.health)+L" / 100  |  ";
     page.status+=inventory.Armed() ? L"무기: 장착 중":L"무기: 빈손";
     page.status+=L"  |  누적 파손 "+std::to_wstring(inventory.Breaks());
+    if(!bossMode && encounter.HasSupportTurret()) page.status+=L"  |  남은 적 "+std::to_wstring(encounter.RemainingEnemies())+L" / 2";
     if(bossMode) page.status+=L"  |  코어 명중 "+std::to_wstring(boss.CoreHits())+L" / 3";
     const auto result=BattleResult();
     page.danger=page.health<=25;
@@ -189,6 +190,12 @@ void CombatTestScene::PopulateHud(UiPage& page) const {
         default: page.warning=L"드론 순찰 중 · 본체를 조준해 파괴하세요."; break;
         }
         page.body=L"왼쪽 클릭: 사격  /  오른쪽 드래그: 조준  /  G: 무기 내려놓기  /  Esc: 메뉴";
+    }
+    if(!bossMode && encounter.HasSupportTurret() && result==combat::EncounterResult::Running) {
+        const auto& turret=encounter.SupportTurret();
+        if(turret.Phase()==combat::TurretPhase::Warning) { page.warning=L"고정 포탑이 조준 중! 엄폐하거나 사선을 벗어나세요.";page.danger=true; }
+        else if(!encounter.EnemyAlive()) page.warning=turret.Armed() ? L"드론 파괴 · 남은 포탑의 본체를 조준하세요.":L"포탑 무기 파괴 · 본체를 맞혀 마무리하세요.";
+        else page.warning=L"드론과 고정 포탑을 모두 파괴하세요. 엄폐물을 활용하세요.";
     }
     if(!bossMode && HasExternalPlayerView() && result==combat::EncounterResult::Running)
         page.body=L"WASD: 이동  /  마우스: 조준  /  왼쪽 클릭: 사격  /  G: 내려놓기  /  Esc: 메뉴";

@@ -850,6 +850,72 @@ int main()
         for(int i=0;i<fps;++i) elapsed+=(1.0/fps)*MovementTimeScale({0,0,-3.0f/fps},1.0/fps);
         check(std::abs(elapsed-1)<0.0001,"full movement world-time integral agrees across 30/60/144 fps");
     }
+    // Mixed encounter: shared inventory/health, independent enemy clocks and source IDs.
+    FixedTurret fixed;
+    const glm::vec3 mixedEye{0,1.65f,-1.5f};
+    check(!fixed.SetPosition({std::numeric_limits<float>::quiet_NaN(),0,0}),"fixed turret rejects invalid placement");
+    const auto fixedPosition=fixed.Position();
+    check(!fixed.Update(0,mixedEye,{}) && fixed.Phase()==TurretPhase::Idle,"paused fixed turret cannot warn or fire");
+    check(!fixed.Update(.01f,mixedEye,{}) && fixed.Phase()==TurretPhase::Warning,"fixed turret starts a visible warning before firing");
+    const auto fixedLockedAim=fixed.AimPoint();
+    check(!fixed.Update(.5f,mixedEye+glm::vec3(1,0,0),{}) && fixed.AimPoint()==fixedLockedAim,"fixed turret locks warning aim so player can dodge");
+    check(fixed.Update(.71f,mixedEye,{}) && fixed.Phase()==TurretPhase::Cooldown,"fixed turret fires once after warning game time");
+    check(fixed.Position()==fixedPosition,"fixed turret never moves its body while tracking player");
+    fixed.Reset();fixed.Update(.01f,mixedEye,{});
+    const std::array<Collider,1> occluder{{{99001,HitKind::Wall,{-5,0,-8},{5,3,-7.9f}}}};
+    check(!fixed.Update(2,mixedEye,occluder) && fixed.Phase()==TurretPhase::Idle,"scenery interrupts turret warning and prevents shooting through walls");
+    fixed.Disarm();check(!fixed.Update(5,mixedEye,{}) && !fixed.Weapon().enabled && fixed.Body().enabled,"disarmed turret stays alive but cannot fire");
+    fixed.Destroy();check(!fixed.Body().enabled && !fixed.Weapon().enabled,"destroyed turret disables both hit regions");
+    fixed.Reset();check(fixed.Armed() && fixed.Body().enabled,"fixed turret reset restores body gun and warning state");
+    for(int fps:{30,60,144}) {
+        fixed.Reset();int shots=0;
+        for(int n=0;n<fps;++n) shots+=fixed.Update(1.0f/fps,mixedEye,{});
+        check(shots==0 && fixed.Phase()==TurretPhase::Warning,"turret warning lasts longer than one second at 30/60/144 fps");
+    }
+    TurretEncounter mixed;
+    mixed.SetEnvironment(aegis::combat_map_asset::walls);
+    mixed.SetDroneSpawn(aegis::combat_map_asset::droneSpawn,glm::radians(aegis::combat_map_asset::droneYawDegrees),aegis::combat_map_asset::droneSpawn.x);
+    mixed.SetDroneMode(true);mixed.SetSupply(aegis::combat_map_asset::supply);mixed.SetSupportTurret(true);
+    check(mixed.RemainingEnemies()==2 && !mixed.CanAnalyze(),"mixed encounter starts with two enemies and locked analysis");
+    bool primaryShot=false,supportShot=false;
+    for(int n=0;n<430;++n) {
+        mixed.Update(.01f,.01f,mixedEye,{0,0,1});
+        for(const auto& f:mixed.EnemyFlights()) { primaryShot|=f.projectile.sourceWeaponId==900;supportShot|=f.projectile.sourceWeaponId==FixedTurret::ShotId; }
+    }
+    check(primaryShot && supportShot,"drone and turret independently fire in the same encounter");
+    check(mixed.Health()<100 && mixed.HitsTaken()>0,"both enemy projectile streams use shared player damage state");
+    mixed.Reset();
+    check(mixed.RemainingEnemies()==2 && mixed.Health()==100 && mixed.Inventory().Armed() && mixed.EnemyFlights().empty() && mixed.PlayerFlights().empty(),"mixed restart restores both enemies health inventory and projectiles");
+    check(mixed.Fire(mixedEye,mixed.DroneState().Position()-mixedEye),"mixed encounter accepts one shared player shot");
+    for(int n=0;n<100;++n) mixed.Update(.01f,.01f,mixedEye);
+    check(!mixed.EnemyAlive() && mixed.SupportTurret().Alive() && mixed.RemainingEnemies()==1,"destroying drone preserves the independent fixed turret");
+    check(mixed.Result()==EncounterResult::Running && !mixed.CanAnalyze(),"one surviving turret blocks clearing analysis and stage advancement");
+    check(mixed.Inventory().Breaks()==1 && mixed.Inventory().Drops().size()==1,"drone kill consumes only its firing weapon and drops one intact enemy gun");
+    check(mixed.Interact(mixedEye,aegis::combat_map_asset::supply-mixedEye),"player can rearm from shared supply between enemy kills");
+    check(mixed.Fire(mixedEye,mixed.SupportTurret().Position()+glm::vec3(0,.9f,0)-mixedEye),"second weapon can target remaining turret body");
+    for(int n=0;n<125;++n) mixed.Update(.01f,.01f,mixedEye);
+    check(mixed.RemainingEnemies()==0 && mixed.Result()==EncounterResult::Securing && !mixed.EnemyFlights().empty() && !mixed.CanAnalyze(),"last enemy death leaves incoming shots active and analysis locked");
+    for(int n=0;n<450;++n) mixed.Update(.01f,.01f,mixedEye);
+    check(mixed.Result()==EncounterResult::Cleared && mixed.CanAnalyze() && mixed.EnemyFlights().empty(),"mixed area clears only after both enemies and remaining shots are gone");
+    check(mixed.Inventory().Breaks()==2 && mixed.Inventory().Drops().size()==2,"two body kills produce exactly two breaks and two drops");
+    mixed.Reset();
+    const auto reverseEye=mixed.SupportTurret().Position()+glm::vec3(0,1,3);
+    mixed.Fire(reverseEye,mixed.SupportTurret().Position()+glm::vec3(0,.9f,0)-reverseEye);
+    for(int n=0;n<40;++n) mixed.Update(.01f,.01f,reverseEye);
+    check(!mixed.SupportTurret().Alive() && mixed.EnemyAlive() && mixed.Result()==EncounterResult::Running && !mixed.CanAnalyze(),"destroying turret first also keeps drone encounter running");
+    mixed.Reset();
+    const auto gunEye=mixed.SupportTurret().Muzzle()+glm::vec3(0,0,2);
+    mixed.Fire(gunEye,mixed.SupportTurret().Muzzle()-gunEye);
+    for(int n=0;n<30;++n) mixed.Update(.01f,.01f,gunEye);
+    check(mixed.SupportTurret().Alive() && !mixed.SupportTurret().Armed() && mixed.RemainingEnemies()==2,"turret gun hit disarms only gun and never counts as a body kill");
+    mixed.Reset();
+    const auto frozenGun=mixed.SupportTurret().Weapon();
+    for(int n=0;n<300;++n) mixed.Update(.01f,0,mixedEye);
+    check(mixed.EnemyShots()==0 && mixed.SupportTurret().Weapon().minimum==frozenGun.minimum,"pause freezes both enemies including turret aim and shot timers");
+    for(int n=0;n<3000 && mixed.Result()!=EncounterResult::Failed;++n) mixed.Update(.01f,.01f,mixedEye,{0,0,1});
+    check(mixed.Result()==EncounterResult::Failed && mixed.Health()==0 && mixed.PlayerFlights().empty() && mixed.EnemyFlights().empty(),"mixed defeat clears both projectile streams and clamps shared health");
+    check(!mixed.Fire(mixedEye,{0,0,-1}) && !mixed.Interact(mixedEye,aegis::combat_map_asset::supply-mixedEye),"failed mixed encounter blocks firing and resupply");
+    mixed.Reset();check(mixed.RemainingEnemies()==2 && mixed.Inventory().Breaks()==0 && mixed.Inventory().Drops().empty() && mixed.EnemyShots()==0,"retry after mixed defeat removes old drops counters and destruction state");
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

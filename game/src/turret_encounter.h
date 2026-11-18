@@ -3,11 +3,11 @@
 #include "combat_range.h"
 #include "weapon_inventory.h"
 #include "drone_behavior.h"
+#include "fixed_turret.h"
 
 namespace aegis::combat {
 
 enum class EncounterResult { Running, Securing, Failed, Cleared };
-enum class TurretPhase { Idle, Warning, Cooldown, Disarmed, Destroyed };
 
 // A fixed-turret encounter. Input, camera, drawing and global time are external.
 class TurretEncounter {
@@ -19,6 +19,10 @@ public:
     bool SetDroneSpawn(const glm::vec3& point,float yawRadians,float patrolCenterX);
     bool SetSupply(const glm::vec3& point);
     void SetExitDoors(ObjectId left,ObjectId right,float distance);
+    void SetSupportTurret(bool enabled);
+    bool HasSupportTurret() const { return supportEnabled; }
+    const FixedTurret& SupportTurret() const { return support; }
+    int RemainingEnemies() const { return (EnemyAlive()?1:0)+(supportEnabled && support.Alive()?1:0); }
     bool CanAnalyze() const { return result==EncounterResult::Cleared; }
     float DoorProgress() const { return doorProgress; }
     bool EnemyAlive() const { return colliders[0].enabled; }
@@ -51,6 +55,8 @@ private:
     ObjectId leftDoor{},rightDoor{};
     float doorDistance{},doorProgress{};
     glm::vec3 supplyPosition=WeaponInventory::SupplyPosition();
+    FixedTurret support;
+    bool supportEnabled{};
     DroneBehavior drone;
     bool droneMode{};
     WeaponInventory inventory;
