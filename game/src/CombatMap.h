@@ -1,9 +1,7 @@
 #pragma once
 
 #include "Common.h"
-
-#include <GL/glew.h>
-#include <vector>
+#include "RenderMesh.h"
 
 class CombatMap
 {
@@ -13,18 +11,7 @@ public:
 	void Clear();
 
 private:
-	struct Mesh
-	{
-		GLuint vao = 0;
-		GLuint vbo = 0;
-		GLuint ebo = 0;
-
-		GLsizei indexCount = 0;
-		glm::vec3 color{1.f};
-		glm::vec3 emission{0.f};
-	};
-
-	std::vector<Mesh> meshes;
+	std::vector<RenderMesh> meshes;
 	GLuint shaderProgram = 0;
 	GLint transformLocation = -1;
 	GLint colorLocation = -1;

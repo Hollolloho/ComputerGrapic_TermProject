@@ -1,20 +1,17 @@
 #pragma once
 
 #include "Common.h"
+#include "RenderMesh.h"
 
 class Drone
 {
 private:
-	struct Mesh
-	{
-		GLuint vao = 0;
-		GLuint vbo = 0;
-		GLuint ebo = 0;
+	std::vector<RenderMesh> meshes;
+	GLuint shaderProgram = 0;
+	GLint transformLocation = -1;
+	GLint colorLocation = -1;
+	GLint emissionLocation = -1;
 
-		GLsizei indexCount = 0;
-		glm::vec3 color{ 1.f };
-		glm::vec3 emission{ 0.f };
-	};
 	glm::mat4 droneMat{ 1.f };
 public:
 	bool Init();
