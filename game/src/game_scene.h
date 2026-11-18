@@ -1,4 +1,5 @@
 #pragma once
+#include "CombatMap.h"
 
 #include "drone.h"
 #include "player_camera.h"
@@ -53,7 +54,6 @@ private:
     };
 
     bool InitEntry(const std::filesystem::path& root);
-    bool InitCombatMap(const std::filesystem::path& root);
     void DrawEntry(int width,int height) const;
     void DrawBattle(int width,int height) const;
     void LoadStage();
@@ -70,7 +70,8 @@ private:
     int stageSmokeFrame{},failedSmokeFrame{},victorySmokeFrame{},pausedSmokeFrame{};
     bool smokeRetried{},smokePaused{},smokeVictory{},smokeRestarted{},smokeDone{};
     mutable KoreanUi ui;
-    std::vector<DrawMesh> entryRoom,entryTerminal,combatMap;
+    std::vector<DrawMesh> entryRoom,entryTerminal;
+    CombatMap combatMap;
     MeshRenderer renderer;
     std::array<CorridorObject, 5> corridor;
     Drone drone;

@@ -4,8 +4,8 @@
 #include <array>
 namespace aegis::combat_map_asset {
 inline constexpr const char* mesh="asset/combat_map/obj/combat_map.obj";
-inline constexpr const char* sourceHash="80040bb4156572234a89f3c2188a36f949934a42a5a40287c84f5be7d0a03f19";
-inline constexpr int triangles=32436;
+inline constexpr const char* sourceHash="1fcf0375ffc9a719bfbcb41059e2aaaca30ba13787e1fe2961a569b8b4f8ecad";
+inline constexpr int triangles=32196;
 inline const glm::vec3 playerStart={0.000000f,0.000000f,-1.500000f};
 inline const glm::vec3 droneSpawn={0.650000f,1.950000f,-11.400000f};
 inline constexpr float droneYawDegrees=-4.420000f;
@@ -14,9 +14,9 @@ inline const glm::vec3 terminal=playerStart+glm::vec3(0.95f,0,-1.5f);
 inline const std::array<combat::Collider,102> walls={{
     {30000,combat::HitKind::Wall,{-3.095000f,-0.240000f,-18.000000f},{3.095000f,0.000000f,0.000000f}}, // 01_Security_corridor_floor
     {30001,combat::HitKind::Wall,{3.095000f,0.000000f,-18.001499f},{3.385000f,3.392000f,0.001500f}}, // 01_Corridor_wall_solid
-    {30002,combat::HitKind::Wall,{3.046000f,0.020000f,-18.000000f},{3.120000f,0.170000f,-0.000000f}}, // 01_Corridor_wall_toe_rail
-    {30003,combat::HitKind::Wall,{2.997000f,2.942000f,-18.000000f},{3.117000f,3.162000f,0.000000f}}, // 01_Corridor_wall_cable_trunk
-    {30004,combat::HitKind::Wall,{2.978000f,3.044500f,-18.000000f},{3.004000f,3.079500f,0.000000f}}, // 01_Corridor_wall_upper_reveal
+    {30002,combat::HitKind::Wall,{3.046000f,0.020000f,-18.012000f},{3.120000f,0.170000f,-0.012000f}}, // 01_Corridor_wall_toe_rail
+    {30003,combat::HitKind::Wall,{2.997000f,2.942000f,-18.012000f},{3.117000f,3.162000f,-0.012000f}}, // 01_Corridor_wall_cable_trunk
+    {30004,combat::HitKind::Wall,{2.978000f,3.044500f,-18.012000f},{3.004000f,3.079500f,-0.012000f}}, // 01_Corridor_wall_upper_reveal
     {30005,combat::HitKind::Wall,{3.031500f,0.220480f,-1.965000f},{3.106500f,2.221760f,-0.035000f}}, // 01_Corridor_wall_lower_panel
     {30006,combat::HitKind::Wall,{3.004500f,1.849600f,-1.925000f},{3.035500f,1.881600f,-0.075000f}}, // 01_Corridor_wall_waist_reveal
     {30007,combat::HitKind::Wall,{3.014500f,0.322240f,-1.714500f},{3.039500f,2.120000f,-1.685500f}}, // 01_Corridor_wall_service_seam
@@ -43,9 +43,9 @@ inline const std::array<combat::Collider,102> walls={{
     {30028,combat::HitKind::Wall,{3.004500f,1.849600f,-17.924999f},{3.035500f,1.881600f,-16.075001f}}, // 01_Corridor_wall_waist_reveal.008
     {30029,combat::HitKind::Wall,{3.014500f,0.322240f,-17.714500f},{3.039500f,2.120000f,-17.685499f}}, // 01_Corridor_wall_service_seam.004
     {30030,combat::HitKind::Wall,{-3.385000f,0.000000f,-18.001499f},{-3.095000f,3.392000f,0.001500f}}, // 01_Corridor_wall_solid.001
-    {30031,combat::HitKind::Wall,{-3.120000f,0.020000f,-18.000000f},{-3.046000f,0.170000f,0.000000f}}, // 01_Corridor_wall_toe_rail.001
-    {30032,combat::HitKind::Wall,{-3.117000f,2.942000f,-18.000000f},{-2.997000f,3.162000f,0.000000f}}, // 01_Corridor_wall_cable_trunk.001
-    {30033,combat::HitKind::Wall,{-3.004000f,3.044500f,-18.000000f},{-2.978000f,3.079500f,-0.000000f}}, // 01_Corridor_wall_upper_reveal.001
+    {30031,combat::HitKind::Wall,{-3.120000f,0.020000f,-18.012000f},{-3.046000f,0.170000f,-0.012000f}}, // 01_Corridor_wall_toe_rail.001
+    {30032,combat::HitKind::Wall,{-3.117000f,2.942000f,-18.012000f},{-2.997000f,3.162000f,-0.012000f}}, // 01_Corridor_wall_cable_trunk.001
+    {30033,combat::HitKind::Wall,{-3.004000f,3.044500f,-18.012000f},{-2.978000f,3.079500f,-0.012000f}}, // 01_Corridor_wall_upper_reveal.001
     {30034,combat::HitKind::Wall,{-3.106500f,0.220480f,-17.965000f},{-3.031500f,2.221760f,-16.035000f}}, // 01_Corridor_wall_lower_panel.009
     {30035,combat::HitKind::Wall,{-3.035500f,1.849600f,-17.924999f},{-3.004500f,1.881600f,-16.075001f}}, // 01_Corridor_wall_waist_reveal.009
     {30036,combat::HitKind::Wall,{-3.039500f,0.322240f,-16.314501f},{-3.014500f,2.120000f,-16.285500f}}, // 01_Corridor_wall_service_seam.005
@@ -73,7 +73,7 @@ inline const std::array<combat::Collider,102> walls={{
     {30058,combat::HitKind::Wall,{-3.039500f,0.322240f,-0.314500f},{-3.014500f,2.120000f,-0.285500f}}, // 01_Corridor_wall_service_seam.009
     {30059,combat::HitKind::Wall,{-3.096500f,0.000000f,-0.290000f},{-1.448500f,3.392000f,-0.000000f}}, // 01_Entry_gate_west_infill_solid
     {30060,combat::HitKind::Wall,{1.448500f,0.000000f,-0.290000f},{3.096500f,3.392000f,-0.000000f}}, // 01_Entry_gate_east_infill_solid
-    {30061,combat::HitKind::Wall,{-1.450000f,3.000000f,-0.290000f},{1.450000f,3.392000f,0.000000f}}, // 01_Entry_gate_header
+    {30061,combat::HitKind::Wall,{-1.448500f,3.012000f,-0.290000f},{1.448500f,3.392000f,0.000000f}}, // 01_Entry_gate_header
     {30062,combat::HitKind::Wall,{-1.620000f,0.000000f,-0.360000f},{-1.450000f,3.000000f,0.120000f}}, // 01_Entry_gate_jamb_-1
     {30063,combat::HitKind::Wall,{-1.566500f,0.975000f,0.118500f},{-1.503500f,1.925000f,0.147500f}}, // 01_Entry_gate_sill_marker_-1
     {30064,combat::HitKind::Wall,{-1.557500f,1.275000f,-0.394500f},{-1.512500f,1.625000f,-0.365500f}}, // 01_Entry_gate_exit_marker_-1
@@ -84,7 +84,7 @@ inline const std::array<combat::Collider,102> walls={{
     {30069,combat::HitKind::Wall,{-0.390000f,3.081000f,0.106000f},{0.390000f,3.149000f,0.144000f}}, // 01_Entry_gate_locator
     {30070,combat::HitKind::Wall,{-6.001500f,0.000000f,-18.290001f},{-1.448500f,4.700000f,-18.000000f}}, // 02_Interlock_gate_west_infill_solid
     {30071,combat::HitKind::Wall,{1.448500f,0.000000f,-18.290001f},{6.001500f,4.700000f,-18.000000f}}, // 02_Interlock_gate_east_infill_solid
-    {30072,combat::HitKind::Wall,{-1.450000f,3.000000f,-18.290001f},{1.450000f,4.700000f,-18.000000f}}, // 02_Interlock_gate_header
+    {30072,combat::HitKind::Wall,{-1.448500f,3.012000f,-18.290001f},{1.448500f,4.700000f,-18.000000f}}, // 02_Interlock_gate_header
     {30073,combat::HitKind::Wall,{-1.620000f,0.000000f,-18.360001f},{-1.450000f,3.000000f,-17.879999f}}, // 02_Interlock_gate_jamb_-1
     {30074,combat::HitKind::Wall,{-1.566500f,0.975000f,-17.881500f},{-1.503500f,1.925000f,-17.852501f}}, // 02_Interlock_gate_sill_marker_-1
     {30075,combat::HitKind::Wall,{-1.557500f,1.275000f,-18.394501f},{-1.512500f,1.625000f,-18.365499f}}, // 02_Interlock_gate_exit_marker_-1
@@ -111,7 +111,7 @@ inline const std::array<combat::Collider,102> walls={{
     {30096,combat::HitKind::Wall,{1.149500f,0.001000f,-13.550000f},{1.210500f,0.009000f,-13.150000f}}, // 01_Security_corridor_guide_1.006
     {30097,combat::HitKind::Wall,{-1.210500f,0.001000f,-15.550000f},{-1.149500f,0.009000f,-15.150000f}}, // 01_Security_corridor_guide_-1.007
     {30098,combat::HitKind::Wall,{1.149500f,0.001000f,-15.550000f},{1.210500f,0.009000f,-15.150000f}}, // 01_Security_corridor_guide_1.007
-    {30099,combat::HitKind::Wall,{-3.095000f,3.392000f,-18.000000f},{3.095000f,3.632000f,0.000000f}}, // 01_Security_corridor_roof
+    {30099,combat::HitKind::Wall,{-3.095000f,3.392000f,-18.012000f},{3.095000f,3.632000f,0.000000f}}, // 01_Security_corridor_roof
     {30100,combat::HitKind::Wall,{-2.470000f,0.000000f,-8.676500f},{-1.330000f,1.830000f,-6.223500f}}, // Cover_A01
     {30101,combat::HitKind::Wall,{1.260000f,0.000000f,-15.576501f},{2.400000f,1.830000f,-13.623500f}}, // Cover_A02
 }};
@@ -121,9 +121,9 @@ inline const std::array<combat::Collider,833> playerWalls={{
     {40002,combat::HitKind::Wall,{0.000000f,-0.240000f,-48.200001f},{10.400000f,0.000000f,-31.000000f}}, // 03_Bent_maintenance_corridor_floor
     {40003,combat::HitKind::Wall,{-0.199152f,-0.240000f,-64.067497f},{15.799151f,0.000000f,-48.200001f}}, // 04_Circular_reactor_room_floor
     {40004,combat::HitKind::Wall,{3.095000f,0.000000f,-18.001499f},{3.385000f,3.392000f,0.001500f}}, // 01_Corridor_wall_solid
-    {40005,combat::HitKind::Wall,{3.046000f,0.020000f,-18.000000f},{3.120000f,0.170000f,-0.000000f}}, // 01_Corridor_wall_toe_rail
-    {40006,combat::HitKind::Wall,{2.997000f,2.942000f,-18.000000f},{3.117000f,3.162000f,0.000000f}}, // 01_Corridor_wall_cable_trunk
-    {40007,combat::HitKind::Wall,{2.978000f,3.044500f,-18.000000f},{3.004000f,3.079500f,0.000000f}}, // 01_Corridor_wall_upper_reveal
+    {40005,combat::HitKind::Wall,{3.046000f,0.020000f,-18.012000f},{3.120000f,0.170000f,-0.012000f}}, // 01_Corridor_wall_toe_rail
+    {40006,combat::HitKind::Wall,{2.997000f,2.942000f,-18.012000f},{3.117000f,3.162000f,-0.012000f}}, // 01_Corridor_wall_cable_trunk
+    {40007,combat::HitKind::Wall,{2.978000f,3.044500f,-18.012000f},{3.004000f,3.079500f,-0.012000f}}, // 01_Corridor_wall_upper_reveal
     {40008,combat::HitKind::Wall,{3.031500f,0.220480f,-1.965000f},{3.106500f,2.221760f,-0.035000f}}, // 01_Corridor_wall_lower_panel
     {40009,combat::HitKind::Wall,{3.004500f,1.849600f,-1.925000f},{3.035500f,1.881600f,-0.075000f}}, // 01_Corridor_wall_waist_reveal
     {40010,combat::HitKind::Wall,{3.014500f,0.322240f,-1.714500f},{3.039500f,2.120000f,-1.685500f}}, // 01_Corridor_wall_service_seam
@@ -150,9 +150,9 @@ inline const std::array<combat::Collider,833> playerWalls={{
     {40031,combat::HitKind::Wall,{3.004500f,1.849600f,-17.924999f},{3.035500f,1.881600f,-16.075001f}}, // 01_Corridor_wall_waist_reveal.008
     {40032,combat::HitKind::Wall,{3.014500f,0.322240f,-17.714500f},{3.039500f,2.120000f,-17.685499f}}, // 01_Corridor_wall_service_seam.004
     {40033,combat::HitKind::Wall,{6.000000f,0.000000f,-31.001499f},{6.290000f,4.700000f,-17.998501f}}, // 02_Interlock_wall_solid
-    {40034,combat::HitKind::Wall,{5.951000f,0.020000f,-31.000000f},{6.025000f,0.170000f,-18.000000f}}, // 02_Interlock_wall_toe_rail
-    {40035,combat::HitKind::Wall,{5.902000f,4.250000f,-31.000000f},{6.022000f,4.470000f,-18.000000f}}, // 02_Interlock_wall_cable_trunk
-    {40036,combat::HitKind::Wall,{5.883000f,4.352500f,-31.000000f},{5.909000f,4.387500f,-18.000000f}}, // 02_Interlock_wall_upper_reveal
+    {40034,combat::HitKind::Wall,{5.951000f,0.020000f,-31.012000f},{6.025000f,0.170000f,-18.012000f}}, // 02_Interlock_wall_toe_rail
+    {40035,combat::HitKind::Wall,{5.902000f,4.250000f,-31.012000f},{6.022000f,4.470000f,-18.012000f}}, // 02_Interlock_wall_cable_trunk
+    {40036,combat::HitKind::Wall,{5.883000f,4.352500f,-31.012000f},{5.909000f,4.387500f,-18.012000f}}, // 02_Interlock_wall_upper_reveal
     {40037,combat::HitKind::Wall,{5.936500f,0.305500f,-20.131666f},{6.011500f,3.078500f,-18.035000f}}, // 02_Interlock_wall_lower_panel
     {40038,combat::HitKind::Wall,{5.909500f,2.569000f,-20.091667f},{5.940500f,2.601000f,-18.075001f}}, // 02_Interlock_wall_waist_reveal
     {40039,combat::HitKind::Wall,{5.919500f,0.446500f,-19.856167f},{5.944500f,2.937500f,-19.827168f}}, // 02_Interlock_wall_service_seam
@@ -171,9 +171,9 @@ inline const std::array<combat::Collider,833> playerWalls={{
     {40052,combat::HitKind::Wall,{5.909500f,2.569000f,-30.924999f},{5.940500f,2.601000f,-28.908333f}}, // 02_Interlock_wall_waist_reveal.005
     {40053,combat::HitKind::Wall,{5.879500f,4.283000f,-30.021667f},{5.910500f,4.357000f,-29.811666f}}, // 02_Interlock_wall_steady_red_marker.001
     {40054,combat::HitKind::Wall,{-3.385000f,0.000000f,-18.001499f},{-3.095000f,3.392000f,0.001500f}}, // 01_Corridor_wall_solid.001
-    {40055,combat::HitKind::Wall,{-3.120000f,0.020000f,-18.000000f},{-3.046000f,0.170000f,0.000000f}}, // 01_Corridor_wall_toe_rail.001
-    {40056,combat::HitKind::Wall,{-3.117000f,2.942000f,-18.000000f},{-2.997000f,3.162000f,0.000000f}}, // 01_Corridor_wall_cable_trunk.001
-    {40057,combat::HitKind::Wall,{-3.004000f,3.044500f,-18.000000f},{-2.978000f,3.079500f,-0.000000f}}, // 01_Corridor_wall_upper_reveal.001
+    {40055,combat::HitKind::Wall,{-3.120000f,0.020000f,-18.012000f},{-3.046000f,0.170000f,-0.012000f}}, // 01_Corridor_wall_toe_rail.001
+    {40056,combat::HitKind::Wall,{-3.117000f,2.942000f,-18.012000f},{-2.997000f,3.162000f,-0.012000f}}, // 01_Corridor_wall_cable_trunk.001
+    {40057,combat::HitKind::Wall,{-3.004000f,3.044500f,-18.012000f},{-2.978000f,3.079500f,-0.012000f}}, // 01_Corridor_wall_upper_reveal.001
     {40058,combat::HitKind::Wall,{-3.106500f,0.220480f,-17.965000f},{-3.031500f,2.221760f,-16.035000f}}, // 01_Corridor_wall_lower_panel.009
     {40059,combat::HitKind::Wall,{-3.035500f,1.849600f,-17.924999f},{-3.004500f,1.881600f,-16.075001f}}, // 01_Corridor_wall_waist_reveal.009
     {40060,combat::HitKind::Wall,{-3.039500f,0.322240f,-16.314501f},{-3.014500f,2.120000f,-16.285500f}}, // 01_Corridor_wall_service_seam.005
@@ -200,9 +200,9 @@ inline const std::array<combat::Collider,833> playerWalls={{
     {40081,combat::HitKind::Wall,{-3.035500f,1.849600f,-1.925000f},{-3.004500f,1.881600f,-0.075000f}}, // 01_Corridor_wall_waist_reveal.017
     {40082,combat::HitKind::Wall,{-3.039500f,0.322240f,-0.314500f},{-3.014500f,2.120000f,-0.285500f}}, // 01_Corridor_wall_service_seam.009
     {40083,combat::HitKind::Wall,{-6.290000f,0.000000f,-31.001499f},{-6.000000f,4.700000f,-17.998501f}}, // 02_Interlock_wall_solid.001
-    {40084,combat::HitKind::Wall,{-6.025000f,0.020000f,-31.000000f},{-5.951000f,0.170000f,-18.000000f}}, // 02_Interlock_wall_toe_rail.001
-    {40085,combat::HitKind::Wall,{-6.022000f,4.250000f,-31.000000f},{-5.902000f,4.470000f,-18.000000f}}, // 02_Interlock_wall_cable_trunk.001
-    {40086,combat::HitKind::Wall,{-5.909000f,4.352500f,-31.000000f},{-5.883000f,4.387500f,-18.000000f}}, // 02_Interlock_wall_upper_reveal.001
+    {40084,combat::HitKind::Wall,{-6.025000f,0.020000f,-31.012000f},{-5.951000f,0.170000f,-18.012000f}}, // 02_Interlock_wall_toe_rail.001
+    {40085,combat::HitKind::Wall,{-6.022000f,4.250000f,-31.012000f},{-5.902000f,4.470000f,-18.012000f}}, // 02_Interlock_wall_cable_trunk.001
+    {40086,combat::HitKind::Wall,{-5.909000f,4.352500f,-31.012000f},{-5.883000f,4.387500f,-18.012000f}}, // 02_Interlock_wall_upper_reveal.001
     {40087,combat::HitKind::Wall,{-6.011500f,0.305500f,-30.965000f},{-5.936500f,3.078500f,-28.868334f}}, // 02_Interlock_wall_lower_panel.006
     {40088,combat::HitKind::Wall,{-5.940500f,2.569000f,-30.924999f},{-5.909500f,2.601000f,-28.908333f}}, // 02_Interlock_wall_waist_reveal.006
     {40089,combat::HitKind::Wall,{-5.944500f,0.446500f,-29.172832f},{-5.919500f,2.937500f,-29.143833f}}, // 02_Interlock_wall_service_seam.003
@@ -221,9 +221,9 @@ inline const std::array<combat::Collider,833> playerWalls={{
     {40102,combat::HitKind::Wall,{-5.940500f,2.569000f,-20.091667f},{-5.909500f,2.601000f,-18.075001f}}, // 02_Interlock_wall_waist_reveal.011
     {40103,combat::HitKind::Wall,{-5.910500f,4.283000f,-19.188334f},{-5.879500f,4.357000f,-18.978333f}}, // 02_Interlock_wall_steady_red_marker.003
     {40104,combat::HitKind::Wall,{5.200000f,0.000000f,-37.001499f},{5.490000f,3.392000f,-30.998501f}}, // 03_Bent_corridor_wall_solid
-    {40105,combat::HitKind::Wall,{5.151000f,0.020000f,-37.000000f},{5.225000f,0.170000f,-31.000000f}}, // 03_Bent_corridor_wall_toe_rail
-    {40106,combat::HitKind::Wall,{5.102000f,2.942000f,-37.000000f},{5.222000f,3.162000f,-31.000000f}}, // 03_Bent_corridor_wall_cable_trunk
-    {40107,combat::HitKind::Wall,{5.083000f,3.044500f,-37.000000f},{5.109000f,3.079500f,-31.000000f}}, // 03_Bent_corridor_wall_upper_reveal
+    {40105,combat::HitKind::Wall,{5.151000f,0.020000f,-37.000000f},{5.225000f,0.170000f,-31.012000f}}, // 03_Bent_corridor_wall_toe_rail
+    {40106,combat::HitKind::Wall,{5.102000f,2.942000f,-37.000000f},{5.222000f,3.162000f,-31.012000f}}, // 03_Bent_corridor_wall_cable_trunk
+    {40107,combat::HitKind::Wall,{5.083000f,3.044500f,-36.992000f},{5.109000f,3.079500f,-31.012000f}}, // 03_Bent_corridor_wall_upper_reveal
     {40108,combat::HitKind::Wall,{5.136500f,0.220480f,-32.965000f},{5.211500f,2.221760f,-31.035000f}}, // 03_Bent_corridor_wall_lower_panel
     {40109,combat::HitKind::Wall,{5.109500f,1.849600f,-32.924999f},{5.140500f,1.881600f,-31.075001f}}, // 03_Bent_corridor_wall_waist_reveal
     {40110,combat::HitKind::Wall,{5.119500f,0.322240f,-32.714500f},{5.144500f,2.120000f,-32.685501f}}, // 03_Bent_corridor_wall_service_seam
@@ -236,7 +236,7 @@ inline const std::array<combat::Collider,833> playerWalls={{
     {40117,combat::HitKind::Wall,{5.198500f,0.000000f,-37.000000f},{10.401500f,3.392000f,-36.709999f}}, // 03_Bent_corridor_wall_solid.001
     {40118,combat::HitKind::Wall,{5.200000f,0.020000f,-37.049000f},{10.400000f,0.170000f,-36.974998f}}, // 03_Bent_corridor_wall_toe_rail.001
     {40119,combat::HitKind::Wall,{5.200000f,2.942000f,-37.098000f},{10.400000f,3.162000f,-36.978001f}}, // 03_Bent_corridor_wall_cable_trunk.001
-    {40120,combat::HitKind::Wall,{5.200000f,3.044500f,-37.117001f},{10.400000f,3.079500f,-37.091000f}}, // 03_Bent_corridor_wall_upper_reveal.001
+    {40120,combat::HitKind::Wall,{5.208000f,3.044500f,-37.117001f},{10.400000f,3.079500f,-37.091000f}}, // 03_Bent_corridor_wall_upper_reveal.001
     {40121,combat::HitKind::Wall,{5.235000f,0.220480f,-37.063499f},{7.765000f,2.221760f,-36.988499f}}, // 03_Bent_corridor_wall_lower_panel.003
     {40122,combat::HitKind::Wall,{5.275000f,1.849600f,-37.090500f},{7.725000f,1.881600f,-37.059502f}}, // 03_Bent_corridor_wall_waist_reveal.003
     {40123,combat::HitKind::Wall,{7.395500f,0.322240f,-37.080502f},{7.424500f,2.120000f,-37.055500f}}, // 03_Bent_corridor_wall_service_seam.002
@@ -244,9 +244,9 @@ inline const std::array<combat::Collider,833> playerWalls={{
     {40125,combat::HitKind::Wall,{7.875000f,1.849600f,-37.090500f},{10.325000f,1.881600f,-37.059502f}}, // 03_Bent_corridor_wall_waist_reveal.004
     {40126,combat::HitKind::Wall,{8.995000f,2.975000f,-37.120499f},{9.205000f,3.049000f,-37.089500f}}, // 03_Bent_corridor_wall_steady_red_marker.001
     {40127,combat::HitKind::Wall,{10.400000f,0.000000f,-48.201500f},{10.690000f,3.392000f,-36.998501f}}, // 03_Bent_corridor_wall_solid.002
-    {40128,combat::HitKind::Wall,{10.351000f,0.020000f,-48.200001f},{10.425000f,0.170000f,-37.000000f}}, // 03_Bent_corridor_wall_toe_rail.002
-    {40129,combat::HitKind::Wall,{10.302000f,2.942000f,-48.200001f},{10.422000f,3.162000f,-37.000000f}}, // 03_Bent_corridor_wall_cable_trunk.002
-    {40130,combat::HitKind::Wall,{10.283000f,3.044500f,-48.200001f},{10.309000f,3.079500f,-37.000000f}}, // 03_Bent_corridor_wall_upper_reveal.002
+    {40128,combat::HitKind::Wall,{10.351000f,0.020000f,-48.212001f},{10.425000f,0.170000f,-37.000000f}}, // 03_Bent_corridor_wall_toe_rail.002
+    {40129,combat::HitKind::Wall,{10.302000f,2.942000f,-48.212001f},{10.422000f,3.162000f,-37.000000f}}, // 03_Bent_corridor_wall_cable_trunk.002
+    {40130,combat::HitKind::Wall,{10.283000f,3.044500f,-48.212001f},{10.309000f,3.079500f,-37.000000f}}, // 03_Bent_corridor_wall_upper_reveal.002
     {40131,combat::HitKind::Wall,{10.336500f,0.220480f,-39.205002f},{10.411500f,2.221760f,-37.035000f}}, // 03_Bent_corridor_wall_lower_panel.005
     {40132,combat::HitKind::Wall,{10.309500f,1.849600f,-39.165001f},{10.340500f,1.881600f,-37.075001f}}, // 03_Bent_corridor_wall_waist_reveal.005
     {40133,combat::HitKind::Wall,{10.319500f,0.322240f,-38.918499f},{10.344500f,2.120000f,-38.889500f}}, // 03_Bent_corridor_wall_service_seam.003
@@ -262,9 +262,9 @@ inline const std::array<combat::Collider,833> playerWalls={{
     {40143,combat::HitKind::Wall,{10.309500f,1.849600f,-48.125000f},{10.340500f,1.881600f,-46.035000f}}, // 03_Bent_corridor_wall_waist_reveal.009
     {40144,combat::HitKind::Wall,{10.319500f,0.322240f,-47.878502f},{10.344500f,2.120000f,-47.849499f}}, // 03_Bent_corridor_wall_service_seam.005
     {40145,combat::HitKind::Wall,{4.910000f,0.000000f,-48.201500f},{5.200000f,3.392000f,-42.198502f}}, // 03_Bent_corridor_wall_solid.003
-    {40146,combat::HitKind::Wall,{5.175000f,0.020000f,-48.200001f},{5.249000f,0.170000f,-42.200001f}}, // 03_Bent_corridor_wall_toe_rail.003
-    {40147,combat::HitKind::Wall,{5.178000f,2.942000f,-48.200001f},{5.298000f,3.162000f,-42.200001f}}, // 03_Bent_corridor_wall_cable_trunk.003
-    {40148,combat::HitKind::Wall,{5.291000f,3.044500f,-48.200001f},{5.317000f,3.079500f,-42.200001f}}, // 03_Bent_corridor_wall_upper_reveal.003
+    {40146,combat::HitKind::Wall,{5.175000f,0.020000f,-48.212001f},{5.249000f,0.170000f,-42.200001f}}, // 03_Bent_corridor_wall_toe_rail.003
+    {40147,combat::HitKind::Wall,{5.178000f,2.942000f,-48.212001f},{5.298000f,3.162000f,-42.200001f}}, // 03_Bent_corridor_wall_cable_trunk.003
+    {40148,combat::HitKind::Wall,{5.291000f,3.044500f,-48.212001f},{5.317000f,3.079500f,-42.208001f}}, // 03_Bent_corridor_wall_upper_reveal.003
     {40149,combat::HitKind::Wall,{5.188500f,0.220480f,-48.165001f},{5.263500f,2.221760f,-46.235001f}}, // 03_Bent_corridor_wall_lower_panel.010
     {40150,combat::HitKind::Wall,{5.259500f,1.849600f,-48.125000f},{5.290500f,1.881600f,-46.275002f}}, // 03_Bent_corridor_wall_waist_reveal.010
     {40151,combat::HitKind::Wall,{5.255500f,0.322240f,-46.514500f},{5.280500f,2.120000f,-46.485500f}}, // 03_Bent_corridor_wall_service_seam.006
@@ -277,7 +277,7 @@ inline const std::array<combat::Collider,833> playerWalls={{
     {40158,combat::HitKind::Wall,{-0.001500f,0.000000f,-42.490002f},{5.201500f,3.392000f,-42.200001f}}, // 03_Bent_corridor_wall_solid.004
     {40159,combat::HitKind::Wall,{0.000000f,0.020000f,-42.224998f},{5.200000f,0.170000f,-42.151001f}}, // 03_Bent_corridor_wall_toe_rail.004
     {40160,combat::HitKind::Wall,{0.000000f,2.942000f,-42.222000f},{5.200000f,3.162000f,-42.102001f}}, // 03_Bent_corridor_wall_cable_trunk.004
-    {40161,combat::HitKind::Wall,{-0.000000f,3.044500f,-42.109001f},{5.200000f,3.079500f,-42.083000f}}, // 03_Bent_corridor_wall_upper_reveal.004
+    {40161,combat::HitKind::Wall,{-0.000000f,3.044500f,-42.109001f},{5.192000f,3.079500f,-42.083000f}}, // 03_Bent_corridor_wall_upper_reveal.004
     {40162,combat::HitKind::Wall,{2.635000f,0.220480f,-42.211498f},{5.165000f,2.221760f,-42.136501f}}, // 03_Bent_corridor_wall_lower_panel.013
     {40163,combat::HitKind::Wall,{2.675000f,1.849600f,-42.140499f},{5.125000f,1.881600f,-42.109501f}}, // 03_Bent_corridor_wall_waist_reveal.013
     {40164,combat::HitKind::Wall,{2.975500f,0.322240f,-42.144501f},{3.004500f,2.120000f,-42.119499f}}, // 03_Bent_corridor_wall_service_seam.008
@@ -285,9 +285,9 @@ inline const std::array<combat::Collider,833> playerWalls={{
     {40166,combat::HitKind::Wall,{0.075000f,1.849600f,-42.140499f},{2.525000f,1.881600f,-42.109501f}}, // 03_Bent_corridor_wall_waist_reveal.014
     {40167,combat::HitKind::Wall,{1.195000f,2.975000f,-42.110500f},{1.405000f,3.049000f,-42.079498f}}, // 03_Bent_corridor_wall_steady_red_marker.004
     {40168,combat::HitKind::Wall,{-0.290000f,0.000000f,-42.201500f},{0.000000f,3.392000f,-30.998501f}}, // 03_Bent_corridor_wall_solid.005
-    {40169,combat::HitKind::Wall,{-0.025000f,0.020000f,-42.200001f},{0.049000f,0.170000f,-31.000000f}}, // 03_Bent_corridor_wall_toe_rail.005
-    {40170,combat::HitKind::Wall,{-0.022000f,2.942000f,-42.200001f},{0.098000f,3.162000f,-31.000000f}}, // 03_Bent_corridor_wall_cable_trunk.005
-    {40171,combat::HitKind::Wall,{0.091000f,3.044500f,-42.200001f},{0.117000f,3.079500f,-31.000000f}}, // 03_Bent_corridor_wall_upper_reveal.005
+    {40169,combat::HitKind::Wall,{-0.025000f,0.020000f,-42.200001f},{0.049000f,0.170000f,-31.012000f}}, // 03_Bent_corridor_wall_toe_rail.005
+    {40170,combat::HitKind::Wall,{-0.022000f,2.942000f,-42.200001f},{0.098000f,3.162000f,-31.012000f}}, // 03_Bent_corridor_wall_cable_trunk.005
+    {40171,combat::HitKind::Wall,{0.091000f,3.044500f,-42.200001f},{0.117000f,3.079500f,-31.012000f}}, // 03_Bent_corridor_wall_upper_reveal.005
     {40172,combat::HitKind::Wall,{-0.011500f,0.220480f,-42.165001f},{0.063500f,2.221760f,-39.994999f}}, // 03_Bent_corridor_wall_lower_panel.015
     {40173,combat::HitKind::Wall,{0.059500f,1.849600f,-42.125000f},{0.090500f,1.881600f,-40.035000f}}, // 03_Bent_corridor_wall_waist_reveal.015
     {40174,combat::HitKind::Wall,{0.055500f,0.322240f,-40.310501f},{0.080500f,2.120000f,-40.281502f}}, // 03_Bent_corridor_wall_service_seam.009
@@ -619,7 +619,7 @@ inline const std::array<combat::Collider,833> playerWalls={{
     {40500,combat::HitKind::Wall,{5.546287f,0.768000f,-48.422840f},{6.337888f,4.736000f,-48.199310f}}, // 04_Reactor_arc_wall_arc_inset.055
     {40501,combat::HitKind::Wall,{-3.096500f,0.000000f,-0.290000f},{-1.448500f,3.392000f,-0.000000f}}, // 01_Entry_gate_west_infill_solid
     {40502,combat::HitKind::Wall,{1.448500f,0.000000f,-0.290000f},{3.096500f,3.392000f,-0.000000f}}, // 01_Entry_gate_east_infill_solid
-    {40503,combat::HitKind::Wall,{-1.450000f,3.000000f,-0.290000f},{1.450000f,3.392000f,0.000000f}}, // 01_Entry_gate_header
+    {40503,combat::HitKind::Wall,{-1.448500f,3.012000f,-0.290000f},{1.448500f,3.392000f,0.000000f}}, // 01_Entry_gate_header
     {40504,combat::HitKind::Wall,{-1.620000f,0.000000f,-0.360000f},{-1.450000f,3.000000f,0.120000f}}, // 01_Entry_gate_jamb_-1
     {40505,combat::HitKind::Wall,{-1.566500f,0.975000f,0.118500f},{-1.503500f,1.925000f,0.147500f}}, // 01_Entry_gate_sill_marker_-1
     {40506,combat::HitKind::Wall,{-1.557500f,1.275000f,-0.394500f},{-1.512500f,1.625000f,-0.365500f}}, // 01_Entry_gate_exit_marker_-1
@@ -630,7 +630,7 @@ inline const std::array<combat::Collider,833> playerWalls={{
     {40511,combat::HitKind::Wall,{-0.390000f,3.081000f,0.106000f},{0.390000f,3.149000f,0.144000f}}, // 01_Entry_gate_locator
     {40512,combat::HitKind::Wall,{-6.001500f,0.000000f,-18.290001f},{-1.448500f,4.700000f,-18.000000f}}, // 02_Interlock_gate_west_infill_solid
     {40513,combat::HitKind::Wall,{1.448500f,0.000000f,-18.290001f},{6.001500f,4.700000f,-18.000000f}}, // 02_Interlock_gate_east_infill_solid
-    {40514,combat::HitKind::Wall,{-1.450000f,3.000000f,-18.290001f},{1.450000f,4.700000f,-18.000000f}}, // 02_Interlock_gate_header
+    {40514,combat::HitKind::Wall,{-1.448500f,3.012000f,-18.290001f},{1.448500f,4.700000f,-18.000000f}}, // 02_Interlock_gate_header
     {40515,combat::HitKind::Wall,{-1.620000f,0.000000f,-18.360001f},{-1.450000f,3.000000f,-17.879999f}}, // 02_Interlock_gate_jamb_-1
     {40516,combat::HitKind::Wall,{-1.566500f,0.975000f,-17.881500f},{-1.503500f,1.925000f,-17.852501f}}, // 02_Interlock_gate_sill_marker_-1
     {40517,combat::HitKind::Wall,{-1.557500f,1.275000f,-18.394501f},{-1.512500f,1.625000f,-18.365499f}}, // 02_Interlock_gate_exit_marker_-1
@@ -641,7 +641,7 @@ inline const std::array<combat::Collider,833> playerWalls={{
     {40522,combat::HitKind::Wall,{-0.390000f,3.081000f,-17.893999f},{0.390000f,3.149000f,-17.856001f}}, // 02_Interlock_gate_locator
     {40523,combat::HitKind::Wall,{-6.001500f,0.000000f,-31.290001f},{1.151500f,4.700000f,-31.000000f}}, // 03_Maintenance_access_west_infill_solid
     {40524,combat::HitKind::Wall,{4.048500f,0.000000f,-31.290001f},{6.001500f,4.700000f,-31.000000f}}, // 03_Maintenance_access_east_infill_solid
-    {40525,combat::HitKind::Wall,{1.150000f,3.000000f,-31.290001f},{4.050000f,4.700000f,-31.000000f}}, // 03_Maintenance_access_header
+    {40525,combat::HitKind::Wall,{1.151500f,3.012000f,-31.290001f},{4.048500f,4.700000f,-31.000000f}}, // 03_Maintenance_access_header
     {40526,combat::HitKind::Wall,{0.980000f,0.000000f,-31.360001f},{1.150000f,3.000000f,-30.879999f}}, // 03_Maintenance_access_jamb_-1
     {40527,combat::HitKind::Wall,{1.033500f,0.975000f,-30.881500f},{1.096500f,1.925000f,-30.852501f}}, // 03_Maintenance_access_sill_marker_-1
     {40528,combat::HitKind::Wall,{1.042500f,1.275000f,-31.394501f},{1.087500f,1.625000f,-31.365499f}}, // 03_Maintenance_access_exit_marker_-1
@@ -652,7 +652,7 @@ inline const std::array<combat::Collider,833> playerWalls={{
     {40533,combat::HitKind::Wall,{2.210000f,3.081000f,-30.893999f},{2.990000f,3.149000f,-30.856001f}}, // 03_Maintenance_access_locator
     {40534,combat::HitKind::Wall,{5.198500f,0.000000f,-48.490002f},{6.351500f,6.400000f,-48.200001f}}, // 04_Reactor_hatch_west_infill_solid
     {40535,combat::HitKind::Wall,{9.248500f,0.000000f,-48.490002f},{10.401500f,6.400000f,-48.200001f}}, // 04_Reactor_hatch_east_infill_solid
-    {40536,combat::HitKind::Wall,{6.350000f,3.000000f,-48.490002f},{9.250000f,6.400000f,-48.200001f}}, // 04_Reactor_hatch_header
+    {40536,combat::HitKind::Wall,{6.351500f,3.012000f,-48.490002f},{9.248500f,6.400000f,-48.200001f}}, // 04_Reactor_hatch_header
     {40537,combat::HitKind::Wall,{6.180000f,0.000000f,-48.560001f},{6.350000f,3.000000f,-48.080002f}}, // 04_Reactor_hatch_jamb_-1
     {40538,combat::HitKind::Wall,{6.233500f,0.975000f,-48.081501f},{6.296500f,1.925000f,-48.052502f}}, // 04_Reactor_hatch_sill_marker_-1
     {40539,combat::HitKind::Wall,{6.242500f,1.275000f,-48.594501f},{6.287500f,1.625000f,-48.565498f}}, // 04_Reactor_hatch_exit_marker_-1
@@ -716,9 +716,9 @@ inline const std::array<combat::Collider,833> playerWalls={{
     {40597,combat::HitKind::Wall,{11.473420f,0.000000f,-52.394077f},{12.399730f,0.010000f,-51.467766f}}, // 04_Inner_ring_inlay.018
     {40598,combat::HitKind::Wall,{12.527768f,0.000000f,-53.698761f},{13.204729f,0.010000f,-52.586231f}}, // 04_Inner_ring_inlay.019
     {40599,combat::HitKind::Wall,{13.259927f,0.000000f,-55.164875f},{13.641406f,0.010000f,-53.941936f}}, // 04_Inner_ring_inlay.020
-    {40600,combat::HitKind::Wall,{-3.095000f,3.392000f,-18.000000f},{3.095000f,3.632000f,0.000000f}}, // 01_Security_corridor_roof
+    {40600,combat::HitKind::Wall,{-3.095000f,3.392000f,-18.012000f},{3.095000f,3.632000f,0.000000f}}, // 01_Security_corridor_roof
     {40601,combat::HitKind::Wall,{-6.000000f,4.700000f,-31.000000f},{6.000000f,4.940000f,-18.000000f}}, // 02_Interlock_room_roof
-    {40602,combat::HitKind::Wall,{0.000000f,3.392000f,-48.200001f},{10.400000f,3.632000f,-31.000000f}}, // 03_Bent_maintenance_corridor_roof
+    {40602,combat::HitKind::Wall,{0.000000f,3.392000f,-48.212001f},{10.400000f,3.632000f,-31.012000f}}, // 03_Bent_maintenance_corridor_roof
     {40603,combat::HitKind::Wall,{-0.199152f,6.400000f,-64.067497f},{15.799151f,6.640000f,-48.200001f}}, // 04_Circular_reactor_room_roof
     {40604,combat::HitKind::Wall,{-2.440000f,0.000000f,-8.625000f},{-1.360000f,1.830000f,-6.275000f}}, // Cover_A01
     {40605,combat::HitKind::Wall,{-2.470000f,0.052500f,-8.655000f},{-1.330000f,0.167500f,-6.245000f}}, // A01_protective_rim

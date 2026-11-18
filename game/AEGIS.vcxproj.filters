@@ -208,4 +208,10 @@
       <Filter>FrameWork</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\CombatMap.cpp" />
+    <ClInclude Include="src\CombatMap.h" />
+    <None Include="shaders\combat_map.vert" />
+    <None Include="shaders\combat_map.frag" />
+  </ItemGroup>
 </Project>
