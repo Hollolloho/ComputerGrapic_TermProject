@@ -110,6 +110,47 @@ void Drone::Draw(const glm::mat4& scene)
 void Drone::Update(float deltaTime)
 {
 	rotorAngle = std::fmod(rotorAngle + 720.f * deltaTime, 360.f);
+<<<<<<< Updated upstream
+=======
+	MovingDrone(deltaTime);
+}
+
+void Drone::MovingDrone(float deltaTime)
+{
+	const float distanceFrame = 1.2f * deltaTime;
+	for (auto& drone : drones)
+	{
+		if (drone.patrolStartZ == drone.patrolEndZ)
+			continue;
+
+		if (drone.is_turning)
+		{
+			drone.turn_rotate += 60.f * deltaTime;
+
+			if (drone.turn_rotate >= 180.f)
+			{
+				drone.rotation.y = std::fmod(drone.rotation.y + 180.f, 360.f);
+				drone.turn_rotate = 0.f;
+				drone.is_turning = false;
+				drone.movingToEnd = !drone.movingToEnd;
+			}
+			continue;
+		}
+
+		const float targetZ = drone.movingToEnd ? drone.patrolEndZ : drone.patrolStartZ;
+		const float remaining = targetZ - drone.pos.z;
+
+		if (std::abs(remaining) <= distanceFrame)
+		{
+			drone.pos.z = targetZ;
+			drone.is_turning = true;
+		}
+		else
+		{
+			drone.pos.z += std::copysign(distanceFrame, remaining);
+		}
+	}
+>>>>>>> Stashed changes
 }
 
 void Drone::Clear()
