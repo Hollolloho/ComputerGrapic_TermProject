@@ -7,6 +7,7 @@ class CombatMap
 {
 public:
 	bool Init();
+	bool Init(const std::filesystem::path& runtimeRoot);
 	void Draw(const glm::mat4& scene) const;
 	void Clear();
 

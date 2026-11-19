@@ -1,0 +1,59 @@
+newmtl shell
+Kd 0.8745 0.9020 0.9098
+Ks 0.15 0.15 0.15
+Ns 32
+
+newmtl white
+Kd 0.9451 0.9529 0.9373
+Ks 0.15 0.15 0.15
+Ns 32
+
+newmtl dark
+Kd 0.0902 0.1216 0.1529
+Ks 0.15 0.15 0.15
+Ns 32
+
+newmtl rubber
+Kd 0.0314 0.0588 0.0824
+Ks 0.15 0.15 0.15
+Ns 32
+
+newmtl steel
+Kd 0.3373 0.4000 0.4510
+Ks 0.15 0.15 0.15
+Ns 32
+
+newmtl wall
+Kd 0.7961 0.8353 0.8510
+Ks 0.15 0.15 0.15
+Ns 32
+
+newmtl floor
+Kd 0.5176 0.5765 0.6196
+Ks 0.15 0.15 0.15
+Ns 32
+
+newmtl recess
+Kd 0.2235 0.2863 0.3255
+Ks 0.15 0.15 0.15
+Ns 32
+
+newmtl red
+Kd 0.8471 0.1725 0.1961
+Ks 0.15 0.15 0.15
+Ns 32
+
+newmtl lens
+Kd 0.2549 0.0510 0.0784
+Ks 0.15 0.15 0.15
+Ns 32
+
+newmtl light
+Kd 0.8784 0.9569 1.0000
+Ks 0.15 0.15 0.15
+Ns 32
+
+newmtl amber
+Kd 0.7843 0.5608 0.2078
+Ks 0.15 0.15 0.15
+Ns 32

@@ -1,0 +1,8 @@
+newmtl CW01C
+Kd 1 1 1
+Pm 0.45
+Pr 0.45
+map_Kd ../textures/cw01c_basecolor.png
+norm ../textures/cw01c_normal.png
+map_Pm ../textures/cw01c_metallic.png
+map_Pr ../textures/cw01c_roughness.png

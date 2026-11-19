@@ -86,4 +86,83 @@
       <Filter>Drone</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Gameplay"><UniqueIdentifier>{a54bcab7-c641-4e73-a1eb-05ad2f146381}</UniqueIdentifier></Filter>
+    <Filter Include="Shaders"><UniqueIdentifier>{408611db-c230-4b35-999d-b70063f0e7ce}</UniqueIdentifier></Filter>
+    <Filter Include="Resources"><UniqueIdentifier>{6bb8f126-f468-4d64-9ea1-839128d4dc4f}</UniqueIdentifier></Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\analysis_session.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\atlas_model.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\boss_encounter.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\boss_geometry.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\boss_view.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\campaign_flow.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\combat.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\combat_debug.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\combat_hud.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\combat_input.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\combat_range.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\combat_render.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\combat_scene.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\combat_smoke_tests.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\death_view.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\destruction_effects.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\drone_behavior.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\fixed_turret.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\game_scene.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\korean_ui.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\mesh_renderer.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\model_binary.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\player_camera.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\player_motion.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\turret_encounter.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\turret_view.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\weapon_inventory.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\weapon_view.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\world_signs.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClInclude Include="src\analysis_session.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\atlas_model.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\boss_encounter.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\boss_geometry.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\boss_layout.generated.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\campaign_flow.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\campaign_layout.generated.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\combat.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\combat_feedback.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\combat_map_layout.generated.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\combat_range.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\combat_scene.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\combat_time.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\corridor_layout.generated.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\cw01c_layout.generated.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\death_view.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\destruction_effects.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\drone_behavior.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\fixed_turret.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\game_options.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\game_scene.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\korean_ui.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\mesh_renderer.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\model_binary.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\player_camera.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\player_motion.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\player_view.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\terminal_layout.generated.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\turret_encounter.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\turret_view.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\weapon_inventory.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\weapon_view.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\world_signs.h"><Filter>Gameplay</Filter></ClInclude>
+    <None Include="src\boss_triangles.generated.inc"><Filter>Gameplay</Filter></None>
+    <None Include="shaders\death_effect.vert"><Filter>Shaders</Filter></None>
+    <None Include="shaders\death_effect.frag"><Filter>Shaders</Filter></None>
+    <None Include="shaders\mesh.vert"><Filter>Shaders</Filter></None>
+    <None Include="shaders\mesh.frag"><Filter>Shaders</Filter></None>
+    <None Include="shaders\turret.vert"><Filter>Shaders</Filter></None>
+    <None Include="shaders\turret.frag"><Filter>Shaders</Filter></None>
+    <None Include="shaders\weapon.vert"><Filter>Shaders</Filter></None>
+    <None Include="shaders\weapon.frag"><Filter>Shaders</Filter></None>
+    <None Include="runtime_assets.props"><Filter>Resources</Filter></None>
+  </ItemGroup>
 </Project>

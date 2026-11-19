@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\armor_guides.obj" TargetPath="asset\boss_e\runtime\obj\armor_guides.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\body_frame.obj" TargetPath="asset\boss_e\runtime\obj\body_frame.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\boss_e.mtl" TargetPath="asset\boss_e\runtime\obj\boss_e.mtl" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\ceiling_clamp.obj" TargetPath="asset\boss_e\runtime\obj\ceiling_clamp.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\core_crystal.obj" TargetPath="asset\boss_e\runtime\obj\core_crystal.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\core_socket_mesh.obj" TargetPath="asset\boss_e\runtime\obj\core_socket_mesh.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\lower_armor_L.obj" TargetPath="asset\boss_e\runtime\obj\lower_armor_L.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\lower_armor_R.obj" TargetPath="asset\boss_e\runtime\obj\lower_armor_R.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\sector_warning.obj" TargetPath="asset\boss_e\runtime\obj\sector_warning.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\shoulder_shell.obj" TargetPath="asset\boss_e\runtime\obj\shoulder_shell.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\turret_pod_L.obj" TargetPath="asset\boss_e\runtime\obj\turret_pod_L.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\turret_pod_R.obj" TargetPath="asset\boss_e\runtime\obj\turret_pod_R.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\turret_sockets.obj" TargetPath="asset\boss_e\runtime\obj\turret_sockets.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\turret_warning_L.obj" TargetPath="asset\boss_e\runtime\obj\turret_warning_L.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\turret_warning_R.obj" TargetPath="asset\boss_e\runtime\obj\turret_warning_R.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\textures\boss_e_basecolor.png" TargetPath="asset\boss_e\runtime\textures\boss_e_basecolor.png" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\textures\boss_e_emission.png" TargetPath="asset\boss_e\runtime\textures\boss_e_emission.png" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\textures\boss_e_metallic.png" TargetPath="asset\boss_e\runtime\textures\boss_e_metallic.png" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\textures\boss_e_normal.png" TargetPath="asset\boss_e\runtime\textures\boss_e_normal.png" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\textures\boss_e_roughness.png" TargetPath="asset\boss_e\runtime\textures\boss_e_roughness.png" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\combat_map\obj\combat_map.mtl" TargetPath="asset\combat_map\obj\combat_map.mtl" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\combat_map\obj\combat_map.obj" TargetPath="asset\combat_map\obj\combat_map.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\core_room\runtime\obj\core_room.mtl" TargetPath="asset\core_room\runtime\obj\core_room.mtl" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\core_room\runtime\obj\core_room.obj" TargetPath="asset\core_room\runtime\obj\core_room.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\corridor\test_scene\corridor_static.obj" TargetPath="asset\corridor\test_scene\corridor_static.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\corridor\test_scene\cover_cabinet.obj" TargetPath="asset\corridor\test_scene\cover_cabinet.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\corridor\test_scene\door_frame.obj" TargetPath="asset\corridor\test_scene\door_frame.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\corridor\test_scene\door_left.obj" TargetPath="asset\corridor\test_scene\door_left.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\corridor\test_scene\door_right.obj" TargetPath="asset\corridor\test_scene\door_right.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\corridor\test_scene\materials.mtl" TargetPath="asset\corridor\test_scene\materials.mtl" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\crystal_cartridge.obj" TargetPath="asset\cw01c\runtime\obj\crystal_cartridge.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\cw01c.mtl" TargetPath="asset\cw01c\runtime\obj\cw01c.mtl" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\front_trim.obj" TargetPath="asset\cw01c\runtime\obj\front_trim.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\grip.obj" TargetPath="asset\cw01c\runtime\obj\grip.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\heel.obj" TargetPath="asset\cw01c\runtime\obj\heel.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\lower_chassis.obj" TargetPath="asset\cw01c\runtime\obj\lower_chassis.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\rear_armor.obj" TargetPath="asset\cw01c\runtime\obj\rear_armor.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\trigger_guard.obj" TargetPath="asset\cw01c\runtime\obj\trigger_guard.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\upper_shell.obj" TargetPath="asset\cw01c\runtime\obj\upper_shell.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\textures\cw01c_basecolor.png" TargetPath="asset\cw01c\runtime\textures\cw01c_basecolor.png" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\textures\cw01c_emission.png" TargetPath="asset\cw01c\runtime\textures\cw01c_emission.png" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\textures\cw01c_metallic.png" TargetPath="asset\cw01c\runtime\textures\cw01c_metallic.png" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\textures\cw01c_normal.png" TargetPath="asset\cw01c\runtime\textures\cw01c_normal.png" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\textures\cw01c_roughness.png" TargetPath="asset\cw01c\runtime\textures\cw01c_roughness.png" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\drone\obj\drone_assembled.obj" TargetPath="asset\drone\obj\drone_assembled.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\drone\obj\materials.mtl" TargetPath="asset\drone\obj\materials.mtl" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\entry_room\runtime\obj\entry_room.mtl" TargetPath="asset\entry_room\runtime\obj\entry_room.mtl" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\entry_room\runtime\obj\entry_room.obj" TargetPath="asset\entry_room\runtime\obj\entry_room.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\props\runtime\obj\analysis_terminal.obj" TargetPath="asset\props\runtime\obj\analysis_terminal.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\props\runtime\obj\cw01c_supply_station.obj" TargetPath="asset\props\runtime\obj\cw01c_supply_station.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\props\runtime\obj\materials.mtl" TargetPath="asset\props\runtime\obj\materials.mtl" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\combat_map.frag" TargetPath="shaders\combat_map.frag" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\combat_map.vert" TargetPath="shaders\combat_map.vert" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\death_effect.frag" TargetPath="shaders\death_effect.frag" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\death_effect.vert" TargetPath="shaders\death_effect.vert" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\drone.frag" TargetPath="shaders\drone.frag" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\drone.vert" TargetPath="shaders\drone.vert" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\mesh.frag" TargetPath="shaders\mesh.frag" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\mesh.vert" TargetPath="shaders\mesh.vert" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\turret.frag" TargetPath="shaders\turret.frag" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\turret.vert" TargetPath="shaders\turret.vert" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\weapon.frag" TargetPath="shaders\weapon.frag" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\weapon.vert" TargetPath="shaders\weapon.vert" />
+  </ItemGroup>
+  <Target Name="CopyRuntimeAssets" AfterTargets="Build">
+    <Copy SourceFiles="@(RuntimeAsset)" DestinationFiles="@(RuntimeAsset->'$(OutDir)%(TargetPath)')" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

@@ -47,7 +47,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)external\glew-2.3.1\lib\Release\x64;$(SolutionDir)external\glfw\lib;$(SolutionDir)external\assimp\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glew32.lib;glfw3.lib;opengl32.lib;assimp-vc145-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glew32.lib;glfw3.lib;opengl32.lib;assimp-vc145-mt.lib;bcrypt.lib;windowscodecs.lib;ole32.lib;gdi32.lib;user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
@@ -82,10 +82,82 @@
     <None Include="shaders\drone.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ItemGroup>
+    <ClCompile Include="src\analysis_session.cpp" />
+    <ClCompile Include="src\atlas_model.cpp" />
+    <ClCompile Include="src\boss_encounter.cpp" />
+    <ClCompile Include="src\boss_geometry.cpp" />
+    <ClCompile Include="src\boss_view.cpp" />
+    <ClCompile Include="src\campaign_flow.cpp" />
+    <ClCompile Include="src\combat.cpp" />
+    <ClCompile Include="src\combat_debug.cpp" />
+    <ClCompile Include="src\combat_hud.cpp" />
+    <ClCompile Include="src\combat_input.cpp" />
+    <ClCompile Include="src\combat_range.cpp" />
+    <ClCompile Include="src\combat_render.cpp" />
+    <ClCompile Include="src\combat_scene.cpp" />
+    <ClCompile Include="src\combat_smoke_tests.cpp" />
+    <ClCompile Include="src\death_view.cpp" />
+    <ClCompile Include="src\destruction_effects.cpp" />
+    <ClCompile Include="src\drone_behavior.cpp" />
+    <ClCompile Include="src\fixed_turret.cpp" />
+    <ClCompile Include="src\game_scene.cpp" />
+    <ClCompile Include="src\korean_ui.cpp" />
+    <ClCompile Include="src\mesh_renderer.cpp" />
+    <ClCompile Include="src\model_binary.cpp" />
+    <ClCompile Include="src\player_camera.cpp" />
+    <ClCompile Include="src\player_motion.cpp" />
+    <ClCompile Include="src\turret_encounter.cpp" />
+    <ClCompile Include="src\turret_view.cpp" />
+    <ClCompile Include="src\weapon_inventory.cpp" />
+    <ClCompile Include="src\weapon_view.cpp" />
+    <ClCompile Include="src\world_signs.cpp" />
+    <ClInclude Include="src\analysis_session.h" />
+    <ClInclude Include="src\atlas_model.h" />
+    <ClInclude Include="src\boss_encounter.h" />
+    <ClInclude Include="src\boss_geometry.h" />
+    <ClInclude Include="src\boss_layout.generated.h" />
+    <ClInclude Include="src\campaign_flow.h" />
+    <ClInclude Include="src\campaign_layout.generated.h" />
+    <ClInclude Include="src\combat.h" />
+    <ClInclude Include="src\combat_feedback.h" />
+    <ClInclude Include="src\combat_map_layout.generated.h" />
+    <ClInclude Include="src\combat_range.h" />
+    <ClInclude Include="src\combat_scene.h" />
+    <ClInclude Include="src\combat_time.h" />
+    <ClInclude Include="src\corridor_layout.generated.h" />
+    <ClInclude Include="src\cw01c_layout.generated.h" />
+    <ClInclude Include="src\death_view.h" />
+    <ClInclude Include="src\destruction_effects.h" />
+    <ClInclude Include="src\drone_behavior.h" />
+    <ClInclude Include="src\fixed_turret.h" />
+    <ClInclude Include="src\game_options.h" />
+    <ClInclude Include="src\game_scene.h" />
+    <ClInclude Include="src\korean_ui.h" />
+    <ClInclude Include="src\mesh_renderer.h" />
+    <ClInclude Include="src\model_binary.h" />
+    <ClInclude Include="src\player_camera.h" />
+    <ClInclude Include="src\player_motion.h" />
+    <ClInclude Include="src\player_view.h" />
+    <ClInclude Include="src\terminal_layout.generated.h" />
+    <ClInclude Include="src\turret_encounter.h" />
+    <ClInclude Include="src\turret_view.h" />
+    <ClInclude Include="src\weapon_inventory.h" />
+    <ClInclude Include="src\weapon_view.h" />
+    <ClInclude Include="src\world_signs.h" />
+    <None Include="src\boss_triangles.generated.inc" />
+    <None Include="shaders\death_effect.vert" />
+    <None Include="shaders\death_effect.frag" />
+    <None Include="shaders\mesh.vert" />
+    <None Include="shaders\mesh.frag" />
+    <None Include="shaders\turret.vert" />
+    <None Include="shaders\turret.frag" />
+    <None Include="shaders\weapon.vert" />
+    <None Include="shaders\weapon.frag" />
+    <None Include="runtime_assets.props" />
+  </ItemGroup>
   <Target Name="CopyRuntimeLibraries" AfterTargets="Build">
     <Copy SourceFiles="$(SolutionDir)external\glew-2.3.1\bin\Release\x64\glew32.dll;$(SolutionDir)external\assimp\bin\x64\assimp-vc145-mt.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
-    <Copy SourceFiles="$(SolutionDir)asset\combat_map\obj\combat_map.obj;$(SolutionDir)asset\combat_map\obj\combat_map.mtl" DestinationFolder="$(OutDir)asset\combat_map\obj\" SkipUnchangedFiles="true" />
-    <Copy SourceFiles="$(SolutionDir)asset\drone\obj\drone_assembled.obj;$(SolutionDir)asset\drone\obj\materials.mtl" DestinationFolder="$(OutDir)asset\drone\obj\" SkipUnchangedFiles="true" />
-    <Copy SourceFiles="$(MSBuildProjectDirectory)\shaders\combat_map.vert;$(MSBuildProjectDirectory)\shaders\combat_map.frag;$(MSBuildProjectDirectory)\shaders\drone.vert;$(MSBuildProjectDirectory)\shaders\drone.frag" DestinationFolder="$(OutDir)shaders\" SkipUnchangedFiles="true" />
   </Target>
+  <Import Project="runtime_assets.props" />
 </Project>

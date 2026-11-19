@@ -1,0 +1,85 @@
+#pragma once
+
+#include "combat.h"
+#include <vector>
+
+namespace aegis::combat
+{
+
+struct DroppedWeapon
+{
+    ObjectId id;
+    glm::vec3 position;
+};
+enum class WeaponInteraction
+{
+    None,
+    Pickup,
+    Supply
+};
+
+// One equipped instance. IDs travel with projectiles and intact dropped weapons.
+class WeaponInventory
+{
+public:
+    void Reset();
+    bool SetSupplyPosition(const glm::vec3& point);
+
+    bool Armed() const
+    {
+        return equipped != 0;
+    }
+
+    ObjectId EquippedId() const
+    {
+        return equipped;
+    }
+
+    bool Break(ObjectId sourceId);
+    bool Drop(const glm::vec3& eye, const glm::vec3& direction);
+    bool SpawnDrop(const glm::vec3& position);
+    std::optional<float> InteractionDistance(const glm::vec3& eye, const glm::vec3& direction,
+                                             std::span<const Collider> obstacles) const;
+    WeaponInteraction Hint(const glm::vec3& eye, const glm::vec3& direction,
+                           std::span<const Collider> obstacles) const;
+    bool Interact(const glm::vec3& eye, const glm::vec3& direction, std::span<const Collider> obstacles);
+
+    const std::vector<DroppedWeapon>& Drops() const
+    {
+        return drops;
+    }
+
+    int Breaks() const
+    {
+        return breaks;
+    }
+
+    int Supplies() const
+    {
+        return supplies;
+    }
+
+    int Pickups() const
+    {
+        return pickups;
+    }
+
+    static glm::vec3 SupplyPosition()
+    {
+        return {-0.8f, 1.15f, -1.4f};
+    }
+
+    Collider HeldCollider(const glm::vec3& eye, const glm::vec3& direction) const;
+
+private:
+    std::optional<Hit> FindInteraction(const glm::vec3& eye, const glm::vec3& direction,
+                                       std::span<const Collider> obstacles) const;
+    glm::vec3 supplyPosition = SupplyPosition();
+    ObjectId equipped{1}, nextId{2};
+    std::vector<DroppedWeapon> drops;
+    int breaks{};
+    int supplies{};
+    int pickups{};
+};
+
+} // namespace aegis::combat

@@ -1,181 +1,284 @@
 #include "FrameWork.h"
+#include "player_motion.h"
 #include <GL/glew.h>
-#include <glfw/glfw3.h>
+#include <GLFW/glfw3.h>
+#include <algorithm>
+#include <cmath>
 
 namespace
 {
+	const float PlayerMoveSpeed = 5.f;
+	const float MouseSensitivity = 0.167f;
 	bool moveForward = false;
 	bool moveBackward = false;
 	bool moveLeft = false;
 	bool moveRight = false;
 	bool mouseFocused = false;
 	bool firstMouse = true;
-
 	double lastMouseX = 0.0;
 	double lastMouseY = 0.0;
 	double mouseDeltaX = 0.0;
 	double mouseDeltaY = 0.0;
 }
 
-int GameFrameWork::Run()
+int GameFrameWork::Run(const GameRunOptions& runOptions)
 {
+	options = runOptions;
 	if (!Init())
 	{
 		Clear();
 		return 1;
 	}
 
+	bool smokePassed = !options.smokeTest;
 	double previousTime = glfwGetTime();
-
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
+		if (glfwWindowShouldClose(window))
+			break;
 
 		double currentTime = glfwGetTime();
-		float deltaTime = static_cast<float>(currentTime - previousTime);
+		float deltaTime = static_cast<float>(std::clamp(currentTime - previousTime, 0.0, 0.05));
 		previousTime = currentTime;
-
 		Update(deltaTime);
+		if (glfwWindowShouldClose(window))
+			break;
 		Draw();
-	}
 
+		if (options.smokeTest && smokeFrame >= scene.SmokeFrameCount())
+		{
+			smokePassed = scene.SmokePassed();
+			const char* label = "Combat smoke: ";
+			if (options.campaign) label = "Campaign smoke: ";
+			else if (options.combatMapTest) label = "Combat map smoke: ";
+			else if (options.playerViewTest) label = "External player view smoke: ";
+			else if (options.bossTest) label = "Boss combat smoke: ";
+			else if (options.droneTest) label = "Drone combat smoke: ";
+			std::cout << label << (smokePassed ? "PASS" : "FAIL") << '\n';
+			break;
+		}
+	}
 	Clear();
-	return 0;
+	return smokePassed ? 0 : 1;
 }
 
 bool GameFrameWork::Init()
 {
 	if (!glfwInit())
 		return false;
-
+	glfwReady = true;
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
+	glfwWindowHint(GLFW_VISIBLE, options.smokeTest ? GLFW_FALSE : GLFW_TRUE);
 	window = glfwCreateWindow(1920, 1080, "AEGIS - OpenGL", nullptr, nullptr);
 	if (!window)
 		return false;
-
 	glfwMakeContextCurrent(window);
 	glewExperimental = GL_TRUE;
 	if (glewInit() != GLEW_OK)
 		return false;
-
-	glfwSwapInterval(1);
+	glfwSwapInterval(options.smokeTest ? 0 : 1);
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.08f, 0.11f, 0.15f, 1.0f);
 
 	camera.Init();
-	if (!combatMap.Init())
-		return false;
-	if (!drone.Init())
+	sceneAttempted = true;
+	if (!scene.Init(".", options))
 		return false;
 	glfwSetWindowUserPointer(window, this);
 	glfwSetKeyCallback(window, KeyCallBack);
 	glfwSetCursorPosCallback(window, CursorPosCallback);
 	glfwSetWindowFocusCallback(window, WindowFocusCallback);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetWindowIconifyCallback(window, WindowFocusCallback);
 	WindowFocusCallback(window, glfwGetWindowAttrib(window, GLFW_FOCUSED));
+	std::cout << "WASD: move | mouse: aim | LMB: fire | E: use | G: drop | Shift: normal time\n"
+		"Enter: next area | R: checkpoint | Esc/Space: pause | Q: quit\n";
 	return true;
 }
 
 void GameFrameWork::Update(float deltaTime)
 {
-	//드론 날개 회전
-	drone.Update(deltaTime);
-
-	// 마우스 이동
-	const bool mouseMoved = mouseDeltaX != 0.0 || mouseDeltaY != 0.0;
-	if (mouseMoved)
+	glfwGetFramebufferSize(window, &width, &height);
+	drawable = width > 0 && height > 0 && !glfwGetWindowAttrib(window, GLFW_ICONIFIED);
+	const bool active = drawable && mouseFocused && !paused;
+	if (toggleModeRequested)
 	{
-		const float sensitivity = 0.167f; // 커서 좌표 1단위당 회전 각도(도)
-		camera.Rotate(-static_cast<float>(mouseDeltaY) * sensitivity,
-			-static_cast<float>(mouseDeltaX) * sensitivity);
-		mouseDeltaX = 0.0;
-		mouseDeltaY = 0.0;
+		scene.ToggleMode();
+		toggleModeRequested = false;
+		paused = false;
+	}
+	if (resetRequested)
+	{
+		scene.Reset();
+		resetRequested = false;
 	}
 
-	// 키보드 이동
-	const glm::vec3 movement = CalculateCameraMovement(deltaTime);
-
-	if (!mouseMoved && glm::length(movement) == 0.f)
+	const bool inputActive = active && wasActive && !restartFrameTime && !options.smokeTest;
+	UpdatePlayerCamera(deltaTime, inputActive);
+	scene.SampleInput(window, inputActive);
+	SyncPlayerCamera(inputActive);
+	if (scene.QuitRequested())
+	{
+		glfwSetWindowShouldClose(window, GLFW_TRUE);
 		return;
+	}
+	if (options.smokeTest)
+	{
+		// 자동 검증은 장면의 테스트 시점과 고정 시간 간격을 사용한다.
+		scene.SmokeFrame(++smokeFrame);
+		scene.Update(1.0 / 60.0, (1.0 / 60.0) * scene.PreviewTimeScale());
+	}
+	else if (inputActive)
+	{
+		scene.Update(deltaTime, deltaTime * scene.PreviewTimeScale());
+	}
+	SyncPlayerCamera(inputActive);
+	wasActive = active;
+	restartFrameTime = false;
+}
 
-	camera.camPos += movement;
-	camera.camTarget += movement;
+void GameFrameWork::UpdatePlayerCamera(float deltaTime, bool inputActive)
+{
+	actualTravel = 0.f;
+	movementTimeScale = 0.05;
+	SyncPlayerCamera(inputActive);
+	if (!cursorCaptured)
+	{
+		firstMouse = true;
+		mouseDeltaX = mouseDeltaY = 0.0;
+		return;
+	}
+
+	// 마우스는 누적 이동량이므로 deltaTime을 다시 곱하지 않는다.
+	camera.Rotate(-static_cast<float>(mouseDeltaY) * MouseSensitivity,
+		-static_cast<float>(mouseDeltaX) * MouseSensitivity);
+	mouseDeltaX = mouseDeltaY = 0.0;
+	const glm::vec3 desired = CalculateCameraMovement(deltaTime);
+	const auto walls = scene.PlayerObstacles();
+	const auto movement = aegis::combat::MovePlayer(camera.camPos, desired, walls);
+	camera.camPos = movement.eye;
+	camera.camTarget += movement.displacement;
 	camera.UpdateView();
+	camera.UpdateProjection(width, height);
+	actualTravel = glm::length(glm::vec2(movement.displacement.x, movement.displacement.z));
+	movementTimeScale = aegis::combat::MovementTimeScale(movement.displacement, deltaTime, PlayerMoveSpeed);
+	scene.SetMovementTimeScale(movementTimeScale);
+	scene.SetPlayerView({ camera.camPos, camera.camTarget - camera.camPos, camera.camUp, camera.fovy });
 }
 
 glm::vec3 GameFrameWork::CalculateCameraMovement(float deltaTime) const
 {
-	glm::vec3 forward = camera.camTarget - camera.camPos;
-	forward.y = 0.f;
+	float forwardInput = 0.f;
+	float rightInput = 0.f;
+	if (moveForward) forwardInput += 1.f;
+	if (moveBackward) forwardInput -= 1.f;
+	if (moveLeft) rightInput -= 1.f;
+	if (moveRight) rightInput += 1.f;
+	return aegis::combat::RequestedPlayerMovement(camera.camTarget - camera.camPos,
+		forwardInput, rightInput, PlayerMoveSpeed * deltaTime);
+}
 
-	if (glm::length(forward) < 0.001f)
-		return glm::vec3(0.f);
-
-	//normalize -> 정규화(방향은 유지, 길이만 1로 만듬), cross -> 외적
-	// y축이랑 외적해서 방향을 좌, 우로 변경함
-	forward = glm::normalize(forward); 
-	const glm::vec3 right = glm::cross(forward, glm::vec3(0.f, 1.f, 0.f));
-
-	// 움직일 방향, forward랑 더하거나 빼서 움직이는 방향을 구함
-	glm::vec3 direction(0.f);
-
-	if (moveForward) direction += forward;
-	if (moveBackward) direction -= forward;
-	if (moveLeft) direction -= right;
-	if (moveRight) direction += right;
-
-	if (glm::length(direction) < 0.001f)
-		return glm::vec3(0.f);
-
-	const float moveSpeed = 5.f;
-	return glm::normalize(direction) * moveSpeed * deltaTime;
+void GameFrameWork::SyncPlayerCamera(bool inputActive)
+{
+	if (options.smokeTest || !(options.campaign || options.combatMapTest))
+		return;
+	const bool playing = scene.PlayerControlsActive();
+	if (playing && (!cameraSynced || cameraSpawnRevision != scene.PlayerSpawnRevision() ||
+		!scene.HasExternalPlayerView()))
+	{
+		const aegis::PlayerView view = scene.CurrentPlayerView();
+		camera.camPos = view.eye;
+		camera.camUp = view.up;
+		camera.rotX = glm::degrees(std::asin(std::clamp(view.forward.y, -1.f, 1.f)));
+		camera.rotY = glm::degrees(std::atan2(-view.forward.x, -view.forward.z));
+		camera.Rotate(0.f, 0.f);
+		camera.UpdateView();
+		movementTimeScale = 0.05;
+		actualTravel = 0.f;
+		cameraSpawnRevision = scene.PlayerSpawnRevision();
+		cameraSynced = true;
+		firstMouse = true;
+		mouseDeltaX = mouseDeltaY = 0.0;
+	}
+	SetCursorCapture(playing && inputActive);
+	if (playing && inputActive)
+	{
+		scene.SetPlayerView({ camera.camPos, camera.camTarget - camera.camPos, camera.camUp, camera.fovy });
+		scene.SetMovementTimeScale(movementTimeScale);
+	}
 }
 
 void GameFrameWork::Draw()
 {
-	int width = 1920;
-	int height = 1080;
-
-	glfwGetFramebufferSize(window, &width, &height);
-
-	if (width <= 0 || height <= 0)
+	if (!drawable)
 	{
 		glfwWaitEventsTimeout(0.1);
 		return;
 	}
-
 	glViewport(0, 0, width, height);
 	camera.UpdateProjection(width, height);
-
-	const glm::mat4 scene = camera.projection * camera.view;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	combatMap.Draw(scene);
-	drone.Draw(scene);
+	const Camera* playerCamera = nullptr;
+	if (!options.smokeTest && (options.campaign || options.combatMapTest) &&
+		cameraSynced && scene.HasExternalPlayerView() && !scene.AnalysisActive())
+	{
+		playerCamera = &camera;
+	}
+	scene.Draw(width, height, playerCamera);
 	glfwSwapBuffers(window);
+	UpdateWindowTitle();
+}
+
+void GameFrameWork::UpdateWindowTitle()
+{
+	std::string title = scene.StatusTitle(paused);
+	if (!options.smokeTest && (options.campaign || options.combatMapTest))
+	{
+		title += " | Player: " + std::to_string(camera.camPos.x) + "," + std::to_string(camera.camPos.y) +
+			"," + std::to_string(camera.camPos.z) + " | Look: " + std::to_string(camera.rotX) + "," +
+			std::to_string(camera.rotY) + " | Travel: " + std::to_string(actualTravel) +
+			" | MoveScale: " + std::to_string(movementTimeScale);
+	}
+	glfwSetWindowTitle(window, title.c_str());
 }
 
 void GameFrameWork::Clear()
 {
+	// 부분 초기화 실패도 GL 컨텍스트가 살아 있을 때 해제한다.
+	if (sceneAttempted)
+	{
+		scene.Clear();
+		sceneAttempted = false;
+	}
 	if (window)
 	{
-		combatMap.Clear();
-		drone.Clear();
 		glfwDestroyWindow(window);
 		window = nullptr;
 	}
-
-	glfwTerminate();
+	if (glfwReady)
+	{
+		glfwTerminate();
+		glfwReady = false;
+	}
 }
 
-void GameFrameWork::CursorPosCallback(GLFWwindow*, double x, double y)
+void GameFrameWork::SetCursorCapture(bool captured)
 {
-	if (!mouseFocused)
+	if (cursorCaptured == captured)
 		return;
+	cursorCaptured = captured;
+	firstMouse = true;
+	mouseDeltaX = mouseDeltaY = 0.0;
+	glfwSetInputMode(window, GLFW_CURSOR, captured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+}
 
+void GameFrameWork::CursorPosCallback(GLFWwindow* window, double x, double y)
+{
+	const auto& game = *static_cast<GameFrameWork*>(glfwGetWindowUserPointer(window));
+	if (!mouseFocused || !game.cursorCaptured)
+		return;
 	if (!firstMouse)
 	{
 		mouseDeltaX += x - lastMouseX;
@@ -186,26 +289,56 @@ void GameFrameWork::CursorPosCallback(GLFWwindow*, double x, double y)
 	firstMouse = false;
 }
 
-void GameFrameWork::WindowFocusCallback(GLFWwindow*, int focused)
+void GameFrameWork::WindowFocusCallback(GLFWwindow* window, int)
 {
-	mouseFocused = focused == GLFW_TRUE;
+	auto& game = *static_cast<GameFrameWork*>(glfwGetWindowUserPointer(window));
+	mouseFocused = glfwGetWindowAttrib(window, GLFW_FOCUSED) && !glfwGetWindowAttrib(window, GLFW_ICONIFIED);
+	game.restartFrameTime = true;
 	firstMouse = true;
-	mouseDeltaX = 0.0;
-	mouseDeltaY = 0.0;
+	mouseDeltaX = mouseDeltaY = 0.0;
+	if (!mouseFocused)
+	{
+		moveForward = moveBackward = moveLeft = moveRight = false;
+		game.SetCursorCapture(false);
+	}
 }
 
-void GameFrameWork::KeyCallBack(GLFWwindow* window, int key, int scancode, int action, int mods)
+void GameFrameWork::KeyCallBack(GLFWwindow* window, int key, int, int action, int)
 {
 	if (action != GLFW_PRESS && action != GLFW_RELEASE)
 		return;
-
-	if (key == GLFW_KEY_Q)
-	{
-		if (action == GLFW_RELEASE)
-			glfwSetWindowShouldClose(window, GLFW_TRUE);
-	}
+	auto& game = *static_cast<GameFrameWork*>(glfwGetWindowUserPointer(window));
+	if (key == GLFW_KEY_Q && action == GLFW_RELEASE)
+		glfwSetWindowShouldClose(window, GLFW_TRUE);
 	else if (key == GLFW_KEY_W) moveForward = (action == GLFW_PRESS);
 	else if (key == GLFW_KEY_S) moveBackward = (action == GLFW_PRESS);
 	else if (key == GLFW_KEY_A) moveLeft = (action == GLFW_PRESS);
 	else if (key == GLFW_KEY_D) moveRight = (action == GLFW_PRESS);
+	if (action != GLFW_PRESS)
+		return;
+	if (key == GLFW_KEY_ESCAPE)
+	{
+		if (!game.scene.CloseAnalysis())
+		{
+			if (game.scene.IsCampaign()) game.scene.TogglePause();
+			else glfwSetWindowShouldClose(window, GLFW_TRUE);
+		}
+		game.restartFrameTime = true;
+	}
+	else if (key == GLFW_KEY_SPACE && !game.scene.AnalysisActive())
+	{
+		if (game.scene.IsCampaign()) game.scene.TogglePause();
+		else game.paused = !game.paused;
+		game.restartFrameTime = true;
+	}
+	else if (key == GLFW_KEY_R)
+	{
+		game.resetRequested = true;
+		game.restartFrameTime = true;
+	}
+	else if (key == GLFW_KEY_F2 && !game.scene.IsCampaign())
+	{
+		game.toggleModeRequested = true;
+		game.restartFrameTime = true;
+	}
 }

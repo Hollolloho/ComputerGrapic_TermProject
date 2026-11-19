@@ -6,19 +6,23 @@
 
 bool CombatMap::Init()
 {
+	return Init(".");
+}
+
+bool CombatMap::Init(const std::filesystem::path& runtimeRoot)
+{
 	Clear();
 
 	aegis::ModelData model;
 	std::string error;
-	// 실행 작업 폴더를 기준으로 한 상대 경로.
-	const std::filesystem::path path = "asset/combat_map/obj/combat_map.obj";
+	const std::filesystem::path path = runtimeRoot / "asset/combat_map/obj/combat_map.obj";
 	if (!aegis::LoadModel(path, model, error))
 	{
 		std::cerr << error << '\n';
 		return false;
 	}
 
-	shaderProgram = LoadShaderProgram("shaders/combat_map.vert", "shaders/combat_map.frag");
+	shaderProgram = LoadShaderProgram(runtimeRoot / "shaders/combat_map.vert", runtimeRoot / "shaders/combat_map.frag");
 	if (!shaderProgram)
 		return false;
 
