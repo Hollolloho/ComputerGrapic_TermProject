@@ -10,6 +10,13 @@ struct DroneState
 	glm::vec3 rotation{ 0.f };
 };
 
+enum RotorSide
+{
+	None,
+	Left,
+	Right
+};
+
 class Drone
 {
 private:
@@ -20,7 +27,11 @@ private:
 	GLint colorLocation = -1;
 	GLint emissionLocation = -1;
 
+	std::vector<RotorSide> rotors{};
 	std::vector<DroneState> drones{};
+	const glm::vec3 leftRotorPivot{ -1.02f, 0.04f, -0.02f };
+	const glm::vec3 rightRotorPivot{ 1.02f, 0.04f, -0.02f };
+	float rotorAngle = 0.f;
 	glm::mat4 droneMat{ 1.f };
 public:
 	bool Init();

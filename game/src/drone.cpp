@@ -31,6 +31,19 @@ bool Drone::Init()
 		Clear();
 		return false;
 	}
+
+	rotors.assign(model.meshes.size(), RotorSide::None);
+
+	for (std::size_t i = 0; i < model.meshes.size(); ++i)
+	{
+		const auto& name = model.meshes[i].name;
+
+		if (name == "part_024" || name == "part_025")
+			rotors[i] = RotorSide::Left;
+		else if (name == "part_041" || name == "part_042")
+			rotors[i] = RotorSide::Right;
+	}
+
 	DroneInit();
 	return true;
 }
@@ -60,26 +73,43 @@ glm::mat4 Drone::CalculateMat(const glm::mat4& scene, const DroneState& drone)
 
 void Drone::Draw(const glm::mat4& scene)
 {
-	for (auto& drone : drones)
+	glUseProgram(shaderProgram);
+
+	for (const DroneState& drone : drones)
 	{
 		droneMat = CalculateMat(scene, drone);
-		glUseProgram(shaderProgram);
-		glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(droneMat));
 
-		for (const RenderMesh& mesh : meshes)
+		for (std::size_t i = 0; i < meshes.size(); ++i)
 		{
+			const RenderMesh& mesh = meshes[i];
+			glm::mat4 transform = droneMat;
+
+			if (rotors[i] != RotorSide::None)
+			{
+				const bool isLeft = (rotors[i] == RotorSide::Left);
+				const glm::vec3& pivot = isLeft ? leftRotorPivot : rightRotorPivot;
+				const float angle = isLeft ? rotorAngle : -rotorAngle;
+
+				transform = glm::translate(transform, pivot);
+				transform = glm::rotate(transform, glm::radians(angle),
+					glm::vec3(0.f, 1.f, 0.f));
+				transform = glm::translate(transform, -pivot);
+			}
+
+			glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(transform));
 			glUniform3fv(colorLocation, 1, glm::value_ptr(mesh.color));
 			glUniform3fv(emissionLocation, 1, glm::value_ptr(mesh.emission));
 			glBindVertexArray(mesh.vao);
 			glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, nullptr);
 		}
 	}
+
 	glBindVertexArray(0);
 }
 
 void Drone::Update(float deltaTime)
 {
-
+	rotorAngle = std::fmod(rotorAngle + 720.f * deltaTime, 360.f);
 }
 
 void Drone::Clear()

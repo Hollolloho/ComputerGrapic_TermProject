@@ -81,6 +81,9 @@ bool GameFrameWork::Init()
 
 void GameFrameWork::Update(float deltaTime)
 {
+	//드론 날개 회전
+	drone.Update(deltaTime);
+
 	// 마우스 이동
 	const bool mouseMoved = mouseDeltaX != 0.0 || mouseDeltaY != 0.0;
 	if (mouseMoved)
