@@ -67,7 +67,7 @@ glm::mat4 Drone::CalculateMat(const glm::mat4& scene, const DroneState& drone)
 {
 	glm::mat4 model = glm::translate(glm::mat4(1.f), drone.pos);
 	model = glm::rotate(model, glm::radians(drone.rotation.y), glm::vec3(0.f, 1.f, 0.f));
-	model = glm::scale(model, glm::vec3(0.8f));
+	model = glm::scale(model, glm::vec3(0.5f));
 	return scene * model;
 }
 
