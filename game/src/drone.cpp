@@ -65,16 +65,27 @@ void Drone::DroneInit()
 	// 원형 보스방 오른쪽
 	drones.push_back({ { 12.50f, 2.40f, -54.00f }, { 0.60f, 0.80f, 1.00f }, { 0.f, -41.82f, 0.f } });
 	drones.back().patrolEndZ = -55.8f;
+
+	for (DroneState& drone : drones)
+	{
+		if (drone.patrolEndZ < drone.patrolStartZ)
+		{
+			drone.rotation.y += 180.f;
+		}
+	}
 }
 
 glm::mat4 Drone::CalculateMat(const glm::mat4& scene, const DroneState& drone)
 {
-	const float fromZ = drone.movingToEnd ? drone.patrolStartZ : drone.patrolEndZ;
-	const float targetZ = drone.movingToEnd ? drone.patrolEndZ : drone.patrolStartZ;
-	const float facing = drone.rotation.y + (targetZ < fromZ ? 180.f : 0.f);
-
+	const glm::vec3 rotationAxis(0.f, 1.f, 0.f);
 	glm::mat4 model = glm::translate(glm::mat4(1.f), drone.pos);
-	model = glm::rotate(model, glm::radians(facing), glm::vec3(0.f, 1.f, 0.f));
+	model = glm::rotate(model, glm::radians(drone.rotation.y), rotationAxis);
+
+	if (drone.is_turning)
+	{
+		model = glm::rotate(model, glm::radians(drone.turn_rotate), rotationAxis);
+	}
+
 	model = glm::scale(model, glm::vec3(0.5f));
 	return scene * model;
 }
@@ -129,13 +140,26 @@ void Drone::MovingDrone(float deltaTime)
 		if (drone.patrolStartZ == drone.patrolEndZ)
 			continue;
 
+		if (drone.is_turning)
+		{
+			drone.turn_rotate += 60.f * deltaTime;
+			if (drone.turn_rotate >= 180.f)
+			{
+				drone.rotation.y = std::fmod(drone.rotation.y + 180.f, 360.f);
+				drone.turn_rotate = 0.f;
+				drone.is_turning = false;
+				drone.movingToEnd = !drone.movingToEnd;
+			}
+			continue;
+		}
+
 		const float targetZ = drone.movingToEnd ? drone.patrolEndZ : drone.patrolStartZ;
 		const float remaining = targetZ - drone.pos.z;
 
 		if (std::abs(remaining) <= distanceFrame)
 		{
 			drone.pos.z = targetZ;
-			drone.movingToEnd = !drone.movingToEnd;
+			drone.is_turning = true;
 		}
 		else
 		{

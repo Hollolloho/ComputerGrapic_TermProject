@@ -11,6 +11,8 @@ struct DroneState
 	float patrolStartZ = pos.z;
 	float patrolEndZ = pos.z;
 	bool movingToEnd = true;
+	bool is_turning = false;
+	float turn_rotate = 0.f;
 };
 
 enum RotorSide
