@@ -2,9 +2,11 @@
 
 #include <glm/glm.hpp>
 
-namespace aegis {
+namespace aegis
+{
 
-class PlayerCamera {
+class PlayerCamera
+{
 public:
     PlayerCamera();
     void Reset();

@@ -5,9 +5,11 @@
 #include <GL/glew.h>
 #include <glm/mat4x4.hpp>
 
-namespace aegis {
+namespace aegis
+{
 
-struct DrawMesh {
+struct DrawMesh
+{
     GLuint vao{};
     GLuint vbo{};
     GLuint ebo{};
@@ -21,13 +23,14 @@ struct DrawMesh {
     void Clear();
 };
 
-class MeshRenderer {
+class MeshRenderer
+{
 public:
     bool Init(const std::filesystem::path& shaderDirectory);
-    void Begin(const glm::vec3& eyePosition, const glm::vec3& lightDirection,
-               const glm::vec3& lightColor, float lightStrength, float ambientStrength) const;
-    void Draw(const std::vector<DrawMesh>& meshes, const glm::mat4& scene,
-              const glm::mat4& model, const glm::vec3* overrideColor=nullptr) const;
+    void Begin(const glm::vec3& eyePosition, const glm::vec3& lightDirection, const glm::vec3& lightColor,
+               float lightStrength, float ambientStrength) const;
+    void Draw(const std::vector<DrawMesh>& meshes, const glm::mat4& scene, const glm::mat4& model,
+              const glm::vec3* overrideColor = nullptr) const;
     void Clear();
 
 private:

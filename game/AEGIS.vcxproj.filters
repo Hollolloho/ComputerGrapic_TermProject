@@ -85,10 +85,10 @@
     <ClCompile Include="src\drone_behavior.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="src\combat_test_hud.cpp">
+    <ClCompile Include="src\combat_hud.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="src\combat_test_scene.cpp">
+    <ClCompile Include="src\combat_scene.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -159,7 +159,7 @@
     <ClInclude Include="src\turret_encounter.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="src\combat_test_scene.h">
+    <ClInclude Include="src\combat_scene.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="src\drone.h">
@@ -241,5 +241,20 @@
   <ItemGroup>
     <ClCompile Include="src\world_signs.cpp" />
     <ClInclude Include="src\world_signs.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\combat_render.cpp" />
+    <ClCompile Include="src\combat_input.cpp" />
+    <ClCompile Include="src\combat_smoke_tests.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\combat_debug.cpp" />
+  </ItemGroup>
+  <ItemGroup><ClInclude Include="src\game_options.h" /></ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\drone.vert" />
+    <None Include="shaders\drone.frag" />
+    <None Include="shaders\weapon.vert" />
+    <None Include="shaders\weapon.frag" />
   </ItemGroup>
 </Project>

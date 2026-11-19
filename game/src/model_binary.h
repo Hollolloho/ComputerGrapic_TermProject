@@ -4,7 +4,8 @@
 #include <cstdint>
 #include <filesystem>
 
-namespace aegis {
+namespace aegis
+{
 
 struct ModelData;
 

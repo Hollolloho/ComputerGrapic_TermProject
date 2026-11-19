@@ -635,41 +635,41 @@ int main()
     check(feedback.Shards().empty() && feedback.DamageStrength()==0,"restart snapshot does not replay old damage or weapon break");
     CombatTime clock;
     auto frameTime=clock.Advance(0.1,0.005);
-    check(std::abs(frameTime.gameDt-0.005)<1e-9 && frameTime.realDt==0.1,"combat clock accepts separate real and slow world time");
+    check(std::abs(frameTime.gameDeltaTime-0.005)<1e-9 && frameTime.realDeltaTime==0.1,"combat clock accepts separate real and slow world time");
     check(clock.RequestShot() && !clock.RequestShot(),"one accepted shot locks repeated shot requests");
     frameTime=clock.Advance(0.1,0.005);
-    check(std::abs(frameTime.gameDt-0.1)<1e-9 && std::abs(clock.ShotRemaining()-0.15)<1e-9,"stationary shot gives enemies normal time for first part of 0.25 real seconds");
+    check(std::abs(frameTime.gameDeltaTime-0.1)<1e-9 && std::abs(clock.ShotRemaining()-0.15)<1e-9,"stationary shot gives enemies normal time for first part of 0.25 real seconds");
     frameTime=clock.Advance(0.2,0.01);
-    check(std::abs(frameTime.gameDt-0.1525)<1e-9 && clock.CanFire(),"frame crossing shot-window boundary splits normal and slow portions exactly");
+    check(std::abs(frameTime.gameDeltaTime-0.1525)<1e-9 && clock.CanFire(),"frame crossing shot-window boundary splits normal and slow portions exactly");
     frameTime=clock.Advance(0.1,0.005);
-    check(std::abs(frameTime.gameDt-0.005)<1e-9,"shot boost returns to supplied world time when expired");
+    check(std::abs(frameTime.gameDeltaTime-0.005)<1e-9,"shot boost returns to supplied world time when expired");
     frameTime=clock.Advance(0.1,0.005,true);
-    check(frameTime.gameDt==0.1,"Shift progresses world normally without needing movement");
+    check(frameTime.gameDeltaTime==0.1,"Shift progresses world normally without needing movement");
     frameTime=clock.Advance(0.1,0.005,false);
-    check(std::abs(frameTime.gameDt-0.005)<1e-9,"releasing Shift restores external slow time");
+    check(std::abs(frameTime.gameDeltaTime-0.005)<1e-9,"releasing Shift restores external slow time");
     clock.RequestShot(); const double pausedWindow=clock.ShotRemaining();
     frameTime=clock.Advance(1,0.05,true,true);
-    check(frameTime.realDt==0 && frameTime.gameDt==0 && clock.ShotRemaining()==pausedWindow,
+    check(frameTime.realDeltaTime==0 && frameTime.gameDeltaTime==0 && clock.ShotRemaining()==pausedWindow,
         "pause overrides Shift and freezes shot window and real-time combat cooldown input");
     frameTime=clock.Advance(0.1,0,true);
-    check(frameTime.realDt==0 && frameTime.gameDt==0 && clock.ShotRemaining()==pausedWindow,
+    check(frameTime.realDeltaTime==0 && frameTime.gameDeltaTime==0 && clock.ShotRemaining()==pausedWindow,
         "zero incoming world time freezes combat even during a shot boost");
     clock.Advance(-1,0.05); clock.Advance(0.1,std::numeric_limits<double>::infinity());
     check(clock.ShotRemaining()==pausedWindow,"invalid frame time cannot consume shot window");
     clock.Reset();
     check(clock.CanFire() && clock.ShotRemaining()==0 && clock.Scale()==1,"restart restores time bridge and clears forced shot progress");
     frameTime=clock.Advance(0.1,2);
-    check(frameTime.gameDt==0.1,"external time cannot accelerate combat above normal speed");
+    check(frameTime.gameDeltaTime==0.1,"external time cannot accelerate combat above normal speed");
     for(int fps:{30,60,144}) {
         CombatTime sampled; sampled.RequestShot(); double elapsedGame{};
-        for(int i=0;i<fps;++i) elapsedGame+=sampled.Advance(1.0/fps,0.05/fps).gameDt;
+        for(int i=0;i<fps;++i) elapsedGame+=sampled.Advance(1.0/fps,0.05/fps).gameDeltaTime;
         check(std::abs(elapsedGame-0.2875)<1e-8 && sampled.CanFire(),"shot boost integral is consistent across 30/60/144 fps");
     }
     CombatTime projectileClock; CombatRange timedRange;
     timedRange.Fire({0,1.65f,0},{0,0,-1}); projectileClock.RequestShot();
     for(int i=0;i<60;++i) {
         const auto t=projectileClock.Advance(1.0/60,0.05/60);
-        timedRange.Update(static_cast<float>(t.realDt),static_cast<float>(t.gameDt));
+        timedRange.Update(static_cast<float>(t.realDeltaTime),static_cast<float>(t.gameDeltaTime));
     }
     check(timedRange.Flights().size()==1 && std::abs(timedRange.Flights()[0].projectile.position.z+3.45f)<0.001f,
         "actual projectile receives 0.25 seconds normal travel then supplied slow time");

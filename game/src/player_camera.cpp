@@ -4,7 +4,8 @@
 #include <algorithm>
 #include <cmath>
 
-namespace aegis {
+namespace aegis
+{
 
 PlayerCamera::PlayerCamera()
 {

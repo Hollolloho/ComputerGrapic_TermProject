@@ -1,9 +1,10 @@
 #pragma once
 #include "CombatMap.h"
+#include "game_options.h"
 
 #include "drone.h"
 #include "player_camera.h"
-#include "combat_test_scene.h"
+#include "combat_scene.h"
 #include "campaign_flow.h"
 #include "korean_ui.h"
 
@@ -11,51 +12,128 @@
 #include <filesystem>
 #include <cstdint>
 
-namespace aegis {
+namespace aegis
+{
 
-class GameScene {
+class GameScene
+{
 public:
-    bool Init(const std::filesystem::path& projectDirectory, bool combatTest = false, bool turretTest = false, bool droneTest = true, bool bossTest = false, bool campaign = true,bool combatMapTest=false,bool playerViewTest=false);
-    void Update(double realDt,double baseGameDt);
-    bool SetPlayerView(const PlayerView& view) {
-        if((campaignMode && !flow.WorldRuns()) || AnalysisActive()) return false;
-        return testScene.SetPlayerView(view);
+    bool Init(const std::filesystem::path& projectDirectory, const GameRunOptions& options = {});
+    void Update(double realDeltaTime, double baseGameDeltaTime);
+
+    bool SetPlayerView(const PlayerView& view)
+    {
+        if ((campaignMode && !flow.WorldRuns()) || AnalysisActive())
+        {
+            return false;
+        }
+        return combatScene.SetPlayerView(view);
     }
-    void ClearPlayerView() { testScene.ClearPlayerView(); }
-    bool PlayerControlsActive() const { return (!campaignMode || flow.WorldRuns()) && !AnalysisActive() && !testScene.DeathStarted(); }
-    std::uint64_t PlayerSpawnRevision() const { return playerSpawnRevision; }
-    bool HasExternalPlayerView() const { return testScene.HasExternalPlayerView(); }
-    PlayerView CurrentPlayerView() const { return testScene.CurrentPlayerView(); }
-    void SetMovementTimeScale(double scale) { testScene.SetMovementTimeScale(scale); }
-    std::vector<combat::Collider> PlayerObstacles() const { return testScene.PlayerObstacles(); }
-    double PreviewTimeScale() const { return testScene.PreviewTimeScale(); }
+
+    void ClearPlayerView()
+    {
+        combatScene.ClearPlayerView();
+    }
+
+    bool PlayerControlsActive() const
+    {
+        return (!campaignMode || flow.WorldRuns()) && !AnalysisActive() && !combatScene.DeathStarted();
+    }
+
+    std::uint64_t PlayerSpawnRevision() const
+    {
+        return playerSpawnRevision;
+    }
+
+    bool HasExternalPlayerView() const
+    {
+        return combatScene.HasExternalPlayerView();
+    }
+
+    PlayerView CurrentPlayerView() const
+    {
+        return combatScene.CurrentPlayerView();
+    }
+
+    void SetMovementTimeScale(double scale)
+    {
+        combatScene.SetMovementTimeScale(scale);
+    }
+
+    std::vector<combat::Collider> PlayerObstacles() const
+    {
+        return combatScene.PlayerObstacles();
+    }
+
+    double PreviewTimeScale() const
+    {
+        return combatScene.PreviewTimeScale();
+    }
+
     void Draw(int width, int height) const;
     void Reset();
     void Clear();
     void ToggleMode();
     void SampleInput(GLFWwindow* window, bool active);
-    bool AnalysisActive() const { return testScene.AnalysisActive(); }
-    bool CloseAnalysis() { return testScene.CloseAnalysis(); }
-    const combat::AnalysisSession& AnalysisState() const { return testScene.AnalysisState(); }
-    bool IsCampaign() const { return campaignMode; }
+
+    bool AnalysisActive() const
+    {
+        return combatScene.AnalysisActive();
+    }
+
+    bool CloseAnalysis()
+    {
+        return combatScene.CloseAnalysis();
+    }
+
+    const combat::AnalysisSession& AnalysisState() const
+    {
+        return combatScene.AnalysisState();
+    }
+
+    bool IsCampaign() const
+    {
+        return campaignMode;
+    }
+
     bool TogglePause();
-    bool QuitRequested() const { return quitRequested; }
+
+    bool QuitRequested() const
+    {
+        return quitRequested;
+    }
+
     std::string StatusTitle(bool paused) const;
-    int SmokeFrameCount() const { return playerViewTestMode ? 480:campaignMode ? 3000:testScene.SmokeFrameCount(); }
+
+    int SmokeFrameCount() const
+    {
+        return playerViewTestMode ? 480 : campaignMode ? 3000 : combatScene.SmokeFrameCount();
+    }
+
     bool SmokePassed() const;
-    bool IsCombatTest() const { return true; }
-    const CombatTestScene& TestScene() const { return testScene; }
+
+    bool IsCombatTest() const
+    {
+        return true;
+    }
+
+    const CombatScene& Combat() const
+    {
+        return combatScene;
+    }
+
     void SmokeFrame(int frame);
 
 private:
-    struct CorridorObject {
+    struct CorridorObject
+    {
         glm::mat4 model{1.0f};
         std::vector<DrawMesh> meshes;
     };
 
     bool InitEntry(const std::filesystem::path& root);
-    void DrawEntry(int width,int height) const;
-    void DrawBattle(int width,int height) const;
+    void DrawEntry(int width, int height) const;
+    void DrawBattle(int width, int height) const;
     void LoadStage();
     void ApplyAction(UiAction action);
     UiPage Page() const;
@@ -66,18 +144,30 @@ private:
     CampaignFlow flow;
     bool playerViewTestMode{};
     bool showCredits{};
-    bool campaignMode{},quitRequested{},mouseHeld{},enterHeld{},escapeHeld{};
-    float mouseX{},mouseY{};
-    int stageSmokeFrame{},failedSmokeFrame{},victorySmokeFrame{},pausedSmokeFrame{};
-    bool smokeRetried{},smokePaused{},smokeVictory{},smokeRestarted{},smokeDone{};
+    bool campaignMode{};
+    bool quitRequested{};
+    bool mouseHeld{};
+    bool enterHeld{};
+    bool escapeHeld{};
+    float mouseX{};
+    float mouseY{};
+    int stageSmokeFrame{};
+    int failedSmokeFrame{};
+    int victorySmokeFrame{};
+    int pausedSmokeFrame{};
+    bool smokeRetried{};
+    bool smokePaused{};
+    bool smokeVictory{};
+    bool smokeRestarted{};
+    bool smokeDone{};
     mutable KoreanUi ui;
-    std::vector<DrawMesh> entryRoom,entryTerminal;
+    std::vector<DrawMesh> entryRoom, entryTerminal;
     CombatMap combatMap;
     MeshRenderer renderer;
     std::array<CorridorObject, 5> corridor;
     Drone drone;
     PlayerCamera camera;
-    CombatTestScene testScene;
+    CombatScene combatScene;
     bool legacyTest{};
 };
 
