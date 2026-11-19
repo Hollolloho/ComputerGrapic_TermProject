@@ -269,10 +269,21 @@ bool TurretEncounter::UpdateDrone(float gameDeltaTime, const glm::vec3& eye)
         wantsToShoot = drone.Update(gameDeltaTime, eye, walls);
         colliders[PrimaryBodyIndex] = drone.Body();
         colliders[PrimaryWeaponIndex] = drone.Weapon();
-        phase = drone.Phase() == DronePhase::Warning    ? TurretPhase::Warning
-                : drone.Phase() == DronePhase::Waiting  ? TurretPhase::Cooldown
-                : drone.Phase() == DronePhase::Disarmed ? TurretPhase::Disarmed
-                                                        : TurretPhase::Idle;
+        switch (drone.Phase())
+        {
+        case DronePhase::Warning:
+            phase = TurretPhase::Warning;
+            break;
+        case DronePhase::Waiting:
+            phase = TurretPhase::Cooldown;
+            break;
+        case DronePhase::Disarmed:
+            phase = TurretPhase::Disarmed;
+            break;
+        default:
+            phase = TurretPhase::Idle;
+            break;
+        }
     }
 
     return wantsToShoot;

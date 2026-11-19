@@ -337,6 +337,14 @@ int main()
     for(int i=0;i<23;++i) coarse.Update(0.1f,eye,sightWall);
     for(int i=0;i<230;++i) fine.Update(0.01f,eye,sightWall);
     check(close(coarse.Position().x,fine.Position().x),"patrol turnaround preserves speed across frame subdivisions");
+    // A long frame must not change the patrol route or skip a wall.
+    DroneBehavior longFrame;
+    longFrame.Update(1000.0f,eye,sightWall);
+    check(close(longFrame.Position().x,-0.65f),"many full patrol cycles return to start without an unbounded loop");
+    longFrame.Reset(); longFrame.Update(.5f,eye,sightWall);
+    check(close(longFrame.Position().x,-0.325f),"short patrol step still uses speed times elapsed time");
+    longFrame.Reset(); longFrame.Update(10.0f,eye,constrained);
+    check(longFrame.Body().maximum.x<1.8001f,"a long patrol step cannot skip a wall on an intermediate leg");
     ai.Reset(); ai.Update(1.51f,eye,empty); ai.Disarm();
     check(ai.Phase()==DronePhase::Disarmed && !ai.Weapon().enabled && ai.Body().enabled,
         "drone weapon disarm leaves body intact");

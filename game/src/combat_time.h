@@ -7,7 +7,9 @@ namespace aegis::combat
 {
 struct CombatFrameTime
 {
-    double realDeltaTime{}, gameDeltaTime{}, scale{};
+    double realDeltaTime{};
+    double gameDeltaTime{};
+    double scale{};
 };
 
 // Receives world time from the movement owner. Does not infer movement from keys.
@@ -45,9 +47,18 @@ public:
         {
             return {};
         }
-        const double base = std::clamp(baseGameDeltaTime / realDeltaTime, 0.0, 1.0);
-        const double shotDt = std::min(realDeltaTime, remaining);
-        const double gameDeltaTime = forceNormal ? realDeltaTime : shotDt + (realDeltaTime - shotDt) * base;
+        // 이동량으로 정한 기본 배속. 정지 상태는 보통 0.05, 정상 이동은 1이다.
+        const double movementScale = std::clamp(baseGameDeltaTime / realDeltaTime, 0.0, 1.0);
+
+        // 사격 직후 0.25초 동안은 적도 정상 속도로 진행한다.
+        // 그 시간이 프레임 중간에 끝나면 남은 부분만 느린 배속을 적용한다.
+        const double normalTime = std::min(realDeltaTime, remaining);
+        const double slowTime = realDeltaTime - normalTime;
+        double gameDeltaTime = normalTime + slowTime * movementScale;
+        if (forceNormal)
+        {
+            gameDeltaTime = realDeltaTime;
+        }
         remaining = std::max(0.0, remaining - realDeltaTime);
         if (remaining < 1e-9)
         {

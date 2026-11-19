@@ -58,9 +58,10 @@ glm::mat4 FixedTurret::BarrelTransform() const
 {
     const float yaw = std::atan2(direction.x, direction.z);
     const float pitch = -std::asin(std::clamp(direction.y, -1.0f, 1.0f));
-    return glm::rotate(
-        glm::rotate(glm::translate(glm::mat4(1), position + glm::vec3(0, 1.65f, 0)), yaw, glm::vec3(0, 1, 0)),
-        pitch, glm::vec3(1, 0, 0));
+    glm::mat4 transform = glm::translate(glm::mat4(1), position + glm::vec3(0, 1.65f, 0));
+    transform = glm::rotate(transform, yaw, glm::vec3(0, 1, 0));
+    transform = glm::rotate(transform, pitch, glm::vec3(1, 0, 0));
+    return transform;
 }
 
 Collider FixedTurret::Body() const
@@ -71,14 +72,19 @@ Collider FixedTurret::Body() const
 
 Collider FixedTurret::Weapon() const
 {
-    glm::vec3 low(std::numeric_limits<float>::max()), high(std::numeric_limits<float>::lowest());
-    const auto transform = BarrelTransform();
-    for (int i = 0; i < 8; ++i)
+    // 총신의 여덟 꼭짓점을 변환하고, 월드 좌표의 충돌 상자를 구한다.
+    const glm::vec4 corners[8] = {{-0.14f, -0.14f, -0.1f, 1}, {0.14f, -0.14f, -0.1f, 1},
+                                  {-0.14f, 0.14f, -0.1f, 1},  {0.14f, 0.14f, -0.1f, 1},
+                                  {-0.14f, -0.14f, 0.8f, 1},  {0.14f, -0.14f, 0.8f, 1},
+                                  {-0.14f, 0.14f, 0.8f, 1},   {0.14f, 0.14f, 0.8f, 1}};
+    glm::vec3 low(std::numeric_limits<float>::max());
+    glm::vec3 high(std::numeric_limits<float>::lowest());
+    const glm::mat4 transform = BarrelTransform();
+    for (const glm::vec4& corner : corners)
     {
-        const auto p = glm::vec3(
-            transform * glm::vec4(i & 1 ? 0.14f : -0.14f, i & 2 ? 0.14f : -0.14f, i & 4 ? 0.8f : -0.1f, 1));
-        low = glm::min(low, p);
-        high = glm::max(high, p);
+        glm::vec3 worldCorner = glm::vec3(transform * corner);
+        low = glm::min(low, worldCorner);
+        high = glm::max(high, worldCorner);
     }
     return {WeaponId, HitKind::Weapon, low, high, Armed()};
 }

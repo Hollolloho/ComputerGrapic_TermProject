@@ -49,6 +49,9 @@ struct Projectile
 std::optional<Projectile> MakeProjectile(const glm::vec3& origin, const glm::vec3& direction, float speed,
                                          ObjectId sourceWeaponId);
 
+// 상자 하나와의 충돌 검사. 충돌하면 true, hitFraction에 선분의 충돌 비율(0~1)을 넣는다.
+bool SegmentHitsBox(const glm::vec3& start, const glm::vec3& end, const Collider& box, float& hitFraction);
+
 // Axis-aligned boxes in world coordinates. Disabled/invalid boxes are skipped.
 // A segment starting in/on a box hits at fraction 0. Ties use HitKind, then ID.
 std::optional<Hit> FindFirstHit(const glm::vec3& start, const glm::vec3& end,

@@ -13,7 +13,7 @@ enum class DronePhase
     Destroyed
 };
 
-// Deterministic, fixed-route enemy controller. All clocks use game time.
+// 상태 하나와 남은 시간으로 행동을 결정한다. 느린 세계 시간을 전달받는다.
 class DroneBehavior
 {
 public:
@@ -62,7 +62,7 @@ public:
 private:
     Collider Bounds(ObjectId id, HitKind kind, const glm::vec3& low, const glm::vec3& high) const;
     bool Visible(const glm::vec3& eye, std::span<const Collider> walls) const;
-    bool Move(float dt, std::span<const Collider> walls);
+    bool Move(float gameDeltaTime, std::span<const Collider> walls);
     glm::vec3 spawn{-0.65f, 1.8f, -10};
     float spawnYaw{};
     float patrolCenter{};
@@ -72,6 +72,6 @@ private:
     DronePhase phase{DronePhase::Patrol};
     float yaw{};
     float timer{1.5f};
-    int destination{1};
+    bool movingRight{true}; // true: 오른쪽 끝으로, false: 왼쪽 끝으로 이동
 };
 } // namespace aegis::combat

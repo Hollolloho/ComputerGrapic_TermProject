@@ -15,47 +15,50 @@ bool IsFinite(const glm::vec3& value)
     return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
 }
 
-std::optional<float> IntersectBox(const glm::vec3& start, const glm::vec3& end, const Collider& box)
+} // namespace
+
+// 선분에서 0은 출발점, 1은 도착점이다. 세 축에서 상자 안에 있는 구간을 겹쳐 본다.
+bool SegmentHitsBox(const glm::vec3& start, const glm::vec3& end, const Collider& box, float& hitFraction)
 {
-    if (!box.enabled || !IsFinite(box.minimum) || !IsFinite(box.maximum))
+    if (!box.enabled || !IsFinite(start) || !IsFinite(end) || !IsFinite(box.minimum) ||
+        !IsFinite(box.maximum))
     {
-        return std::nullopt;
+        return false;
     }
-    // Double intermediates avoid overflow/subtraction loss for float endpoints.
     double enter = 0.0;
     double leave = 1.0;
     for (int axis = 0; axis < 3; ++axis)
     {
         if (box.minimum[axis] > box.maximum[axis])
         {
-            return std::nullopt;
+            return false;
         }
-        const double delta = static_cast<double>(end[axis]) - start[axis];
-        if (delta == 0.0)
+        double movement = static_cast<double>(end[axis]) - start[axis];
+        if (movement == 0)
         {
+            // 이 축으로 이동하지 않는데 이미 상자 밖이라면 충돌할 수 없다.
             if (start[axis] < box.minimum[axis] || start[axis] > box.maximum[axis])
             {
-                return std::nullopt;
+                return false;
             }
             continue;
         }
-        double near = (static_cast<double>(box.minimum[axis]) - start[axis]) / delta;
-        double far = (static_cast<double>(box.maximum[axis]) - start[axis]) / delta;
-        if (near > far)
+        double nearTime = (static_cast<double>(box.minimum[axis]) - start[axis]) / movement;
+        double farTime = (static_cast<double>(box.maximum[axis]) - start[axis]) / movement;
+        if (nearTime > farTime)
         {
-            std::swap(near, far);
+            std::swap(nearTime, farTime);
         }
-        enter = std::max(enter, near);
-        leave = std::min(leave, far);
+        enter = std::max(enter, nearTime);
+        leave = std::min(leave, farTime);
         if (enter > leave)
         {
-            return std::nullopt;
+            return false;
         }
     }
-    return static_cast<float>(enter);
+    hitFraction = static_cast<float>(enter);
+    return true;
 }
-
-} // namespace
 
 std::optional<Projectile> MakeProjectile(const glm::vec3& origin, const glm::vec3& direction, float speed,
                                          ObjectId sourceWeaponId)
@@ -80,33 +83,53 @@ std::optional<Projectile> MakeProjectile(const glm::vec3& origin, const glm::vec
 std::optional<Hit> FindFirstHit(const glm::vec3& start, const glm::vec3& end,
                                 std::span<const Collider> colliders)
 {
-    if (!IsFinite(start) || !IsFinite(end))
+    bool found = false;
+    Hit nearestHit;
+    for (const Collider& box : colliders)
     {
-        return std::nullopt;
-    }
-    std::optional<Hit> first;
-    for (const auto& box : colliders)
-    {
-        const auto fraction = IntersectBox(start, end, box);
-        if (!fraction)
+        float hitFraction = 0;
+        if (!SegmentHitsBox(start, end, box, hitFraction))
         {
             continue;
         }
-        const bool tieWins =
-            first && *fraction == first->fraction &&
-            (box.kind < first->kind || (box.kind == first->kind && box.id < first->objectId));
-        if (!first || *fraction < first->fraction || tieWins)
+
+        // 같은 거리라면 벽 → 장갑 → 무기 → 본체 순서로 우선한다.
+        bool useThisHit = !found;
+        if (found && hitFraction < nearestHit.fraction)
         {
-            glm::vec3 point;
-            for (int axis = 0; axis < 3; ++axis)
+            useThisHit = true;
+        }
+        if (found && hitFraction == nearestHit.fraction)
+        {
+            if (box.kind < nearestHit.kind)
             {
-                point[axis] = static_cast<float>(static_cast<double>(start[axis]) +
-                                                 (static_cast<double>(end[axis]) - start[axis]) * *fraction);
+                useThisHit = true;
             }
-            first = Hit{box.id, box.kind, *fraction, point};
+            else if (box.kind == nearestHit.kind && box.id < nearestHit.objectId)
+            {
+                useThisHit = true;
+            }
+        }
+        if (useThisHit)
+        {
+            found = true;
+            nearestHit.objectId = box.id;
+            nearestHit.kind = box.kind;
+            nearestHit.fraction = hitFraction;
         }
     }
-    return first;
+    if (!found)
+    {
+        return std::nullopt;
+    }
+
+    // 출발점에서 가장 가까운 충돌 위치를 구한다. 중간 계산은 double로 한다.
+    for (int axis = 0; axis < 3; ++axis)
+    {
+        double movement = static_cast<double>(end[axis]) - start[axis];
+        nearestHit.position[axis] = static_cast<float>(start[axis] + movement * nearestHit.fraction);
+    }
+    return nearestHit;
 }
 
 std::optional<Hit> AdvanceProjectile(Projectile& projectile, float gameDeltaTime,
@@ -117,16 +140,21 @@ std::optional<Hit> AdvanceProjectile(Projectile& projectile, float gameDeltaTime
     {
         return std::nullopt;
     }
+    // 위치 = 이전 위치 + 속도 × 경과시간. 두 위치 사이도 검사해 얇은 벽을 건너뛰지 않는다.
     const glm::vec3 next = projectile.position + projectile.velocity * gameDeltaTime;
     if (!IsFinite(next))
     {
         return std::nullopt;
     }
     const auto hit = FindFirstHit(projectile.position, next, colliders);
-    projectile.position = hit ? hit->position : next;
     if (hit)
     {
+        projectile.position = hit->position;
         projectile.active = false;
+    }
+    else
+    {
+        projectile.position = next;
     }
     return hit;
 }

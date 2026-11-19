@@ -108,17 +108,26 @@ std::optional<float> WeaponInventory::InteractionDistance(const glm::vec3& eye, 
                                                           std::span<const Collider> obstacles) const
 {
     const auto hit = FindInteraction(eye, direction, obstacles);
-    return hit ? std::optional<float>(hit->fraction * 2.5f) : std::nullopt;
+    if (!hit)
+    {
+        return std::nullopt;
+    }
+    return hit->fraction * 2.5f;
 }
 
 WeaponInteraction WeaponInventory::Hint(const glm::vec3& eye, const glm::vec3& direction,
                                         std::span<const Collider> obstacles) const
 {
     const auto hit = FindInteraction(eye, direction, obstacles);
-    const auto id = hit ? hit->objectId : 0;
-    return id == supplyId ? WeaponInteraction::Supply
-           : id           ? WeaponInteraction::Pickup
-                          : WeaponInteraction::None;
+    if (!hit || hit->objectId == 0)
+    {
+        return WeaponInteraction::None;
+    }
+    if (hit->objectId == supplyId)
+    {
+        return WeaponInteraction::Supply;
+    }
+    return WeaponInteraction::Pickup;
 }
 
 bool WeaponInventory::Interact(const glm::vec3& eye, const glm::vec3& direction,
@@ -140,16 +149,18 @@ bool WeaponInventory::Interact(const glm::vec3& eye, const glm::vec3& direction,
         ++supplies;
         return true;
     }
-    const auto item =
-        std::find_if(drops.begin(), drops.end(), [id](const auto& drop) { return drop.id == id; });
-    if (item == drops.end())
+    // 바닥의 총을 순서대로 찾고, 선택한 총만 목록에서 지운다.
+    for (std::size_t index = 0; index < drops.size(); ++index)
     {
-        return false;
+        if (drops[index].id == id)
+        {
+            equipped = drops[index].id;
+            drops.erase(drops.begin() + index);
+            ++pickups;
+            return true;
+        }
     }
-    equipped = item->id;
-    drops.erase(item);
-    ++pickups;
-    return true;
+    return false;
 }
 
 Collider WeaponInventory::HeldCollider(const glm::vec3& eye, const glm::vec3& direction) const

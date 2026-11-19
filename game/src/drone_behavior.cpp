@@ -53,20 +53,22 @@ void DroneBehavior::Reset()
     phase = DronePhase::Patrol;
     yaw = spawnYaw;
     timer = 1.5f;
-    destination = 1;
+    movingRight = true;
 }
 
 Collider DroneBehavior::Bounds(ObjectId id, HitKind kind, const glm::vec3& low, const glm::vec3& high) const
 {
-    glm::vec3 minimum(std::numeric_limits<float>::max()), maximum(std::numeric_limits<float>::lowest());
-    for (int i = 0; i < 8; ++i)
+    // 상자의 여덟 꼭짓점을 모델과 똑같이 회전시킨 뒤, 전체를 감싸는 상자를 만든다.
+    glm::vec3 corners[8] = {{low.x, low.y, low.z},   {high.x, low.y, low.z},  {low.x, high.y, low.z},
+                            {high.x, high.y, low.z}, {low.x, low.y, high.z},  {high.x, low.y, high.z},
+                            {low.x, high.y, high.z}, {high.x, high.y, high.z}};
+    glm::vec3 minimum(std::numeric_limits<float>::max());
+    glm::vec3 maximum(std::numeric_limits<float>::lowest());
+    for (const glm::vec3& corner : corners)
     {
-        const auto p =
-            position +
-            Rotate(glm::vec3(i & 1 ? high.x : low.x, i & 2 ? high.y : low.y, i & 4 ? high.z : low.z) * scale,
-                   yaw);
-        minimum = glm::min(minimum, p);
-        maximum = glm::max(maximum, p);
+        glm::vec3 worldCorner = position + Rotate(corner * scale, yaw);
+        minimum = glm::min(minimum, worldCorner);
+        maximum = glm::max(maximum, worldCorner);
     }
     return {id, kind, minimum, maximum, phase != DronePhase::Destroyed};
 }
@@ -93,96 +95,133 @@ bool DroneBehavior::Visible(const glm::vec3& eye, std::span<const Collider> wall
     return glm::length(eye - position) < 18 && !FindFirstHit(Muzzle(), eye, walls);
 }
 
-bool DroneBehavior::Move(float dt, std::span<const Collider> walls)
+bool DroneBehavior::Move(float gameDeltaTime, std::span<const Collider> walls)
 {
-    // Analytic ping-pong keeps speed independent of frame rate at turnarounds.
-    constexpr double span = 1.3, period = 2.6;
-    const double progress =
-        destination ? position.x - patrolCenter + 0.65 : span + (0.65 - (position.x - patrolCenter));
-    const double travel = 0.65 * dt;
-    const double p = std::fmod(progress + travel, period);
-    auto next = position;
-    next.x = patrolCenter + static_cast<float>(-0.65 + (p < span ? p : period - p));
-    const auto body = Body();
-    const auto weapon = Weapon();
-    const auto low = glm::min(body.minimum, weapon.minimum) - position;
-    const auto high = glm::max(body.maximum, weapon.maximum) - position;
-    auto start = position, end = next;
-    const double boundary = destination ? span - progress : period - progress;
-    if (travel >= span)
+    // 중심에서 좌우 0.65만큼 왕복한다. 속도 × 시간으로 이번 이동 거리를 구한다.
+    const double leftEnd = -0.65;
+    const double rightEnd = 0.65;
+    const double routeLength = rightEnd - leftEnd;
+    const double travelDistance = 0.65 * gameDeltaTime;
+    double nextX = position.x - patrolCenter;
+    bool nextMovingRight = movingRight;
+
+    // 한 바퀴를 돌아오면 위치가 같으므로, 긴 프레임도 끝없이 반복하지 않는다.
+    double distanceLeft = std::fmod(travelDistance, routeLength * 2);
+    double lowestX = nextX;
+    double highestX = nextX;
+    while (distanceLeft > 0)
     {
-        start.x = patrolCenter - 0.65f;
-        end.x = patrolCenter + 0.65f;
-    }
-    else if (travel > boundary)
-    {
-        start.x = destination ? std::min(position.x, next.x) : std::max(position.x, next.x);
-        end.x = patrolCenter + (destination ? 0.65f : -0.65f);
-    }
-    for (const auto& wall : walls)
-    {
-        if (!wall.enabled)
+        double targetX = leftEnd;
+        if (nextMovingRight)
         {
-            continue;
+            targetX = rightEnd;
         }
-        const Collider expanded{wall.id, HitKind::Wall, wall.minimum - high, wall.maximum - low};
-        if (FindFirstHit(start, end, std::span<const Collider>(&expanded, 1)))
+        double distanceToEnd = std::abs(targetX - nextX);
+        double step = std::min(distanceLeft, distanceToEnd);
+        if (nextMovingRight)
         {
-            destination = 1 - destination;
+            nextX += step;
+        }
+        else
+        {
+            nextX -= step;
+        }
+        distanceLeft -= step;
+        lowestX = std::min(lowestX, nextX);
+        highestX = std::max(highestX, nextX);
+        if (step == distanceToEnd)
+        {
+            nextMovingRight = !nextMovingRight;
+        }
+    }
+    if (travelDistance >= routeLength)
+    {
+        lowestX = leftEnd;
+        highestX = rightEnd;
+    }
+
+    // 드론 크기만큼 벽을 넓혀 검사하면, 중심뿐 아니라 날개도 벽을 통과하지 않는다.
+    const Collider body = Body();
+    const Collider weapon = Weapon();
+    const glm::vec3 localMinimum = glm::min(body.minimum, weapon.minimum) - position;
+    const glm::vec3 localMaximum = glm::max(body.maximum, weapon.maximum) - position;
+    glm::vec3 pathStart = position;
+    glm::vec3 pathEnd = position;
+    pathStart.x = patrolCenter + static_cast<float>(lowestX);
+    pathEnd.x = patrolCenter + static_cast<float>(highestX);
+    for (const Collider& wall : walls)
+    {
+        Collider expandedWall = wall;
+        expandedWall.minimum -= localMaximum;
+        expandedWall.maximum -= localMinimum;
+        float hitFraction = 0;
+        if (SegmentHitsBox(pathStart, pathEnd, expandedWall, hitFraction))
+        {
+            movingRight = !movingRight;
             return false;
         }
     }
-    position = next;
-    destination = p < span ? 1 : 0;
+    position.x = patrolCenter + static_cast<float>(nextX);
+    movingRight = nextMovingRight;
     return true;
 }
 
 bool DroneBehavior::Update(float gameDeltaTime, const glm::vec3& eye, std::span<const Collider> walls)
 {
-    if (!std::isfinite(gameDeltaTime) || gameDeltaTime <= 0 || !Finite(eye) || !Armed())
+    if (!std::isfinite(gameDeltaTime) || gameDeltaTime <= 0 || !Finite(eye))
     {
         return false;
     }
-    const float dt = gameDeltaTime;
-    if (phase == DronePhase::Patrol)
+
+    // 반환값 true는 "이번 프레임에 한 발 발사"라는 뜻이다.
+    switch (phase)
     {
+    case DronePhase::Patrol:
         yaw = spawnYaw;
-        Move(dt, walls);
-        timer = std::max(0.0f, timer - dt);
+        Move(gameDeltaTime, walls);
+        timer = std::max(0.0f, timer - gameDeltaTime);
         if (timer <= 0 && Visible(eye, walls))
         {
-            phase = DronePhase::Warning;
-            timer = 1;
+            // 발견 순간의 위치를 기억한다. 경고 중에 계속 플레이어를 따라 조준하지 않는다.
             aimPoint = eye;
-            const auto direction = eye - position;
+            glm::vec3 direction = eye - position;
             yaw = std::atan2(direction.x, direction.z);
+            phase = DronePhase::Warning;
+            timer = 1.0f;
         }
-        return false;
-    }
-    if (phase == DronePhase::Waiting)
-    {
-        timer -= dt;
+        break;
+
+    case DronePhase::Warning:
+        if (!Visible(eye, walls))
+        {
+            phase = DronePhase::Patrol;
+            timer = 0;
+            break;
+        }
+        timer -= gameDeltaTime;
+        if (timer <= 0)
+        {
+            phase = DronePhase::Waiting;
+            timer = 1.5f;
+            return true;
+        }
+        break;
+
+    case DronePhase::Waiting:
+        timer -= gameDeltaTime;
         if (timer <= 0)
         {
             phase = DronePhase::Patrol;
             timer = 0;
         }
-        return false;
+        break;
+
+    case DronePhase::Disarmed:
+    case DronePhase::Destroyed:
+        // 무기가 없거나 파괴된 드론은 이동·사격하지 않는다.
+        break;
     }
-    if (!Visible(eye, walls))
-    {
-        phase = DronePhase::Patrol;
-        timer = 0;
-        return false;
-    }
-    timer -= dt;
-    if (timer > 0)
-    {
-        return false;
-    }
-    phase = DronePhase::Waiting;
-    timer = 1.5f;
-    return true;
+    return false;
 }
 
 void DroneBehavior::Disarm()

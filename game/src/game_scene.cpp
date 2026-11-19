@@ -588,10 +588,22 @@ std::string GameScene::StatusTitle(bool paused) const
                          : flow.Screen() == CampaignScreen::Failed  ? "FAILED"
                          : flow.Screen() == CampaignScreen::Victory ? "VICTORY"
                                                                     : "PLAYING";
-    const char* stage = flow.Stage() == CampaignStage::Entry         ? "ENTRY"
-                        : flow.Stage() == CampaignStage::Corridor    ? "CORRIDOR"
-                        : flow.Stage() == CampaignStage::Maintenance ? "MAINTENANCE"
-                                                                     : "BOSS";
+    const char* stage = "ENTRY";
+    switch (flow.Stage())
+    {
+    case CampaignStage::Entry:
+        stage = "ENTRY";
+        break;
+    case CampaignStage::Corridor:
+        stage = "CORRIDOR";
+        break;
+    case CampaignStage::Maintenance:
+        stage = "MAINTENANCE";
+        break;
+    case CampaignStage::Boss:
+        stage = "BOSS";
+        break;
+    }
     return std::string("AEGIS CAMPAIGN | ") + screen + " | " + stage + " | " +
            combatScene.StatusTitle(false) + combatScene.TimeDebug();
 }
