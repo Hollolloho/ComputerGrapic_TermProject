@@ -115,6 +115,127 @@ inline const std::array<combat::Collider,102> walls={{
     {30100,combat::HitKind::Wall,{-2.470000f,0.000000f,-8.676500f},{-1.330000f,1.830000f,-6.223500f}}, // Cover_A01
     {30101,combat::HitKind::Wall,{1.260000f,0.000000f,-15.576501f},{2.400000f,1.830000f,-13.623500f}}, // Cover_A02
 }};
+struct DronePlacement { glm::vec3 position; float yawDegrees,scale; };
+inline const std::array<DronePlacement,4> friendDrones={{
+    {{0.650000f,1.950000f,-11.400000f},-4.420000f,0.8f},
+    {{1.560000f,2.300000f,-40.690000f},12.380000f,0.8f},
+    {{2.550000f,2.300000f,-58.800000f},19.950000f,0.8f},
+    {{12.500000f,2.400000f,-54.000000f},-41.820000f,0.8f},
+}};
+inline const glm::vec3 maintenanceStart={2.600000f,0.000000f,-32.500000f};
+inline const glm::vec3 maintenanceSupply=maintenanceStart+glm::vec3(-0.8f,1.15f,-1.4f);
+inline const glm::vec3 maintenanceTerminal=maintenanceStart+glm::vec3(0.95f,0,-1.5f);
+inline const std::array<combat::Collider,109> maintenanceWalls={{
+    {50000,combat::HitKind::Wall,{0.000000f,-0.240000f,-48.200001f},{10.400000f,0.000000f,-31.000000f}}, // 03_Bent_maintenance_corridor_floor
+    {50001,combat::HitKind::Wall,{5.200000f,0.000000f,-37.001499f},{5.490000f,3.392000f,-30.998501f}}, // 03_Bent_corridor_wall_solid
+    {50002,combat::HitKind::Wall,{5.151000f,0.020000f,-37.000000f},{5.225000f,0.170000f,-31.012000f}}, // 03_Bent_corridor_wall_toe_rail
+    {50003,combat::HitKind::Wall,{5.102000f,2.942000f,-37.000000f},{5.222000f,3.162000f,-31.012000f}}, // 03_Bent_corridor_wall_cable_trunk
+    {50004,combat::HitKind::Wall,{5.083000f,3.044500f,-36.992000f},{5.109000f,3.079500f,-31.012000f}}, // 03_Bent_corridor_wall_upper_reveal
+    {50005,combat::HitKind::Wall,{5.136500f,0.220480f,-32.965000f},{5.211500f,2.221760f,-31.035000f}}, // 03_Bent_corridor_wall_lower_panel
+    {50006,combat::HitKind::Wall,{5.109500f,1.849600f,-32.924999f},{5.140500f,1.881600f,-31.075001f}}, // 03_Bent_corridor_wall_waist_reveal
+    {50007,combat::HitKind::Wall,{5.119500f,0.322240f,-32.714500f},{5.144500f,2.120000f,-32.685501f}}, // 03_Bent_corridor_wall_service_seam
+    {50008,combat::HitKind::Wall,{5.136500f,0.220480f,-34.965000f},{5.211500f,2.221760f,-33.035000f}}, // 03_Bent_corridor_wall_lower_panel.001
+    {50009,combat::HitKind::Wall,{5.109500f,1.849600f,-34.924999f},{5.140500f,1.881600f,-33.075001f}}, // 03_Bent_corridor_wall_waist_reveal.001
+    {50010,combat::HitKind::Wall,{5.079500f,2.975000f,-34.105000f},{5.110500f,3.049000f,-33.895000f}}, // 03_Bent_corridor_wall_steady_red_marker
+    {50011,combat::HitKind::Wall,{5.136500f,0.220480f,-36.965000f},{5.211500f,2.221760f,-35.035000f}}, // 03_Bent_corridor_wall_lower_panel.002
+    {50012,combat::HitKind::Wall,{5.109500f,1.849600f,-36.924999f},{5.140500f,1.881600f,-35.075001f}}, // 03_Bent_corridor_wall_waist_reveal.002
+    {50013,combat::HitKind::Wall,{5.119500f,0.322240f,-36.714500f},{5.144500f,2.120000f,-36.685501f}}, // 03_Bent_corridor_wall_service_seam.001
+    {50014,combat::HitKind::Wall,{5.198500f,0.000000f,-37.000000f},{10.401500f,3.392000f,-36.709999f}}, // 03_Bent_corridor_wall_solid.001
+    {50015,combat::HitKind::Wall,{5.200000f,0.020000f,-37.049000f},{10.400000f,0.170000f,-36.974998f}}, // 03_Bent_corridor_wall_toe_rail.001
+    {50016,combat::HitKind::Wall,{5.200000f,2.942000f,-37.098000f},{10.400000f,3.162000f,-36.978001f}}, // 03_Bent_corridor_wall_cable_trunk.001
+    {50017,combat::HitKind::Wall,{5.208000f,3.044500f,-37.117001f},{10.400000f,3.079500f,-37.091000f}}, // 03_Bent_corridor_wall_upper_reveal.001
+    {50018,combat::HitKind::Wall,{5.235000f,0.220480f,-37.063499f},{7.765000f,2.221760f,-36.988499f}}, // 03_Bent_corridor_wall_lower_panel.003
+    {50019,combat::HitKind::Wall,{5.275000f,1.849600f,-37.090500f},{7.725000f,1.881600f,-37.059502f}}, // 03_Bent_corridor_wall_waist_reveal.003
+    {50020,combat::HitKind::Wall,{7.395500f,0.322240f,-37.080502f},{7.424500f,2.120000f,-37.055500f}}, // 03_Bent_corridor_wall_service_seam.002
+    {50021,combat::HitKind::Wall,{7.835000f,0.220480f,-37.063499f},{10.365000f,2.221760f,-36.988499f}}, // 03_Bent_corridor_wall_lower_panel.004
+    {50022,combat::HitKind::Wall,{7.875000f,1.849600f,-37.090500f},{10.325000f,1.881600f,-37.059502f}}, // 03_Bent_corridor_wall_waist_reveal.004
+    {50023,combat::HitKind::Wall,{8.995000f,2.975000f,-37.120499f},{9.205000f,3.049000f,-37.089500f}}, // 03_Bent_corridor_wall_steady_red_marker.001
+    {50024,combat::HitKind::Wall,{10.400000f,0.000000f,-48.201500f},{10.690000f,3.392000f,-36.998501f}}, // 03_Bent_corridor_wall_solid.002
+    {50025,combat::HitKind::Wall,{10.351000f,0.020000f,-48.212001f},{10.425000f,0.170000f,-37.000000f}}, // 03_Bent_corridor_wall_toe_rail.002
+    {50026,combat::HitKind::Wall,{10.302000f,2.942000f,-48.212001f},{10.422000f,3.162000f,-37.000000f}}, // 03_Bent_corridor_wall_cable_trunk.002
+    {50027,combat::HitKind::Wall,{10.283000f,3.044500f,-48.212001f},{10.309000f,3.079500f,-37.000000f}}, // 03_Bent_corridor_wall_upper_reveal.002
+    {50028,combat::HitKind::Wall,{10.336500f,0.220480f,-39.205002f},{10.411500f,2.221760f,-37.035000f}}, // 03_Bent_corridor_wall_lower_panel.005
+    {50029,combat::HitKind::Wall,{10.309500f,1.849600f,-39.165001f},{10.340500f,1.881600f,-37.075001f}}, // 03_Bent_corridor_wall_waist_reveal.005
+    {50030,combat::HitKind::Wall,{10.319500f,0.322240f,-38.918499f},{10.344500f,2.120000f,-38.889500f}}, // 03_Bent_corridor_wall_service_seam.003
+    {50031,combat::HitKind::Wall,{10.336500f,0.220480f,-41.445000f},{10.411500f,2.221760f,-39.275002f}}, // 03_Bent_corridor_wall_lower_panel.006
+    {50032,combat::HitKind::Wall,{10.309500f,1.849600f,-41.404999f},{10.340500f,1.881600f,-39.314999f}}, // 03_Bent_corridor_wall_waist_reveal.006
+    {50033,combat::HitKind::Wall,{10.279500f,2.975000f,-40.465000f},{10.310500f,3.049000f,-40.255001f}}, // 03_Bent_corridor_wall_steady_red_marker.002
+    {50034,combat::HitKind::Wall,{10.336500f,0.220480f,-43.685001f},{10.411500f,2.221760f,-41.514999f}}, // 03_Bent_corridor_wall_lower_panel.007
+    {50035,combat::HitKind::Wall,{10.309500f,1.849600f,-43.645000f},{10.340500f,1.881600f,-41.555000f}}, // 03_Bent_corridor_wall_waist_reveal.007
+    {50036,combat::HitKind::Wall,{10.319500f,0.322240f,-43.398499f},{10.344500f,2.120000f,-43.369499f}}, // 03_Bent_corridor_wall_service_seam.004
+    {50037,combat::HitKind::Wall,{10.336500f,0.220480f,-45.924999f},{10.411500f,2.221760f,-43.755001f}}, // 03_Bent_corridor_wall_lower_panel.008
+    {50038,combat::HitKind::Wall,{10.309500f,1.849600f,-45.884998f},{10.340500f,1.881600f,-43.794998f}}, // 03_Bent_corridor_wall_waist_reveal.008
+    {50039,combat::HitKind::Wall,{10.336500f,0.220480f,-48.165001f},{10.411500f,2.221760f,-45.994999f}}, // 03_Bent_corridor_wall_lower_panel.009
+    {50040,combat::HitKind::Wall,{10.309500f,1.849600f,-48.125000f},{10.340500f,1.881600f,-46.035000f}}, // 03_Bent_corridor_wall_waist_reveal.009
+    {50041,combat::HitKind::Wall,{10.319500f,0.322240f,-47.878502f},{10.344500f,2.120000f,-47.849499f}}, // 03_Bent_corridor_wall_service_seam.005
+    {50042,combat::HitKind::Wall,{4.910000f,0.000000f,-48.201500f},{5.200000f,3.392000f,-42.198502f}}, // 03_Bent_corridor_wall_solid.003
+    {50043,combat::HitKind::Wall,{5.175000f,0.020000f,-48.212001f},{5.249000f,0.170000f,-42.200001f}}, // 03_Bent_corridor_wall_toe_rail.003
+    {50044,combat::HitKind::Wall,{5.178000f,2.942000f,-48.212001f},{5.298000f,3.162000f,-42.200001f}}, // 03_Bent_corridor_wall_cable_trunk.003
+    {50045,combat::HitKind::Wall,{5.291000f,3.044500f,-48.212001f},{5.317000f,3.079500f,-42.208001f}}, // 03_Bent_corridor_wall_upper_reveal.003
+    {50046,combat::HitKind::Wall,{5.188500f,0.220480f,-48.165001f},{5.263500f,2.221760f,-46.235001f}}, // 03_Bent_corridor_wall_lower_panel.010
+    {50047,combat::HitKind::Wall,{5.259500f,1.849600f,-48.125000f},{5.290500f,1.881600f,-46.275002f}}, // 03_Bent_corridor_wall_waist_reveal.010
+    {50048,combat::HitKind::Wall,{5.255500f,0.322240f,-46.514500f},{5.280500f,2.120000f,-46.485500f}}, // 03_Bent_corridor_wall_service_seam.006
+    {50049,combat::HitKind::Wall,{5.188500f,0.220480f,-46.165001f},{5.263500f,2.221760f,-44.235001f}}, // 03_Bent_corridor_wall_lower_panel.011
+    {50050,combat::HitKind::Wall,{5.259500f,1.849600f,-46.125000f},{5.290500f,1.881600f,-44.275002f}}, // 03_Bent_corridor_wall_waist_reveal.011
+    {50051,combat::HitKind::Wall,{5.289500f,2.975000f,-45.305000f},{5.320500f,3.049000f,-45.095001f}}, // 03_Bent_corridor_wall_steady_red_marker.003
+    {50052,combat::HitKind::Wall,{5.188500f,0.220480f,-44.165001f},{5.263500f,2.221760f,-42.235001f}}, // 03_Bent_corridor_wall_lower_panel.012
+    {50053,combat::HitKind::Wall,{5.259500f,1.849600f,-44.125000f},{5.290500f,1.881600f,-42.275002f}}, // 03_Bent_corridor_wall_waist_reveal.012
+    {50054,combat::HitKind::Wall,{5.255500f,0.322240f,-42.514500f},{5.280500f,2.120000f,-42.485500f}}, // 03_Bent_corridor_wall_service_seam.007
+    {50055,combat::HitKind::Wall,{-0.001500f,0.000000f,-42.490002f},{5.201500f,3.392000f,-42.200001f}}, // 03_Bent_corridor_wall_solid.004
+    {50056,combat::HitKind::Wall,{0.000000f,0.020000f,-42.224998f},{5.200000f,0.170000f,-42.151001f}}, // 03_Bent_corridor_wall_toe_rail.004
+    {50057,combat::HitKind::Wall,{0.000000f,2.942000f,-42.222000f},{5.200000f,3.162000f,-42.102001f}}, // 03_Bent_corridor_wall_cable_trunk.004
+    {50058,combat::HitKind::Wall,{-0.000000f,3.044500f,-42.109001f},{5.192000f,3.079500f,-42.083000f}}, // 03_Bent_corridor_wall_upper_reveal.004
+    {50059,combat::HitKind::Wall,{2.635000f,0.220480f,-42.211498f},{5.165000f,2.221760f,-42.136501f}}, // 03_Bent_corridor_wall_lower_panel.013
+    {50060,combat::HitKind::Wall,{2.675000f,1.849600f,-42.140499f},{5.125000f,1.881600f,-42.109501f}}, // 03_Bent_corridor_wall_waist_reveal.013
+    {50061,combat::HitKind::Wall,{2.975500f,0.322240f,-42.144501f},{3.004500f,2.120000f,-42.119499f}}, // 03_Bent_corridor_wall_service_seam.008
+    {50062,combat::HitKind::Wall,{0.035000f,0.220480f,-42.211498f},{2.565000f,2.221760f,-42.136501f}}, // 03_Bent_corridor_wall_lower_panel.014
+    {50063,combat::HitKind::Wall,{0.075000f,1.849600f,-42.140499f},{2.525000f,1.881600f,-42.109501f}}, // 03_Bent_corridor_wall_waist_reveal.014
+    {50064,combat::HitKind::Wall,{1.195000f,2.975000f,-42.110500f},{1.405000f,3.049000f,-42.079498f}}, // 03_Bent_corridor_wall_steady_red_marker.004
+    {50065,combat::HitKind::Wall,{-0.290000f,0.000000f,-42.201500f},{0.000000f,3.392000f,-30.998501f}}, // 03_Bent_corridor_wall_solid.005
+    {50066,combat::HitKind::Wall,{-0.025000f,0.020000f,-42.200001f},{0.049000f,0.170000f,-31.012000f}}, // 03_Bent_corridor_wall_toe_rail.005
+    {50067,combat::HitKind::Wall,{-0.022000f,2.942000f,-42.200001f},{0.098000f,3.162000f,-31.012000f}}, // 03_Bent_corridor_wall_cable_trunk.005
+    {50068,combat::HitKind::Wall,{0.091000f,3.044500f,-42.200001f},{0.117000f,3.079500f,-31.012000f}}, // 03_Bent_corridor_wall_upper_reveal.005
+    {50069,combat::HitKind::Wall,{-0.011500f,0.220480f,-42.165001f},{0.063500f,2.221760f,-39.994999f}}, // 03_Bent_corridor_wall_lower_panel.015
+    {50070,combat::HitKind::Wall,{0.059500f,1.849600f,-42.125000f},{0.090500f,1.881600f,-40.035000f}}, // 03_Bent_corridor_wall_waist_reveal.015
+    {50071,combat::HitKind::Wall,{0.055500f,0.322240f,-40.310501f},{0.080500f,2.120000f,-40.281502f}}, // 03_Bent_corridor_wall_service_seam.009
+    {50072,combat::HitKind::Wall,{-0.011500f,0.220480f,-39.924999f},{0.063500f,2.221760f,-37.755001f}}, // 03_Bent_corridor_wall_lower_panel.016
+    {50073,combat::HitKind::Wall,{0.059500f,1.849600f,-39.884998f},{0.090500f,1.881600f,-37.794998f}}, // 03_Bent_corridor_wall_waist_reveal.016
+    {50074,combat::HitKind::Wall,{0.089500f,2.975000f,-38.945000f},{0.120500f,3.049000f,-38.735001f}}, // 03_Bent_corridor_wall_steady_red_marker.005
+    {50075,combat::HitKind::Wall,{-0.011500f,0.220480f,-37.685001f},{0.063500f,2.221760f,-35.514999f}}, // 03_Bent_corridor_wall_lower_panel.017
+    {50076,combat::HitKind::Wall,{0.059500f,1.849600f,-37.645000f},{0.090500f,1.881600f,-35.555000f}}, // 03_Bent_corridor_wall_waist_reveal.017
+    {50077,combat::HitKind::Wall,{0.055500f,0.322240f,-35.830502f},{0.080500f,2.120000f,-35.801498f}}, // 03_Bent_corridor_wall_service_seam.010
+    {50078,combat::HitKind::Wall,{-0.011500f,0.220480f,-35.445000f},{0.063500f,2.221760f,-33.275002f}}, // 03_Bent_corridor_wall_lower_panel.018
+    {50079,combat::HitKind::Wall,{0.059500f,1.849600f,-35.404999f},{0.090500f,1.881600f,-33.314999f}}, // 03_Bent_corridor_wall_waist_reveal.018
+    {50080,combat::HitKind::Wall,{-0.011500f,0.220480f,-33.205002f},{0.063500f,2.221760f,-31.035000f}}, // 03_Bent_corridor_wall_lower_panel.019
+    {50081,combat::HitKind::Wall,{0.059500f,1.849600f,-33.165001f},{0.090500f,1.881600f,-31.075001f}}, // 03_Bent_corridor_wall_waist_reveal.019
+    {50082,combat::HitKind::Wall,{0.055500f,0.322240f,-31.350500f},{0.080500f,2.120000f,-31.321501f}}, // 03_Bent_corridor_wall_service_seam.011
+    {50083,combat::HitKind::Wall,{-6.001500f,0.000000f,-31.290001f},{1.151500f,4.700000f,-31.000000f}}, // 03_Maintenance_access_west_infill_solid
+    {50084,combat::HitKind::Wall,{4.048500f,0.000000f,-31.290001f},{6.001500f,4.700000f,-31.000000f}}, // 03_Maintenance_access_east_infill_solid
+    {50085,combat::HitKind::Wall,{1.151500f,3.012000f,-31.290001f},{4.048500f,4.700000f,-31.000000f}}, // 03_Maintenance_access_header
+    {50086,combat::HitKind::Wall,{0.980000f,0.000000f,-31.360001f},{1.150000f,3.000000f,-30.879999f}}, // 03_Maintenance_access_jamb_-1
+    {50087,combat::HitKind::Wall,{1.033500f,0.975000f,-30.881500f},{1.096500f,1.925000f,-30.852501f}}, // 03_Maintenance_access_sill_marker_-1
+    {50088,combat::HitKind::Wall,{1.042500f,1.275000f,-31.394501f},{1.087500f,1.625000f,-31.365499f}}, // 03_Maintenance_access_exit_marker_-1
+    {50089,combat::HitKind::Wall,{4.050000f,0.000000f,-31.360001f},{4.220000f,3.000000f,-30.879999f}}, // 03_Maintenance_access_jamb_1
+    {50090,combat::HitKind::Wall,{4.103500f,0.975000f,-30.881500f},{4.166500f,1.925000f,-30.852501f}}, // 03_Maintenance_access_sill_marker_1
+    {50091,combat::HitKind::Wall,{4.112500f,1.275000f,-31.394501f},{4.157500f,1.625000f,-31.365499f}}, // 03_Maintenance_access_exit_marker_1
+    {50092,combat::HitKind::Wall,{1.000000f,3.000000f,-31.360001f},{4.200000f,3.180000f,-30.879999f}}, // 03_Maintenance_access_lintel_trim
+    {50093,combat::HitKind::Wall,{2.210000f,3.081000f,-30.893999f},{2.990000f,3.149000f,-30.856001f}}, // 03_Maintenance_access_locator
+    {50094,combat::HitKind::Wall,{1.392500f,-0.008000f,-36.799999f},{1.447500f,0.004000f,-31.400000f}}, // 03_Maintenance_leg_A_floor_inlay_-1
+    {50095,combat::HitKind::Wall,{3.752500f,-0.008000f,-36.799999f},{3.807500f,0.004000f,-31.400000f}}, // 03_Maintenance_leg_A_floor_inlay_1
+    {50096,combat::HitKind::Wall,{1.389500f,0.001000f,-32.599998f},{1.450500f,0.009000f,-32.200001f}}, // 03_Maintenance_leg_A_guide_-1
+    {50097,combat::HitKind::Wall,{3.749500f,0.001000f,-32.599998f},{3.810500f,0.009000f,-32.200001f}}, // 03_Maintenance_leg_A_guide_1
+    {50098,combat::HitKind::Wall,{1.389500f,0.001000f,-34.599998f},{1.450500f,0.009000f,-34.200001f}}, // 03_Maintenance_leg_A_guide_-1.001
+    {50099,combat::HitKind::Wall,{3.749500f,0.001000f,-34.599998f},{3.810500f,0.009000f,-34.200001f}}, // 03_Maintenance_leg_A_guide_1.001
+    {50100,combat::HitKind::Wall,{6.592500f,-0.008000f,-47.900002f},{6.647500f,0.004000f,-42.400002f}}, // 03_Maintenance_leg_B_floor_inlay_-1
+    {50101,combat::HitKind::Wall,{8.952500f,-0.008000f,-47.900002f},{9.007500f,0.004000f,-42.400002f}}, // 03_Maintenance_leg_B_floor_inlay_1
+    {50102,combat::HitKind::Wall,{6.589500f,0.001000f,-43.599998f},{6.650500f,0.009000f,-43.200001f}}, // 03_Maintenance_leg_B_guide_-1
+    {50103,combat::HitKind::Wall,{8.949500f,0.001000f,-43.599998f},{9.010500f,0.009000f,-43.200001f}}, // 03_Maintenance_leg_B_guide_1
+    {50104,combat::HitKind::Wall,{6.589500f,0.001000f,-45.599998f},{6.650500f,0.009000f,-45.200001f}}, // 03_Maintenance_leg_B_guide_-1.001
+    {50105,combat::HitKind::Wall,{8.949500f,0.001000f,-45.599998f},{9.010500f,0.009000f,-45.200001f}}, // 03_Maintenance_leg_B_guide_1.001
+    {50106,combat::HitKind::Wall,{0.000000f,3.392000f,-48.212001f},{10.400000f,3.632000f,-31.012000f}}, // 03_Bent_maintenance_corridor_roof
+    {50107,combat::HitKind::Wall,{0.420000f,0.000000f,-35.936497f},{1.600000f,1.830000f,-34.343502f}}, // Cover_C01
+    {50108,combat::HitKind::Wall,{5.000000f,0.000000f,-41.531498f},{6.440000f,1.830000f,-40.288502f}}, // Cover_C02
+}};
 inline const std::array<combat::Collider,833> playerWalls={{
     {40000,combat::HitKind::Wall,{-3.095000f,-0.240000f,-18.000000f},{3.095000f,0.000000f,0.000000f}}, // 01_Security_corridor_floor
     {40001,combat::HitKind::Wall,{-6.000000f,-0.240000f,-31.000000f},{6.000000f,0.000000f,-18.000000f}}, // 02_Interlock_room_floor

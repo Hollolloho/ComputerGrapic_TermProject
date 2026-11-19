@@ -6,6 +6,7 @@ enum class CampaignStage
 {
     Entry,
     Corridor,
+    Maintenance,
     Boss
 };
 enum class CampaignScreen

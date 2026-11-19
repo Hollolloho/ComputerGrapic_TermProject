@@ -346,6 +346,10 @@ void GameScene::LoadStage()
     {
         combatScene.SetCombatMapMode(true);
     }
+    if (flow.Stage() == CampaignStage::Maintenance)
+    {
+        combatScene.SetMaintenanceMode();
+    }
     if (flow.Stage() == CampaignStage::Boss)
     {
         combatScene.SetBossMode(true);
@@ -364,7 +368,7 @@ bool GameScene::ReadyToAdvance() const
     {
         return true;
     }
-    if (flow.Stage() != CampaignStage::Corridor)
+    if (flow.Stage() != CampaignStage::Corridor && flow.Stage() != CampaignStage::Maintenance)
     {
         return false;
     }
@@ -474,7 +478,7 @@ UiPage GameScene::Page() const
     case CampaignScreen::Title:
         page.title = L"AEGIS  저항 작전";
         page.body = L"중앙 AI가 장악한 시설에 침투하세요.\n전투 복도를 돌파하고 코어를 파괴하는 것이 "
-                    L"목표입니다.\n\n시작 → 안전 진입실 → 전투 복도 → 코어실";
+                    L"목표입니다.\n\n시작 → 안전 진입실 → 첫 복도 → 정비 복도 → 코어실";
         add(UiAction::Start, L"게임 시작", 0);
         add(UiAction::Help, L"조작 안내", 1);
         add(UiAction::Quit, L"게임 종료", 2);
@@ -505,9 +509,17 @@ UiPage GameScene::Page() const
         break;
     case CampaignScreen::Failed:
         page.title = L"임무 실패";
-        page.body = flow.Stage() == CampaignStage::Boss
-                        ? L"코어실에서 전투 불능이 되었습니다.\n다시 시도하면 보스전부터 시작합니다."
-                        : L"전투 복도에서 전투 불능이 되었습니다.\n다시 시도하면 복도 전투부터 시작합니다.";
+        if (flow.Stage() == CampaignStage::Maintenance)
+        {
+            page.body = L"정비 복도에서 전투 불능이 되었습니다.\n다시 시도하면 정비 복도부터 시작합니다.";
+        }
+        else
+        {
+            page.body =
+                flow.Stage() == CampaignStage::Boss
+                    ? L"코어실에서 전투 불능이 되었습니다.\n다시 시도하면 보스전부터 시작합니다."
+                    : L"전투 복도에서 전투 불능이 되었습니다.\n다시 시도하면 복도 전투부터 시작합니다.";
+        }
         add(UiAction::Retry, L"현재 구역 다시 시작", 0);
         add(UiAction::Title, L"시작 화면으로", 1);
         add(UiAction::Quit, L"게임 종료", 2);
@@ -526,24 +538,31 @@ UiPage GameScene::Page() const
         page.panel = false;
         if (flow.Stage() == CampaignStage::Entry)
         {
-            page.title = L"1 / 3  안전 진입실";
+            page.title = L"1 / 4  안전 진입실";
             page.body = L"이동: 시간 진행 / 적 본체 명중: 내 총 파손\n빈손으로 총 조준 + E: 재무장 / Enter: "
                         L"복도 진입";
             page.buttons.push_back({UiAction::Advance, L"복도로 진입", 744, 640, 232, 54, true});
         }
         else if (flow.Stage() == CampaignStage::Corridor)
         {
-            page.title = L"2 / 3  새 전투 맵 · 첫 복도";
+            page.title = L"2 / 4  새 전투 맵 · 첫 복도";
             page.body = ReadyToAdvance()
-                            ? L"복도가 안전해졌습니다. 오른쪽 단말에서 분석하거나 코어실로 진행하세요."
+                            ? L"복도가 안전해졌습니다. 오른쪽 단말에서 분석하거나 정비 복도로 진행하세요."
                             : L"드론과 포탑을 제거하고 남은 적탄을 피하세요. 모든 위험이 사라지면 진행할 수 "
                               L"있습니다.";
+            page.buttons.push_back(
+                {UiAction::Advance, L"Enter · 정비 복도로", 744, 640, 232, 54, ReadyToAdvance()});
+        }
+        else if (flow.Stage() == CampaignStage::Maintenance)
+        {
+            page.title = L"3 / 4  정비 복도";
+            page.body = L"코너의 드론을 파괴하고 남은 적탄을 정리하세요.";
             page.buttons.push_back(
                 {UiAction::Advance, L"Enter · 코어실로 이동", 744, 640, 232, 54, ReadyToAdvance()});
         }
         else
         {
-            page.title = L"3 / 3  코어실 보스전";
+            page.title = L"4 / 4  코어실 보스전";
             page.body = L"장갑이 완전히 열렸을 때만 코어를 공격하세요. 세 번의 유효타가 필요합니다.\nB로 "
                         L"엄폐·사격 위치 전환  /  빈손일 때 E로 보급  /  Esc로 메뉴";
         }
@@ -569,9 +588,10 @@ std::string GameScene::StatusTitle(bool paused) const
                          : flow.Screen() == CampaignScreen::Failed  ? "FAILED"
                          : flow.Screen() == CampaignScreen::Victory ? "VICTORY"
                                                                     : "PLAYING";
-    const char* stage = flow.Stage() == CampaignStage::Entry      ? "ENTRY"
-                        : flow.Stage() == CampaignStage::Corridor ? "CORRIDOR"
-                                                                  : "BOSS";
+    const char* stage = flow.Stage() == CampaignStage::Entry         ? "ENTRY"
+                        : flow.Stage() == CampaignStage::Corridor    ? "CORRIDOR"
+                        : flow.Stage() == CampaignStage::Maintenance ? "MAINTENANCE"
+                                                                     : "BOSS";
     return std::string("AEGIS CAMPAIGN | ") + screen + " | " + stage + " | " +
            combatScene.StatusTitle(false) + combatScene.TimeDebug();
 }
@@ -630,6 +650,14 @@ void GameScene::SmokeFrame(int frame)
                 {
                     ApplyAction(UiAction::Advance);
                 }
+            }
+        }
+        else if (flow.Stage() == CampaignStage::Maintenance)
+        {
+            combatScene.CampaignSmokeFrame(stageSmokeFrame);
+            if (ReadyToAdvance())
+            {
+                ApplyAction(UiAction::Advance);
             }
         }
         else

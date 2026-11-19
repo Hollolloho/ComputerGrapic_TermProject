@@ -339,7 +339,8 @@ void CombatScene::PopulateHud(UiPage& page) const
     {
         page.warning = L"구역 안전 확보 완료";
         page.body = (combatMapMode || DoorProgress() >= 1)
-                        ? L"Enter: 코어실로 진행  /  오른쪽 단말을 가까이서 조준하고 E: 분석"
+                        ? (maintenanceMode ? L"Enter: 코어실로 진행  /  가까운 단말 조준 + E: 분석"
+                                           : L"Enter: 정비 복도로 진행  /  가까운 단말 조준 + E: 분석")
                         : L"출구 문이 열리고 있습니다. 잠시 기다리세요.";
     }
     else if (bossMode)
@@ -445,7 +446,8 @@ void CombatScene::PopulateHud(UiPage& page) const
     }
     else if (result == combat::EncounterResult::Cleared && TerminalTarget())
     {
-        page.body = L"E: 드론 분석 열기  /  Enter: 코어실로 진행";
+        page.body = maintenanceMode ? L"E: 드론 분석 열기  /  Enter: 코어실로 진행"
+                                    : L"E: 드론 분석 열기  /  Enter: 정비 복도로 진행";
     }
 }
 

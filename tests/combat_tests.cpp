@@ -591,7 +591,10 @@ int main()
     check(flow.TogglePause() && flow.WorldRuns(),"resume restores playing state");
     check(flow.ObserveBattle(true,false) && flow.Screen()==Screen::Failed && !flow.WorldRuns(),"corridor failure enters result screen");
     check(flow.Retry() && flow.Stage()==Stage::Corridor && flow.WorldRuns(),"retry restarts corridor checkpoint instead of whole campaign");
-    check(flow.Advance(true) && flow.Stage()==Stage::Boss,"safe completed corridor enables boss checkpoint");
+    check(flow.Advance(true) && flow.Stage()==Stage::Maintenance,"first corridor clear enables maintenance checkpoint");
+    check(!flow.Advance(false) && flow.Stage()==Stage::Maintenance,"maintenance must clear independently before boss entry");
+    check(flow.ObserveBattle(true,false) && flow.Retry() && flow.Stage()==Stage::Maintenance,"maintenance death retries its own checkpoint instead of first corridor");
+    check(flow.Advance(true) && flow.Stage()==Stage::Boss,"safe maintenance clear enables boss checkpoint");
     check(!flow.Advance(true),"boss checkpoint cannot be skipped into victory");
     check(flow.ObserveBattle(true,true) && flow.Screen()==Screen::Failed,"simultaneous failure takes priority over victory");
     check(flow.Retry() && flow.Stage()==Stage::Boss,"boss failure retry preserves boss checkpoint");
@@ -956,6 +959,45 @@ int main()
         for(int n=0;n<fps;++n) timedDeath.UpdateDeath(1.0f/fps);
         check(!timedDeath.DeathPlaying(),"death menu delay finishes consistently at 30/60/144 fps");
     }
+    // Friend's maintenance drone: placement, scale, scenery and per-stage state.
+    const auto& maintenancePose=map::friendDrones[1];
+    check(maintenancePose.position==glm::vec3(1.56f,2.3f,-40.69f) && close(maintenancePose.yawDegrees,12.38f) && close(maintenancePose.scale,.8f),"maintenance placement matches friend's drone position yaw and display scale");
+    check(map::friendDrones.size()==4,"all four friend drone placements are available without activating unfinished encounters");
+    const auto maintenanceEye=map::maintenanceStart+glm::vec3(0,1.65f,0);
+    const auto maintenanceStand=MovePlayer(maintenanceEye,{0,0,0},map::playerWalls);
+    check(glm::length(maintenanceStand.displacement)<.001f,"maintenance checkpoint starts outside walls and cover");
+    check(FindFirstHit({2.6f,1.65f,-32.5f},{9.15f,1.65f,-38.4f},map::maintenanceWalls).has_value(),"maintenance corner wall blocks line of sight toward the far leg");
+    const auto maintenanceCover=FindFirstHit({1.01f,1.2f,-33.8f},{1.01f,1.2f,-36.4f},map::maintenanceWalls);
+    check(maintenanceCover && maintenanceCover->kind==HitKind::Wall,"maintenance cabinet stops a bullet instead of relying only on player collision");
+    DroneBehavior scaledDrone;
+    const auto fullBody=scaledDrone.Body();
+    check(scaledDrone.SetScale(.8f),"drone accepts friend's 0.8 display scale");
+    const auto smallBody=scaledDrone.Body();
+    check(glm::length((smallBody.maximum-smallBody.minimum)-(fullBody.maximum-fullBody.minimum)*.8f)<.0001f,"drone body hit box scales with visible mesh");
+    check(!scaledDrone.SetScale(0) && !scaledDrone.SetScale(std::numeric_limits<float>::quiet_NaN()) && scaledDrone.Scale()==.8f,"invalid scale cannot corrupt drone geometry");
+    TurretEncounter maintenanceBattle;
+    maintenanceBattle.SetEnvironment(map::maintenanceWalls);
+    maintenanceBattle.SetDroneMode(true);
+    maintenanceBattle.SetDroneSpawn(maintenancePose.position,glm::radians(maintenancePose.yawDegrees),maintenancePose.position.x);
+    maintenanceBattle.SetDroneScale(maintenancePose.scale);
+    maintenanceBattle.SetSupply(map::maintenanceSupply);
+    check(maintenanceBattle.RemainingEnemies()==1 && !maintenanceBattle.HasSupportTurret() && !maintenanceBattle.CanAnalyze(),"maintenance starts its own one-drone encounter and locked exit");
+    check(!FindFirstHit(maintenanceBattle.DroneState().Muzzle(),maintenanceEye,map::maintenanceWalls),"maintenance drone has a clear initial sight line to checkpoint");
+    for(int n=0;n<50;++n) maintenanceBattle.Update(.01f,.01f,maintenanceEye);
+    check(maintenanceBattle.DroneState().Position().x>maintenancePose.position.x,"maintenance drone patrol moves along its wall-safe route");
+    for(int n=0;n<350;++n) maintenanceBattle.Update(.01f,.01f,maintenanceEye);
+    check(maintenanceBattle.EnemyShots()>0,"maintenance drone warns and shoots after its own game-time timers");
+    maintenanceBattle.Reset();
+    check(maintenanceBattle.DroneState().Position()==maintenancePose.position && maintenanceBattle.DroneState().Scale()==.8f && maintenanceBattle.Health()==100 && maintenanceBattle.EnemyFlights().empty(),"maintenance retry restores its spawn scale health and bullets");
+    maintenanceBattle.Fire(maintenanceEye,maintenancePose.position-maintenanceEye);
+    for(int n=0;n<120;++n) maintenanceBattle.Update(.01f,.01f,maintenanceEye);
+    check(maintenanceBattle.Result()==EncounterResult::Cleared && maintenanceBattle.RemainingEnemies()==0 && maintenanceBattle.CanAnalyze(),"valid maintenance body hit independently unlocks its sector");
+    check(maintenanceBattle.Inventory().Breaks()==1 && maintenanceBattle.Inventory().Drops().size()==1,"maintenance body hit breaks one source gun and drops one intact enemy gun");
+    check(maintenanceBattle.Interact(maintenanceEye,map::maintenanceSupply-maintenanceEye),"maintenance checkpoint supply can rearm a nearby empty-handed player");
+    maintenanceBattle.Reset();
+    check(maintenanceBattle.Inventory().Breaks()==0 && maintenanceBattle.Inventory().Drops().empty() && maintenanceBattle.Inventory().Armed(),"maintenance reset does not carry previous gun drops or break counters");
+    for(int n=0;n<1800 && maintenanceBattle.Result()!=EncounterResult::Failed;++n) maintenanceBattle.Update(.01f,.01f,maintenanceEye,{0,0,1});
+    check(maintenanceBattle.Result()==EncounterResult::Failed && maintenanceBattle.Health()==0,"maintenance enemy can damage and defeat the player instead of being decorative");
     std::cout << checks << " checks, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

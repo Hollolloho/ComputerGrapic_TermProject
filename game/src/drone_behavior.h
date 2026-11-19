@@ -1,3 +1,4 @@
+// 드론의 순찰, 경고, 조준과 사격 시점을 계산한다.
 #pragma once
 #include "combat.h"
 
@@ -16,6 +17,13 @@ enum class DronePhase
 class DroneBehavior
 {
 public:
+    bool SetScale(float value);
+
+    float Scale() const
+    {
+        return scale;
+    }
+
     void Reset();
     bool SetSpawn(const glm::vec3& point, float yawRadians, float patrolCenterX);
     bool Update(float gameDeltaTime, const glm::vec3& eye, std::span<const Collider> walls);
@@ -58,6 +66,7 @@ private:
     glm::vec3 spawn{-0.65f, 1.8f, -10};
     float spawnYaw{};
     float patrolCenter{};
+    float scale{1};
     glm::vec3 position{-0.65f, 1.8f, -10};
     glm::vec3 aimPoint{0};
     DronePhase phase{DronePhase::Patrol};

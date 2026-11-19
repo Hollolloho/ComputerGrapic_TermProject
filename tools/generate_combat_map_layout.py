@@ -1,4 +1,4 @@
-"""Generate first-corridor collision from the friend's OBJ and placement data."""
+"""Generate combat-map encounter collision from the friend's OBJ and placement data."""
 import argparse
 import hashlib
 import json
@@ -35,6 +35,14 @@ def generate():
             assert low[a]<=cover['center'][a]-extent/2+0.001 and high[a]>=cover['center'][a]+extent/2-0.001
         walls.append(('Cover_'+key,low,high))
     assert len(walls)>50
+    maintenance=[]
+    for name in objects:
+        if name.startswith('03_'): maintenance.append((name,*bounds([name])))
+    for cover in data['cover_footprints']:
+        key=cover['id']
+        if not key.startswith('C'):continue
+        names=[n for n in objects if n=='Cover_'+key or n.startswith(key+'_')]
+        maintenance.append(('Cover_'+key,*bounds(names)))
     drone=data['encounters']['corridor_a'][0]; assert drone['type']=='drone'
     def f(x): return format(x,'.6f')+'f'
     def v(p): return '{'+','.join(f(x) for x in p)+'}'
@@ -52,6 +60,18 @@ def generate():
         'inline const std::array<combat::Collider,'+str(len(walls))+'> walls={{']
     for i,(name,low,high) in enumerate(walls):
         out.append('    {'+str(30000+i)+',combat::HitKind::Wall,'+v(low)+','+v(high)+'}, // '+name)
+    out+=['}};']
+    poses=[data['encounters']['corridor_a'][0],data['encounters']['dogleg'][0]]+[d for d in data['encounters']['core_room'] if d['type']=='drone']
+    assert len(poses)==4 and poses[1]['id']=='dogleg_drone'
+    out+=['struct DronePlacement { glm::vec3 position; float yawDegrees,scale; };',
+          'inline const std::array<DronePlacement,4> friendDrones={{']
+    for d in poses: out+=['    {'+v(d['position'])+','+f(d['yaw_degrees'])+',0.8f},']
+    start=list(data['doorways'][2]['center']);start[2]-=1.5
+    out+=['}};','inline const glm::vec3 maintenanceStart='+v(start)+';',
+          'inline const glm::vec3 maintenanceSupply=maintenanceStart+glm::vec3(-0.8f,1.15f,-1.4f);',
+          'inline const glm::vec3 maintenanceTerminal=maintenanceStart+glm::vec3(0.95f,0,-1.5f);',
+          'inline const std::array<combat::Collider,'+str(len(maintenance))+'> maintenanceWalls={{']
+    for i,(name,low,high) in enumerate(maintenance): out+=['    {'+str(50000+i)+',combat::HitKind::Wall,'+v(low)+','+v(high)+'}, // '+name]
     out+=['}};']
     player_walls=[(name,*bounds([name])) for name in objects]
     out+=['inline const std::array<combat::Collider,'+str(len(player_walls))+'> playerWalls={{']

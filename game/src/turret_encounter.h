@@ -24,6 +24,17 @@ public:
     void Reset();
     void SetEnvironment(std::span<const Collider> walls);
     void SetDroneMode(bool enabled);
+
+    bool SetDroneScale(float value)
+    {
+        if (!drone.SetScale(value))
+        {
+            return false;
+        }
+        Reset();
+        return true;
+    }
+
     bool SetDroneSpawn(const glm::vec3& point, float yawRadians, float patrolCenterX);
     bool SetSupply(const glm::vec3& point);
     void SetExitDoors(ObjectId left, ObjectId right, float distance);

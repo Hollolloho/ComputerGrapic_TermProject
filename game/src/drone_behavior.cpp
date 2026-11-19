@@ -35,6 +35,17 @@ bool DroneBehavior::SetSpawn(const glm::vec3& point, float yawRadians, float pat
     return true;
 }
 
+bool DroneBehavior::SetScale(float value)
+{
+    if (!std::isfinite(value) || value < .1f || value > 4)
+    {
+        return false;
+    }
+    scale = value;
+    Reset();
+    return true;
+}
+
 void DroneBehavior::Reset()
 {
     position = spawn;
@@ -51,7 +62,9 @@ Collider DroneBehavior::Bounds(ObjectId id, HitKind kind, const glm::vec3& low, 
     for (int i = 0; i < 8; ++i)
     {
         const auto p =
-            position + Rotate({i & 1 ? high.x : low.x, i & 2 ? high.y : low.y, i & 4 ? high.z : low.z}, yaw);
+            position +
+            Rotate(glm::vec3(i & 1 ? high.x : low.x, i & 2 ? high.y : low.y, i & 4 ? high.z : low.z) * scale,
+                   yaw);
         minimum = glm::min(minimum, p);
         maximum = glm::max(maximum, p);
     }
@@ -72,7 +85,7 @@ Collider DroneBehavior::Weapon() const
 
 glm::vec3 DroneBehavior::Muzzle() const
 {
-    return position + Rotate({0, -0.35f, 0.68f}, yaw);
+    return position + Rotate(glm::vec3(0, -0.35f, 0.68f) * scale, yaw);
 }
 
 bool DroneBehavior::Visible(const glm::vec3& eye, std::span<const Collider> walls) const

@@ -184,6 +184,8 @@ void CombatScene::SetCorridorMode(bool enabled)
 {
     bossMode = false;
     combatMapMode = false;
+    maintenanceMode = false;
+    encounter.SetDroneScale(1);
     encounter.SetSupportTurret(false);
     encounter.SetDroneSpawn({-0.65f, 1.8f, -10}, 0, 0);
     encounter.SetSupply(combat::WeaponInventory::SupplyPosition());
@@ -208,6 +210,8 @@ void CombatScene::SetCombatMapMode(bool enabled)
         SetCorridorMode(true);
         return;
     }
+    maintenanceMode = false;
+    encounter.SetDroneScale(1);
     combatMapMode = true;
     corridorMode = turretMode = true;
     bossMode = false;
@@ -223,6 +227,25 @@ void CombatScene::SetCombatMapMode(bool enabled)
     Reset();
     smokeMapSlow = smokeMapCoverBlocked = smokeFailureSeen = smokeMapDeath = smokeMapBoth =
         smokeMapTurretShot = smokeMapLocked = false;
+}
+
+// 친구가 배치한 두 번째 드론으로 정비 복도 전투를 구성한다.
+void CombatScene::SetMaintenanceMode()
+{
+    SetCombatMapMode(true);
+    maintenanceMode = true;
+    encounter.SetSupportTurret(false);
+
+    std::vector<combat::Collider> walls(combat_map_asset::maintenanceWalls.begin(),
+                                        combat_map_asset::maintenanceWalls.end());
+    walls.push_back(TerminalCollider());
+    encounter.SetEnvironment(walls);
+
+    const auto& placement = combat_map_asset::friendDrones[1];
+    encounter.SetDroneSpawn(placement.position, glm::radians(placement.yawDegrees), placement.position.x);
+    encounter.SetDroneScale(placement.scale);
+    encounter.SetSupply(SupplyPosition());
+    Reset();
 }
 
 void CombatScene::SetDroneMode(bool enabled)
@@ -250,6 +273,10 @@ glm::vec3 CombatScene::CameraRoot() const
         }
         return combat::BossEncounter::FiringRoot();
     }
+    if (maintenanceMode)
+    {
+        return combat_map_asset::maintenanceStart;
+    }
     if (combatMapMode)
     {
         return combat_map_asset::playerStart;
@@ -263,6 +290,7 @@ void CombatScene::SetBossMode(bool enabled)
     if (enabled)
     {
         combatMapMode = false;
+        maintenanceMode = false;
     }
     Reset();
     smokeBossFailureSeen = false;
@@ -334,6 +362,10 @@ bool CombatScene::Interact(const glm::vec3& direction)
 
 glm::vec3 CombatScene::TerminalPosition() const
 {
+    if (maintenanceMode)
+    {
+        return combat_map_asset::maintenanceTerminal;
+    }
     return combatMapMode ? combat_map_asset::terminal : terminal_asset::position;
 }
 
@@ -348,6 +380,10 @@ combat::Collider CombatScene::TerminalCollider() const
 
 glm::vec3 CombatScene::SupplyPosition() const
 {
+    if (maintenanceMode)
+    {
+        return combat_map_asset::maintenanceSupply;
+    }
     return combatMapMode ? combat_map_asset::supply : combat::WeaponInventory::SupplyPosition();
 }
 
@@ -495,8 +531,10 @@ void CombatScene::UpdateVisualEffects(double realDeltaTime, double gameDeltaTime
 void CombatScene::ObserveDestruction()
 {
     const auto& state = encounter.DroneState();
-    const auto droneWorld =
-        glm::rotate(glm::translate(glm::mat4(1), state.Position()), state.Yaw(), glm::vec3(0, 1, 0));
+    // 실습과 같은 순서로 위치 → 회전 → 크기를 적용한다.
+    glm::mat4 droneWorld = glm::translate(glm::mat4(1), state.Position());
+    droneWorld = glm::rotate(droneWorld, state.Yaw(), glm::vec3(0, 1, 0));
+    droneWorld = glm::scale(droneWorld, glm::vec3(state.Scale()));
     destruction.ObserveEnemy(0, IsDroneMode() && encounter.EnemyAlive(), droneWorld);
     destruction.ObserveEnemy(1,
                              !bossMode && encounter.HasSupportTurret() && encounter.SupportTurret().Alive(),

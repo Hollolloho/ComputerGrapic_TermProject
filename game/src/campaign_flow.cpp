@@ -36,6 +36,11 @@ bool CampaignFlow::Advance(bool corridorSafe)
     }
     if (stage == CampaignStage::Corridor && corridorSafe)
     {
+        stage = CampaignStage::Maintenance;
+        return true;
+    }
+    if (stage == CampaignStage::Maintenance && corridorSafe)
+    {
         stage = CampaignStage::Boss;
         return true;
     }

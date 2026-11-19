@@ -72,6 +72,8 @@ public:
     void SetDroneMode(bool enabled);
     void SetCombatMapMode(bool enabled);
 
+    void SetMaintenanceMode();
+
     bool IsCombatMapMode() const
     {
         return combatMapMode;
@@ -281,6 +283,7 @@ private:
     combat::BossEncounter boss;
     BossView bossView;
     bool debugControls{true};
+    bool maintenanceMode{};
     bool combatMapMode{};
     bool smokeMapSlow{};
     bool smokeMapCoverBlocked{};

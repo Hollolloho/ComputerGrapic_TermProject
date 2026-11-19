@@ -17,8 +17,10 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
     if (IsDroneMode() && encounter.EnemyAlive())
     {
         const auto& state = encounter.DroneState();
-        const auto world =
-            glm::rotate(glm::translate(glm::mat4(1), state.Position()), state.Yaw(), glm::vec3(0, 1, 0));
+        // 실습과 같은 순서로 위치 → 회전 → 크기를 적용한다.
+        glm::mat4 world = glm::translate(glm::mat4(1), state.Position());
+        world = glm::rotate(world, state.Yaw(), glm::vec3(0, 1, 0));
+        world = glm::scale(world, glm::vec3(state.Scale()));
         droneRenderer.Begin(PlayerEye(), {0.45f, 0.9f, 0.7f}, {1, 1, 1}, 4, 0.25f);
         drone.Draw(viewProjection, world, state.Phase() == combat::DronePhase::Warning, state.Armed());
     }
@@ -173,7 +175,7 @@ void CombatScene::Draw(int width, int height,
     }
     if (combatMapMode)
     {
-        signs.Draw(viewProjection, SupplyPosition(), TerminalPosition(), CanAnalyze());
+        signs.Draw(viewProjection, SupplyPosition(), TerminalPosition(), CanAnalyze(), maintenanceMode);
     }
     DrawEnemies(viewProjection);
     glUseProgram(program);
