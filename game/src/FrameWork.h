@@ -2,6 +2,7 @@
 
 #include "Camera.h"
 #include "CombatMap.h"
+#include "drone.h"
 
 struct GLFWwindow;
 
@@ -13,6 +14,7 @@ public:
 private:
 	Camera camera;
 	CombatMap combatMap;
+	Drone drone;
 
 	GLFWwindow* window = nullptr;
 	

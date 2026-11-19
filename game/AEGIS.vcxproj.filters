@@ -7,15 +7,6 @@
     <ClCompile Include="src\CombatMap.cpp">
       <Filter>CombatMap</Filter>
     </ClCompile>
-    <ClCompile Include="src\drone.cpp">
-      <Filter>Drone</Filter>
-    </ClCompile>
-    <ClCompile Include="src\RenderMesh.cpp">
-      <Filter>Rendering</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Shader.cpp">
-      <Filter>Rendering</Filter>
-    </ClCompile>
     <ClCompile Include="src\main.cpp">
       <Filter>main</Filter>
     </ClCompile>
@@ -24,6 +15,15 @@
     </ClCompile>
     <ClCompile Include="src\Game_FrameWork.cpp">
       <Filter>FrameWork</Filter>
+    </ClCompile>
+    <ClCompile Include="src\drone.cpp">
+      <Filter>Drone</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Shader.cpp">
+      <Filter>Loader</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RenderMesh.cpp">
+      <Filter>Loader</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -43,10 +43,7 @@
       <UniqueIdentifier>{fc9d82bc-c717-4c5e-ae66-feb88840c246}</UniqueIdentifier>
     </Filter>
     <Filter Include="Drone">
-      <UniqueIdentifier>{aec58d3e-8f80-43b2-8d01-7121845b6c9c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Rendering">
-      <UniqueIdentifier>{7c656ac2-89c6-4a2a-b692-ebddf9ac96f7}</UniqueIdentifier>
+      <UniqueIdentifier>{e8100638-50b6-49a0-8364-6d9abfb7aae0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -62,17 +59,17 @@
     <ClInclude Include="src\CombatMap.h">
       <Filter>CombatMap</Filter>
     </ClInclude>
+    <ClInclude Include="src\Common.h">
+      <Filter>main</Filter>
+    </ClInclude>
     <ClInclude Include="src\drone.h">
       <Filter>Drone</Filter>
     </ClInclude>
-    <ClInclude Include="src\RenderMesh.h">
-      <Filter>Rendering</Filter>
-    </ClInclude>
     <ClInclude Include="src\Shader.h">
-      <Filter>Rendering</Filter>
+      <Filter>Loader</Filter>
     </ClInclude>
-    <ClInclude Include="src\Common.h">
-      <Filter>main</Filter>
+    <ClInclude Include="src\RenderMesh.h">
+      <Filter>Loader</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -82,10 +79,10 @@
     <None Include="shaders\combat_map.frag">
       <Filter>CombatMap</Filter>
     </None>
-    <None Include="shaders\drone.vert">
+    <None Include="shaders\drone.frag">
       <Filter>Drone</Filter>
     </None>
-    <None Include="shaders\drone.frag">
+    <None Include="shaders\drone.vert">
       <Filter>Drone</Filter>
     </None>
   </ItemGroup>

@@ -78,8 +78,8 @@
     <ClInclude Include="src\Shader.h" />
     <None Include="shaders\combat_map.vert" />
     <None Include="shaders\combat_map.frag" />
-    <None Include="shaders\drone.vert" />
     <None Include="shaders\drone.frag" />
+    <None Include="shaders\drone.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Target Name="CopyRuntimeLibraries" AfterTargets="Build">

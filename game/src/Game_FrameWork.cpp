@@ -68,7 +68,8 @@ bool GameFrameWork::Init()
 	camera.Init();
 	if (!combatMap.Init())
 		return false;
-
+	if (!drone.Init())
+		return false;
 	glfwSetWindowUserPointer(window, this);
 	glfwSetKeyCallback(window, KeyCallBack);
 	glfwSetCursorPosCallback(window, CursorPosCallback);
@@ -126,7 +127,7 @@ glm::vec3 GameFrameWork::CalculateCameraMovement(float deltaTime) const
 	if (glm::length(direction) < 0.001f)
 		return glm::vec3(0.f);
 
-	const float moveSpeed = 3.f;
+	const float moveSpeed = 5.f;
 	return glm::normalize(direction) * moveSpeed * deltaTime;
 }
 
@@ -150,6 +151,7 @@ void GameFrameWork::Draw()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	combatMap.Draw(scene);
+	drone.Draw(scene);
 	glfwSwapBuffers(window);
 }
 
@@ -158,6 +160,7 @@ void GameFrameWork::Clear()
 	if (window)
 	{
 		combatMap.Clear();
+		drone.Clear();
 		glfwDestroyWindow(window);
 		window = nullptr;
 	}

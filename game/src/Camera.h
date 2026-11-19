@@ -8,7 +8,7 @@ struct Camera
     glm::vec3 camTarget{ 0.0f };
     glm::vec3 camUp{ 0.0f, 1.0f, 0.0f };
 
-    float fovy = 60.0f;
+    float fovy = 65.0f;
     float rotX = 0.0f;
     float rotY = 0.0f;
     glm::mat4 view{ 1.0f };
