@@ -2,6 +2,7 @@
 #include "Shader.h"
 #include "model_loader.h"
 
+#include <cmath>
 #include <iostream>
 
 bool Drone::Init()
@@ -52,22 +53,40 @@ void Drone::DroneInit()
 {
 	// 첫 직선 복도
 	drones.push_back({ { 0.65f, 1.95f, -11.40f }, { 1.00f, 1.00f, 1.00f }, { 0.f,  -4.42f, 0.f } });
+	drones.back().patrolEndZ = -14.40f;
 
 	// 정비 복도 첫 코너 감지 드론
 	drones.push_back({ { 1.56f, 2.30f, -40.69f }, { 1.00f, 0.55f, 0.55f }, { 0.f,  12.38f, 0.f } });
 
 	// 원형 보스방 왼쪽
 	drones.push_back({ { 2.55f, 2.30f, -58.80f }, { 0.55f, 1.00f, 0.90f }, { 0.f,  19.95f, 0.f } });
+	drones.back().patrolEndZ = -56.8f;
 
 	// 원형 보스방 오른쪽
 	drones.push_back({ { 12.50f, 2.40f, -54.00f }, { 0.60f, 0.80f, 1.00f }, { 0.f, -41.82f, 0.f } });
+	drones.back().patrolEndZ = -55.8f;
+
+	for (DroneState& drone : drones)
+	{
+		if (drone.patrolEndZ < drone.patrolStartZ)
+		{
+			drone.rotation.y += 180.f;
+		}
+	}
 }
 
 glm::mat4 Drone::CalculateMat(const glm::mat4& scene, const DroneState& drone)
 {
+	const glm::vec3 rotationAxis(0.f, 1.f, 0.f);
 	glm::mat4 model = glm::translate(glm::mat4(1.f), drone.pos);
-	model = glm::rotate(model, glm::radians(drone.rotation.y), glm::vec3(0.f, 1.f, 0.f));
-	model = glm::scale(model, glm::vec3(0.8f));
+	model = glm::rotate(model, glm::radians(drone.rotation.y), rotationAxis);
+
+	if (drone.is_turning)
+	{
+		model = glm::rotate(model, glm::radians(drone.turn_rotate), rotationAxis);
+	}
+
+	model = glm::scale(model, glm::vec3(0.5f));
 	return scene * model;
 }
 
@@ -110,8 +129,6 @@ void Drone::Draw(const glm::mat4& scene)
 void Drone::Update(float deltaTime)
 {
 	rotorAngle = std::fmod(rotorAngle + 720.f * deltaTime, 360.f);
-<<<<<<< Updated upstream
-=======
 	MovingDrone(deltaTime);
 }
 
@@ -126,7 +143,6 @@ void Drone::MovingDrone(float deltaTime)
 		if (drone.is_turning)
 		{
 			drone.turn_rotate += 60.f * deltaTime;
-
 			if (drone.turn_rotate >= 180.f)
 			{
 				drone.rotation.y = std::fmod(drone.rotation.y + 180.f, 360.f);
@@ -150,12 +166,12 @@ void Drone::MovingDrone(float deltaTime)
 			drone.pos.z += std::copysign(distanceFrame, remaining);
 		}
 	}
->>>>>>> Stashed changes
 }
 
 void Drone::Clear()
 {
 	ClearMeshes(meshes);
+	rotors.clear();
 	drones.clear();
 	if (shaderProgram)
 	{
