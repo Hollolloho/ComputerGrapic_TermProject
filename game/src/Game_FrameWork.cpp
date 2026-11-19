@@ -88,9 +88,9 @@ void GameFrameWork::Update(float deltaTime)
 	const bool mouseMoved = mouseDeltaX != 0.0 || mouseDeltaY != 0.0;
 	if (mouseMoved)
 	{
-		const float sensitivity = 10.f;
-		camera.Rotate(-static_cast<float>(mouseDeltaY) * sensitivity * deltaTime,
-			-static_cast<float>(mouseDeltaX) * sensitivity * deltaTime);
+		const float sensitivity = 0.167f; // 커서 좌표 1단위당 회전 각도(도)
+		camera.Rotate(-static_cast<float>(mouseDeltaY) * sensitivity,
+			-static_cast<float>(mouseDeltaX) * sensitivity);
 		mouseDeltaX = 0.0;
 		mouseDeltaY = 0.0;
 	}
