@@ -18,30 +18,14 @@ void CombatScene::SampleInput(GLFWwindow* window, bool active)
     {
         active = false;
     }
-    const bool preview = glfwGetKey(window, GLFW_KEY_F5) == GLFW_PRESS;
     forceNormal = active && !analysis.Active() &&
                   (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
                    glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS);
-    if (active && !analysis.Active() && preview && !previewHeld)
-    {
-        if (movementTimeAvailable)
-        {
-            manualNormalTime = !manualNormalTime;
-        }
-        else
-        {
-            slowPreview = !slowPreview;
-        }
-    }
-    previewHeld = preview;
     const bool left = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
     const bool right = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
     const bool cover = glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS;
     const bool drop = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
     const bool interact = glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS;
-    const bool bossToggle = glfwGetKey(window, GLFW_KEY_F4) == GLFW_PRESS;
-    const bool droneToggle = glfwGetKey(window, GLFW_KEY_F3) == GLFW_PRESS;
-    const bool turret = glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS;
     double x{}, y{};
     glfwGetCursorPos(window, &x, &y);
     if (analysis.Active())
@@ -53,9 +37,6 @@ void CombatScene::SampleInput(GLFWwindow* window, bool active)
         mouseHeld = left;
         coverHeld = cover;
         lookHeld = false;
-        turretHeld = turret;
-        droneToggleHeld = droneToggle;
-        bossToggleHeld = bossToggle;
         dropHeld = drop;
         interactHeld = interact;
         lastX = x;
@@ -64,28 +45,11 @@ void CombatScene::SampleInput(GLFWwindow* window, bool active)
     }
     if (active)
     {
-        if (debugControls && bossToggle && !bossToggleHeld)
-        {
-            SetBossMode(!bossMode);
-        }
-        if (debugControls && !bossMode && corridorMode && droneToggle && !droneToggleHeld)
-        {
-            SetDroneMode(!IsDroneMode());
-        }
-        if (debugControls && !bossMode && !corridorMode && turret && !turretHeld)
-        {
-            SetTurretMode(!turretMode);
-        }
-        const bool playing = coreMode ? core.Result() == combat::EncounterResult::Running ||
-                                        core.Result() == combat::EncounterResult::Securing
-                             : bossMode
-                                 ? boss.Result() == combat::EncounterResult::Running ||
-                                       boss.Result() == combat::EncounterResult::Securing
-                                 : !turretMode || encounter.Result() == combat::EncounterResult::Running ||
-                                       encounter.Result() == combat::EncounterResult::Securing;
-        const bool canEquip = coreMode ? core.Result() != combat::EncounterResult::Failed
-                              : bossMode ? boss.Result() != combat::EncounterResult::Failed
-                                       : !turretMode || encounter.Result() != combat::EncounterResult::Failed;
+        auto* battle = ActiveEncounter();
+        const auto result = battle->Result();
+        const bool playing = result == combat::EncounterResult::Running ||
+                             result == combat::EncounterResult::Securing;
+        const bool canEquip = result != combat::EncounterResult::Failed;
         if (!HasExternalPlayerView() && canEquip && right && lookHeld)
         {
             yaw -= static_cast<float>(x - lastX) * 0.14f;
@@ -98,33 +62,14 @@ void CombatScene::SampleInput(GLFWwindow* window, bool active)
             {
                 ToggleBossCover();
             }
-            else if (turretMode)
-            {
-                encounter.ToggleCover();
-            }
             else
             {
-                range.ToggleCover();
+                encounter.ToggleCover();
             }
         }
         if (canEquip && drop && !dropHeld)
         {
-            if (coreMode)
-            {
-                core.DropWeapon(PlayerEye(), PlayerForward());
-            }
-            else if (bossMode)
-            {
-                boss.DropWeapon(PlayerEye(), PlayerForward());
-            }
-            else if (turretMode)
-            {
-                encounter.DropWeapon(PlayerEye(), PlayerForward());
-            }
-            else
-            {
-                range.DropWeapon(PlayerEye(), PlayerForward());
-            }
+            battle->DropWeapon(PlayerEye(), PlayerForward());
         }
         if (canEquip && interact && !interactHeld)
         {
@@ -138,9 +83,6 @@ void CombatScene::SampleInput(GLFWwindow* window, bool active)
     mouseHeld = left;
     coverHeld = cover;
     lookHeld = active && right;
-    turretHeld = turret;
-    droneToggleHeld = droneToggle;
-    bossToggleHeld = bossToggle;
     dropHeld = drop;
     interactHeld = interact;
     lastX = x;

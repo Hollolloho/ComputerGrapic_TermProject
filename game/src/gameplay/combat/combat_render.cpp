@@ -65,9 +65,8 @@ void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
 {
     if (coreMode) return;
     const std::span<const combat::Collider> boxes =
-        bossMode     ? std::span<const combat::Collider>()
-        : turretMode ? std::span<const combat::Collider>(encounter.Colliders())
-                     : std::span<const combat::Collider>(range.Colliders());
+        bossMode ? std::span<const combat::Collider>()
+                 : std::span<const combat::Collider>(encounter.Colliders());
     for (const auto& box : boxes)
     {
         if ((encounter.HasSupportTurret() &&
@@ -84,7 +83,7 @@ void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
                                                                       : glm::vec3(0.15f, 0.22f, 0.31f);
         DrawBox(viewProjection, box.minimum, box.maximum, color);
     }
-    if (turretMode && !bossMode && !IsDroneMode() && encounter.EnemyAlive())
+    if (!bossMode && !IsDroneMode() && encounter.EnemyAlive())
     {
         DrawBox(viewProjection, {-0.9f, 0, -10.6f}, {0.9f, 0.35f, -9.3f}, {0.25f, 0.3f, 0.4f});
 
@@ -105,29 +104,17 @@ void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
 
 void CombatScene::DrawProjectiles(const glm::mat4& viewProjection) const
 {
-    const auto& shots = coreMode     ? core.PlayerFlights()
-                        : bossMode     ? boss.PlayerFlights()
-                        : turretMode ? encounter.PlayerFlights()
-                                     : range.Flights();
+    const auto* battle = ActiveEncounter();
+    const auto& shots = battle->PlayerFlights();
     for (const auto& flight : shots)
     {
         const auto p = flight.projectile.position;
         DrawBox(viewProjection, p - glm::vec3(0.055f), p + glm::vec3(0.055f), {1, 0.85f, 0.15f});
     }
-    if (coreMode || bossMode || turretMode)
+    for (const auto& flight : battle->EnemyFlights())
     {
-        const auto& enemyShots = coreMode ? core.EnemyFlights()
-                                : bossMode ? boss.EnemyFlights() : encounter.EnemyFlights();
-        for (const auto& flight : enemyShots)
-        {
-            const auto p = flight.projectile.position;
-            DrawBox(viewProjection, p - glm::vec3(0.08f), p + glm::vec3(0.08f), {1, 0.15f, 0.08f});
-        }
-    }
-    if (!bossMode && !turretMode && range.LastHit() && range.ImpactTime() > 0)
-    {
-        const auto p = range.LastHit()->position;
-        DrawBox(viewProjection, p - glm::vec3(0.07f), p + glm::vec3(0.07f), {1, 1, 1});
+        const auto p = flight.projectile.position;
+        DrawBox(viewProjection, p - glm::vec3(0.08f), p + glm::vec3(0.08f), {1, 0.15f, 0.08f});
     }
 }
 
@@ -236,7 +223,7 @@ void CombatScene::Draw(int width, int height,
     }
     // Crisp centre crosshair drawn in framebuffer pixels.
     glEnable(GL_SCISSOR_TEST);
-    glClearColor(range.RemainingTargets() == 0 ? 0.15f : 0.95f, 1, 0.7f, 1);
+    glClearColor(0.95f, 1, 0.7f, 1);
     glScissor(width / 2 - 8, height / 2 - 1, 17, 3);
     glClear(GL_COLOR_BUFFER_BIT);
     glScissor(width / 2 - 1, height / 2 - 8, 3, 17);

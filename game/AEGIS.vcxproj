@@ -83,6 +83,15 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ItemGroup>
+    <ClInclude Include="src\gameplay\campaign\campaign_environment.h" />
+    <ClCompile Include="src\gameplay\campaign\campaign_environment.cpp" />
+    <ClInclude Include="src\gameplay\campaign\campaign_menu.h" />
+    <ClCompile Include="src\gameplay\campaign\campaign_menu.cpp" />
+    <ClCompile Include="src\gameplay\campaign\game_scene_player.cpp" />
+    <ClCompile Include="src\gameplay\campaign\game_scene_render.cpp" />
+    <ClCompile Include="src\gameplay\campaign\game_scene_ui.cpp" />
+    <ClCompile Include="src\gameplay\combat\combat_interaction.cpp" />
+    <ClCompile Include="src\gameplay\combat\combat_modes.cpp" />
     <ClCompile Include="src\gameplay\ui\analysis_session.cpp" />
     <ClCompile Include="src\gameplay\rendering\atlas_model.cpp" />
     <ClCompile Include="src\gameplay\boss\boss_encounter.cpp" />
@@ -93,13 +102,13 @@
     <ClCompile Include="src\gameplay\core\core_view.cpp" />
     <ClCompile Include="src\gameplay\turret\single_turret_view.cpp" />
     <ClCompile Include="src\gameplay\combat\combat.cpp" />
+    <ClCompile Include="src\gameplay\combat\combat_encounter.cpp" />
+    <ClInclude Include="src\gameplay\combat\combat_encounter.h" />
     <ClCompile Include="src\gameplay\combat\combat_debug.cpp" />
     <ClCompile Include="src\gameplay\combat\combat_hud.cpp" />
     <ClCompile Include="src\gameplay\combat\combat_input.cpp" />
-    <ClCompile Include="src\gameplay\combat\combat_range.cpp" />
     <ClCompile Include="src\gameplay\combat\combat_render.cpp" />
     <ClCompile Include="src\gameplay\combat\combat_scene.cpp" />
-    <ClCompile Include="src\gameplay\combat\combat_smoke_tests.cpp" />
     <ClCompile Include="src\gameplay\effects\death_view.cpp" />
     <ClCompile Include="src\gameplay\effects\destruction_effects.cpp" />
     <ClCompile Include="src\drone\drone_behavior.cpp" />
@@ -107,6 +116,7 @@
     <ClCompile Include="src\gameplay\campaign\game_scene.cpp" />
     <ClCompile Include="src\gameplay\ui\korean_ui.cpp" />
     <ClCompile Include="src\gameplay\rendering\mesh_renderer.cpp" />
+    <ClCompile Include="src\gameplay\rendering\primitive_view.cpp" />
     <ClCompile Include="src\loader\model_binary.cpp" />
     <ClCompile Include="src\gameplay\player\player_camera.cpp" />
     <ClCompile Include="src\gameplay\player\player_motion.cpp" />
@@ -129,7 +139,6 @@
     <ClInclude Include="src\gameplay\combat\combat.h" />
     <ClInclude Include="src\gameplay\combat\combat_feedback.h" />
     <ClInclude Include="src\combat_map\combat_map_layout.generated.h" />
-    <ClInclude Include="src\gameplay\combat\combat_range.h" />
     <ClInclude Include="src\gameplay\combat\combat_scene.h" />
     <ClInclude Include="src\gameplay\combat\combat_time.h" />
     <ClInclude Include="src\combat_map\corridor_layout.generated.h" />
@@ -138,10 +147,10 @@
     <ClInclude Include="src\gameplay\effects\destruction_effects.h" />
     <ClInclude Include="src\drone\drone_behavior.h" />
     <ClInclude Include="src\gameplay\turret\fixed_turret.h" />
-    <ClInclude Include="src\gameplay\campaign\game_options.h" />
     <ClInclude Include="src\gameplay\campaign\game_scene.h" />
     <ClInclude Include="src\gameplay\ui\korean_ui.h" />
     <ClInclude Include="src\gameplay\rendering\mesh_renderer.h" />
+    <ClInclude Include="src\gameplay\rendering\primitive_view.h" />
     <ClInclude Include="src\loader\model_binary.h" />
     <ClInclude Include="src\gameplay\player\player_camera.h" />
     <ClInclude Include="src\gameplay\player\player_motion.h" />
@@ -171,10 +180,4 @@
     <Copy SourceFiles="$(SolutionDir)external\glew-2.3.1\bin\Release\x64\glew32.dll;$(SolutionDir)external\assimp\bin\x64\assimp-vc145-mt.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
   </Target>
   <Import Project="runtime_assets.props" />
-  <ItemGroup>
-    <ClCompile Include="src\gameplay\combat\combat_encounter.cpp" />
-    <ClInclude Include="src\gameplay\combat\combat_encounter.h" />
-    <ClCompile Include="src\gameplay\rendering\primitive_view.cpp" />
-    <ClInclude Include="src\gameplay\rendering\primitive_view.h" />
-  </ItemGroup>
 </Project>

@@ -1,17 +1,8 @@
-// 전투 장면의 초기화, 구역 설정, 갱신과 종료를 연결한다.
+// 전투 장면의 초기화, 갱신과 종료를 연결한다.
 #include "combat_scene.h"
-#include "combat_map/corridor_layout.generated.h"
 #include "combat_map/terminal_layout.generated.h"
-
-#include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <algorithm>
-#include <fstream>
 #include <iostream>
-#include <vector>
-#include <array>
-#include <limits>
 
 namespace aegis
 {
@@ -28,7 +19,7 @@ GLuint Compile(GLenum kind, const char* source)
     {
         char log[2048]{};
         glGetShaderInfoLog(shader, sizeof(log), nullptr, log);
-        std::cerr << "Combat range shader: " << log << '\n';
+        std::cerr << "Combat shader: " << log << '\n';
         glDeleteShader(shader);
         return 0;
     }
@@ -133,26 +124,6 @@ bool CombatScene::InitTerminal(const std::filesystem::path& root)
     return triangles == terminal_asset::triangles;
 }
 
-bool CombatScene::SetPlayerView(const PlayerView& view)
-{
-    if (analysis.Active() || DeathStarted())
-    {
-        return false;
-    }
-    if (!externalView.Set(view))
-    {
-        return false;
-    }
-    lookHeld = false;
-    return true;
-}
-
-PlayerView CombatScene::CurrentPlayerView() const
-{
-    const PlayerView fallback{camera.EyePosition(), camera.ViewDirection(), {0, 1, 0}, 60};
-    return externalView.Selected(fallback);
-}
-
 void CombatScene::Reset()
 {
     analysis.Reset();
@@ -160,11 +131,9 @@ void CombatScene::Reset()
     feedback.Reset();
     destruction.Reset();
     time.Reset();
-    slowPreview = false;
     forceNormal = false;
-    movementTimeAvailable = manualNormalTime = false;
+    movementTimeAvailable = false;
     movementScale = 0.05;
-    range.Reset();
     encounter.Reset();
     weapon.Reset();
     drone.Reset();
@@ -181,303 +150,6 @@ void CombatScene::Reset()
     camera.SetPose(CameraRoot(), yaw, pitch);
     // Held input remains latched until release (R must not create a fresh shot).
     lookHeld = false;
-}
-
-void CombatScene::SetCorridorMode(bool enabled)
-{
-    coreMode = false;
-    bossMode = false;
-    combatMapMode = false;
-    maintenanceMode = false;
-    encounter.SetDroneScale(1);
-    encounter.SetSupportTurret(false);
-    encounter.SetDroneSpawn({-0.65f, 1.8f, -10}, 0, 0);
-    encounter.SetSupply(combat::WeaponInventory::SupplyPosition());
-    corridorMode = enabled;
-    std::vector<combat::Collider> walls;
-    if (enabled)
-    {
-        walls.assign(corridor_asset::walls.begin(), corridor_asset::walls.end());
-        walls.push_back(terminal_asset::collider);
-    }
-    encounter.SetEnvironment(walls);
-    encounter.SetExitDoors(enabled ? 10010 : 0, enabled ? 10011 : 0,
-                           enabled ? corridor_asset::doorTravel : 0);
-    encounter.SetDroneMode(enabled);
-    SetTurretMode(enabled);
-}
-
-void CombatScene::SetCombatMapMode(bool enabled)
-{
-    if (!enabled)
-    {
-        SetCorridorMode(true);
-        return;
-    }
-    coreMode = false;
-    maintenanceMode = false;
-    encounter.SetDroneScale(1);
-    combatMapMode = true;
-    corridorMode = turretMode = true;
-    bossMode = false;
-    std::vector<combat::Collider> walls(combat_map_asset::walls.begin(), combat_map_asset::walls.end());
-    walls.push_back(TerminalCollider());
-    encounter.SetEnvironment(walls);
-    encounter.SetExitDoors(0, 0, 0);
-    encounter.SetDroneSpawn(combat_map_asset::droneSpawn, glm::radians(combat_map_asset::droneYawDegrees),
-                            combat_map_asset::droneSpawn.x);
-    encounter.SetSupply(combat_map_asset::supply);
-    encounter.SetDroneMode(true);
-    encounter.SetSupportTurret(true);
-    Reset();
-    smokeMapSlow = smokeMapCoverBlocked = smokeFailureSeen = smokeMapDeath = smokeMapBoth =
-        smokeMapTurretShot = smokeMapLocked = false;
-}
-
-// 친구가 배치한 두 번째 드론으로 정비 복도 전투를 구성한다.
-void CombatScene::SetMaintenanceMode()
-{
-    SetCombatMapMode(true);
-    maintenanceMode = true;
-    encounter.SetSupportTurret(false);
-
-    std::vector<combat::Collider> walls(combat_map_asset::maintenanceWalls.begin(),
-                                        combat_map_asset::maintenanceWalls.end());
-    walls.push_back(TerminalCollider());
-    encounter.SetEnvironment(walls);
-
-    const auto& placement = combat_map_asset::friendDrones[1];
-    encounter.SetDroneSpawn(placement.position, glm::radians(placement.yawDegrees), placement.position.x);
-    encounter.SetDroneScale(placement.scale);
-    encounter.SetSupply(SupplyPosition());
-    Reset();
-}
-
-void CombatScene::SetDroneMode(bool enabled)
-{
-    encounter.SetDroneMode(enabled);
-    Reset();
-    smokeFailureSeen = smokePatrolSeen = smokeWarningSeen = smokeShotSeen = smokeSecuringSeen =
-        smokeAnalysisSeen = smokeAnalysisReturned = smokeWorldFrozen = false;
-}
-
-void CombatScene::SetTurretMode(bool enabled)
-{
-    turretMode = enabled;
-    Reset();
-    smokeFailureSeen = false;
-}
-
-glm::vec3 CombatScene::CameraRoot() const
-{
-    if (coreMode) return combat::CoreEncounter::PlayerRoot();
-    if (bossMode)
-    {
-        if (bossCovered)
-        {
-            return combat::BossEncounter::CoverRoot();
-        }
-        return combat::BossEncounter::FiringRoot();
-    }
-    if (maintenanceMode)
-    {
-        return combat_map_asset::maintenanceStart;
-    }
-    if (combatMapMode)
-    {
-        return combat_map_asset::playerStart;
-    }
-    return glm::vec3(0);
-}
-
-void CombatScene::SetBossMode(bool enabled)
-{
-    coreMode = false;
-    bossMode = enabled;
-    if (enabled)
-    {
-        combatMapMode = false;
-        maintenanceMode = false;
-    }
-    Reset();
-    smokeBossFailureSeen = false;
-}
-
-void CombatScene::SetCoreMode()
-{
-    bossMode = maintenanceMode = false;
-    coreMode = combatMapMode = corridorMode = turretMode = true;
-    core.SetEnvironment(combat_map_asset::playerWalls, combat_map_asset::playerWalls);
-    Reset();
-}
-
-void CombatScene::ToggleBossCover()
-{
-    bossCovered = !bossCovered;
-    const auto target = bossCovered ? boss_asset::supplyInteraction : boss.CoreCenter();
-    const auto d = glm::normalize(target - (CameraRoot() + glm::vec3(0, 1.65f, 0)));
-    yaw = glm::degrees(std::atan2(-d.x, -d.z));
-    pitch = glm::degrees(std::asin(d.y));
-    camera.SetPose(CameraRoot(), yaw, pitch);
-    lookHeld = false;
-}
-
-bool CombatScene::Fire(const glm::vec3& direction)
-{
-    if (!time.CanFire())
-    {
-        return false;
-    }
-    bool fired = false;
-    if (coreMode)
-    {
-        fired = core.Fire(PlayerEye(), direction);
-    }
-    else if (bossMode)
-    {
-        fired = boss.Fire(PlayerEye(), direction);
-    }
-    else if (turretMode)
-    {
-        fired = encounter.Fire(PlayerEye(), direction);
-    }
-    else
-    {
-        fired = range.Fire(PlayerEye(), direction);
-    }
-    if (fired)
-    {
-        time.RequestShot();
-        weapon.OnShot();
-    }
-    return fired;
-}
-
-const combat::WeaponInventory& CombatScene::Inventory() const
-{
-    if (coreMode) return core.Inventory();
-    if (bossMode)
-    {
-        return boss.Inventory();
-    }
-    if (turretMode)
-    {
-        return encounter.Inventory();
-    }
-    return range.Inventory();
-}
-
-bool CombatScene::Interact(const glm::vec3& direction)
-{
-    if (coreMode) return core.Interact(PlayerEye(), direction);
-    if (bossMode)
-    {
-        return boss.Interact(PlayerEye(), direction);
-    }
-    if (TerminalTarget(direction))
-    {
-        return analysis.Open(CanAnalyze(), TerminalCollider(), PlayerEye(), direction, encounter.Colliders());
-    }
-    return turretMode ? encounter.Interact(PlayerEye(), direction) : range.Interact(PlayerEye(), direction);
-}
-
-glm::vec3 CombatScene::TerminalPosition() const
-{
-    if (maintenanceMode)
-    {
-        return combat_map_asset::maintenanceTerminal;
-    }
-    return combatMapMode ? combat_map_asset::terminal : terminal_asset::position;
-}
-
-combat::Collider CombatScene::TerminalCollider() const
-{
-    auto box = terminal_asset::collider;
-    const auto offset = TerminalPosition() - terminal_asset::position;
-    box.minimum += offset;
-    box.maximum += offset;
-    return box;
-}
-
-glm::vec3 CombatScene::SupplyPosition() const
-{
-    if (coreMode) return combat::CoreEncounter::SupplyPosition();
-    if (maintenanceMode)
-    {
-        return combat_map_asset::maintenanceSupply;
-    }
-    return combatMapMode ? combat_map_asset::supply : combat::WeaponInventory::SupplyPosition();
-}
-
-std::vector<combat::Collider> CombatScene::PlayerObstacles() const
-{
-    if (coreMode) return core.PlayerObstacles();
-    if (bossMode)
-    {
-        std::vector<combat::Collider> walls(boss_asset::walls.begin(), boss_asset::walls.end());
-        glm::vec3 low(std::numeric_limits<float>::max()), high(std::numeric_limits<float>::lowest());
-        for (int i = 0; i < boss_asset::partCount; ++i)
-        {
-            const auto& part = boss_asset::parts[i];
-            for (int corner = 0; corner < 8; ++corner)
-            {
-                const auto point =
-                    glm::vec3(boss.Pose().parts[i] * glm::vec4(corner & 1 ? part.high.x : part.low.x,
-                                                               corner & 2 ? part.high.y : part.low.y,
-                                                               corner & 4 ? part.high.z : part.low.z, 1));
-                low = glm::min(low, point);
-                high = glm::max(high, point);
-            }
-        }
-        walls.push_back({29000, combat::HitKind::Armor, low, high});
-        return walls;
-    }
-    if (combatMapMode)
-    {
-        std::vector<combat::Collider> walls(combat_map_asset::playerWalls.begin(),
-                                            combat_map_asset::playerWalls.end());
-        walls.push_back(TerminalCollider());
-        if (encounter.HasSupportTurret() && encounter.SupportTurret().Alive())
-        {
-            auto body = encounter.SupportTurret().Body();
-            body.kind = combat::HitKind::Armor;
-            walls.push_back(body);
-        }
-        return walls;
-    }
-    return turretMode ? encounter.Colliders()
-                      : std::vector<combat::Collider>(range.Colliders().begin(), range.Colliders().end());
-}
-
-bool CombatScene::TerminalTarget() const
-{
-    return TerminalTarget(PlayerForward());
-}
-
-bool CombatScene::TerminalTarget(const glm::vec3& direction) const
-{
-    if (!corridorMode || bossMode || coreMode)
-    {
-        return false;
-    }
-    return analysis.IsFirstTarget(
-        TerminalCollider(), PlayerEye(), direction, encounter.Colliders(),
-        Inventory().InteractionDistance(PlayerEye(), direction, encounter.Colliders()));
-}
-
-combat::WeaponInteraction CombatScene::InteractionHint() const
-{
-    if (coreMode) return core.InteractionHint(PlayerEye(), PlayerForward());
-    if (bossMode)
-    {
-        return boss.InteractionHint(PlayerEye(), PlayerForward());
-    }
-    if (TerminalTarget())
-    {
-        return combat::WeaponInteraction::None;
-    }
-    return turretMode ? encounter.InteractionHint(PlayerEye(), PlayerForward())
-                      : range.InteractionHint(PlayerEye(), PlayerForward());
 }
 
 void CombatScene::Update(double realDeltaTime, double gameDeltaTime)
@@ -506,39 +178,14 @@ void CombatScene::Update(double realDeltaTime, double gameDeltaTime)
 
 int CombatScene::PlayerHealth() const
 {
-    if (coreMode) return core.Health();
-    if (bossMode)
-    {
-        return boss.Health();
-    }
-    if (turretMode)
-    {
-        return encounter.Health();
-    }
-    return 100;
+    return ActiveEncounter()->Health();
 }
 
 void CombatScene::UpdateBattle(double realDeltaTime, double gameDeltaTime)
 {
-    if (coreMode)
-    {
-        core.Update(static_cast<float>(realDeltaTime), static_cast<float>(gameDeltaTime),
-                    PlayerEye(), PlayerForward());
-    }
-    else if (bossMode)
-    {
-        boss.Update(static_cast<float>(realDeltaTime), static_cast<float>(gameDeltaTime), PlayerEye(),
-                    PlayerForward());
-    }
-    else if (turretMode)
-    {
-        encounter.Update(static_cast<float>(realDeltaTime), static_cast<float>(gameDeltaTime), PlayerEye(),
-                         PlayerForward());
-    }
-    else
-    {
-        range.Update(static_cast<float>(realDeltaTime), static_cast<float>(gameDeltaTime));
-    }
+    const float realTime = static_cast<float>(realDeltaTime);
+    const float gameTime = static_cast<float>(gameDeltaTime);
+    ActiveEncounter()->Update(realTime, gameTime, PlayerEye(), PlayerForward());
 }
 
 void CombatScene::UpdateVisualEffects(double realDeltaTime, double gameDeltaTime)

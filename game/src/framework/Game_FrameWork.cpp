@@ -1,5 +1,6 @@
 #include "FrameWork.h"
 #include "gameplay/player/player_motion.h"
+#include "gameplay/player/player_view.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <algorithm>
@@ -21,16 +22,14 @@ namespace
 	double mouseDeltaY = 0.0;
 }
 
-int GameFrameWork::Run(const GameRunOptions& runOptions)
+int GameFrameWork::Run()
 {
-	options = runOptions;
 	if (!Init())
 	{
 		Clear();
 		return 1;
 	}
 
-	bool smokePassed = !options.smokeTest;
 	double previousTime = glfwGetTime();
 	while (!glfwWindowShouldClose(window))
 	{
@@ -45,22 +44,9 @@ int GameFrameWork::Run(const GameRunOptions& runOptions)
 		if (glfwWindowShouldClose(window))
 			break;
 		Draw();
-
-		if (options.smokeTest && smokeFrame >= scene.SmokeFrameCount())
-		{
-			smokePassed = scene.SmokePassed();
-			const char* label = "Combat smoke: ";
-			if (options.campaign) label = "Campaign smoke: ";
-			else if (options.combatMapTest) label = "Combat map smoke: ";
-			else if (options.playerViewTest) label = "External player view smoke: ";
-			else if (options.bossTest) label = "Boss combat smoke: ";
-			else if (options.droneTest) label = "Drone combat smoke: ";
-			std::cout << label << (smokePassed ? "PASS" : "FAIL") << '\n';
-			break;
-		}
 	}
 	Clear();
-	return smokePassed ? 0 : 1;
+	return 0;
 }
 
 bool GameFrameWork::Init()
@@ -71,7 +57,6 @@ bool GameFrameWork::Init()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_VISIBLE, options.smokeTest ? GLFW_FALSE : GLFW_TRUE);
 	window = glfwCreateWindow(1920, 1080, "AEGIS - OpenGL", nullptr, nullptr);
 	if (!window)
 		return false;
@@ -79,13 +64,13 @@ bool GameFrameWork::Init()
 	glewExperimental = GL_TRUE;
 	if (glewInit() != GLEW_OK)
 		return false;
-	glfwSwapInterval(options.smokeTest ? 0 : 1);
+	glfwSwapInterval(1);
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.08f, 0.11f, 0.15f, 1.0f);
 
 	camera.Init();
 	sceneAttempted = true;
-	if (!scene.Init(".", options))
+	if (!scene.Init("."))
 		return false;
 	glfwSetWindowUserPointer(window, this);
 	glfwSetKeyCallback(window, KeyCallBack);
@@ -102,20 +87,14 @@ void GameFrameWork::Update(float deltaTime)
 {
 	glfwGetFramebufferSize(window, &width, &height);
 	drawable = width > 0 && height > 0 && !glfwGetWindowAttrib(window, GLFW_ICONIFIED);
-	const bool active = drawable && mouseFocused && !paused;
-	if (toggleModeRequested)
-	{
-		scene.ToggleMode();
-		toggleModeRequested = false;
-		paused = false;
-	}
+	const bool active = drawable && mouseFocused;
 	if (resetRequested)
 	{
 		scene.Reset();
 		resetRequested = false;
 	}
 
-	const bool inputActive = active && wasActive && !restartFrameTime && !options.smokeTest;
+	const bool inputActive = active && wasActive && !restartFrameTime;
 	UpdatePlayerCamera(deltaTime, inputActive);
 	scene.SampleInput(window, inputActive);
 	SyncPlayerCamera(inputActive);
@@ -124,13 +103,7 @@ void GameFrameWork::Update(float deltaTime)
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
 		return;
 	}
-	if (options.smokeTest)
-	{
-		// 자동 검증은 장면의 테스트 시점과 고정 시간 간격을 사용한다.
-		scene.SmokeFrame(++smokeFrame);
-		scene.Update(1.0 / 60.0, (1.0 / 60.0) * scene.PreviewTimeScale());
-	}
-	else if (inputActive)
+	if (inputActive)
 	{
 		scene.Update(deltaTime, deltaTime * scene.PreviewTimeScale());
 	}
@@ -182,8 +155,6 @@ glm::vec3 GameFrameWork::CalculateCameraMovement(float deltaTime) const
 
 void GameFrameWork::SyncPlayerCamera(bool inputActive)
 {
-	if (options.smokeTest || !(options.campaign || options.combatMapTest))
-		return;
 	const bool playing = scene.PlayerControlsActive();
 	if (playing && (!cameraSynced || cameraSpawnRevision != scene.PlayerSpawnRevision() ||
 		!scene.HasExternalPlayerView()))
@@ -221,8 +192,7 @@ void GameFrameWork::Draw()
 	camera.UpdateProjection(width, height);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	const Camera* playerCamera = nullptr;
-	if (!options.smokeTest && (options.campaign || options.combatMapTest) &&
-		cameraSynced && scene.HasExternalPlayerView() && !scene.AnalysisActive())
+	if (cameraSynced && scene.HasExternalPlayerView() && !scene.AnalysisActive())
 	{
 		playerCamera = &camera;
 	}
@@ -233,14 +203,11 @@ void GameFrameWork::Draw()
 
 void GameFrameWork::UpdateWindowTitle()
 {
-	std::string title = scene.StatusTitle(paused);
-	if (!options.smokeTest && (options.campaign || options.combatMapTest))
-	{
-		title += " | Player: " + std::to_string(camera.camPos.x) + "," + std::to_string(camera.camPos.y) +
-			"," + std::to_string(camera.camPos.z) + " | Look: " + std::to_string(camera.rotX) + "," +
-			std::to_string(camera.rotY) + " | Travel: " + std::to_string(actualTravel) +
-			" | MoveScale: " + std::to_string(movementTimeScale);
-	}
+	std::string title = scene.StatusTitle();
+	title += " | Player: " + std::to_string(camera.camPos.x) + "," + std::to_string(camera.camPos.y) +
+		"," + std::to_string(camera.camPos.z) + " | Look: " + std::to_string(camera.rotX) + "," +
+		std::to_string(camera.rotY) + " | Travel: " + std::to_string(actualTravel) +
+		" | MoveScale: " + std::to_string(movementTimeScale);
 	glfwSetWindowTitle(window, title.c_str());
 }
 
@@ -320,25 +287,18 @@ void GameFrameWork::KeyCallBack(GLFWwindow* window, int key, int, int action, in
 	{
 		if (!game.scene.CloseAnalysis())
 		{
-			if (game.scene.IsCampaign()) game.scene.TogglePause();
-			else glfwSetWindowShouldClose(window, GLFW_TRUE);
+			game.scene.TogglePause();
 		}
 		game.restartFrameTime = true;
 	}
 	else if (key == GLFW_KEY_SPACE && !game.scene.AnalysisActive())
 	{
-		if (game.scene.IsCampaign()) game.scene.TogglePause();
-		else game.paused = !game.paused;
+		game.scene.TogglePause();
 		game.restartFrameTime = true;
 	}
 	else if (key == GLFW_KEY_R)
 	{
 		game.resetRequested = true;
-		game.restartFrameTime = true;
-	}
-	else if (key == GLFW_KEY_F2 && !game.scene.IsCampaign())
-	{
-		game.toggleModeRequested = true;
 		game.restartFrameTime = true;
 	}
 }

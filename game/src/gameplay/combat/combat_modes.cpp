@@ -1,0 +1,219 @@
+// 전투 구역별 배치, 시점과 이동 충돌 범위를 설정한다.
+#include "combat_scene.h"
+#include "combat_map/corridor_layout.generated.h"
+#include "combat_map/terminal_layout.generated.h"
+#include <limits>
+#include <utility>
+
+namespace aegis
+{
+const combat::CombatEncounter* CombatScene::ActiveEncounter() const
+{
+    if (coreMode)
+    {
+        return &core;
+    }
+    if (bossMode)
+    {
+        return &boss;
+    }
+    return &encounter;
+}
+
+combat::CombatEncounter* CombatScene::ActiveEncounter()
+{
+    return const_cast<combat::CombatEncounter*>(std::as_const(*this).ActiveEncounter());
+}
+
+combat::EncounterResult CombatScene::BattleResult() const
+{
+    return ActiveEncounter()->Result();
+}
+
+void CombatScene::SetCorridorMode(bool enabled)
+{
+    coreMode = false;
+    bossMode = false;
+    combatMapMode = false;
+    maintenanceMode = false;
+    encounter.SetDroneScale(1);
+    encounter.SetSupportTurret(false);
+    encounter.SetDroneSpawn({-0.65f, 1.8f, -10}, 0, 0);
+    encounter.SetSupply(combat::WeaponInventory::SupplyPosition());
+    corridorMode = enabled;
+    std::vector<combat::Collider> walls;
+    if (enabled)
+    {
+        walls.assign(corridor_asset::walls.begin(), corridor_asset::walls.end());
+        walls.push_back(terminal_asset::collider);
+    }
+    encounter.SetEnvironment(walls);
+    encounter.SetExitDoors(enabled ? 10010 : 0, enabled ? 10011 : 0,
+                           enabled ? corridor_asset::doorTravel : 0);
+    encounter.SetDroneMode(enabled);
+    Reset();
+}
+
+void CombatScene::SetCombatMapMode(bool enabled)
+{
+    if (!enabled)
+    {
+        SetCorridorMode(true);
+        return;
+    }
+    coreMode = false;
+    maintenanceMode = false;
+    encounter.SetDroneScale(1);
+    combatMapMode = true;
+    corridorMode = true;
+    bossMode = false;
+    std::vector<combat::Collider> walls(combat_map_asset::walls.begin(), combat_map_asset::walls.end());
+    walls.push_back(TerminalCollider());
+    encounter.SetEnvironment(walls);
+    encounter.SetExitDoors(0, 0, 0);
+    encounter.SetDroneSpawn(combat_map_asset::droneSpawn, glm::radians(combat_map_asset::droneYawDegrees),
+                            combat_map_asset::droneSpawn.x);
+    encounter.SetSupply(combat_map_asset::supply);
+    encounter.SetDroneMode(true);
+    encounter.SetSupportTurret(true);
+    Reset();
+}
+
+// 친구가 배치한 두 번째 드론으로 정비 복도 전투를 구성한다.
+void CombatScene::SetMaintenanceMode()
+{
+    SetCombatMapMode(true);
+    maintenanceMode = true;
+    encounter.SetSupportTurret(false);
+
+    std::vector<combat::Collider> walls(combat_map_asset::maintenanceWalls.begin(),
+                                        combat_map_asset::maintenanceWalls.end());
+    walls.push_back(TerminalCollider());
+    encounter.SetEnvironment(walls);
+
+    const auto& placement = combat_map_asset::friendDrones[1];
+    encounter.SetDroneSpawn(placement.position, glm::radians(placement.yawDegrees), placement.position.x);
+    encounter.SetDroneScale(placement.scale);
+    encounter.SetSupply(SupplyPosition());
+    Reset();
+}
+
+void CombatScene::SetDroneMode(bool enabled)
+{
+    encounter.SetDroneMode(enabled);
+    Reset();
+}
+
+void CombatScene::SetBossMode(bool enabled)
+{
+    coreMode = false;
+    bossMode = enabled;
+    if (enabled)
+    {
+        combatMapMode = false;
+        maintenanceMode = false;
+    }
+    Reset();
+}
+
+void CombatScene::SetCoreMode()
+{
+    bossMode = maintenanceMode = false;
+    coreMode = combatMapMode = corridorMode = true;
+    core.SetEnvironment(combat_map_asset::playerWalls, combat_map_asset::playerWalls);
+    Reset();
+}
+
+glm::vec3 CombatScene::CameraRoot() const
+{
+    if (coreMode) return combat::CoreEncounter::PlayerRoot();
+    if (bossMode)
+    {
+        if (bossCovered)
+        {
+            return combat::BossEncounter::CoverRoot();
+        }
+        return combat::BossEncounter::FiringRoot();
+    }
+    if (maintenanceMode)
+    {
+        return combat_map_asset::maintenanceStart;
+    }
+    if (combatMapMode)
+    {
+        return combat_map_asset::playerStart;
+    }
+    return glm::vec3(0);
+}
+
+bool CombatScene::SetPlayerView(const PlayerView& view)
+{
+    if (analysis.Active() || DeathStarted())
+    {
+        return false;
+    }
+    if (!externalView.Set(view))
+    {
+        return false;
+    }
+    lookHeld = false;
+    return true;
+}
+
+PlayerView CombatScene::CurrentPlayerView() const
+{
+    const PlayerView fallback{camera.EyePosition(), camera.ViewDirection(), {0, 1, 0}, 60};
+    return externalView.Selected(fallback);
+}
+
+void CombatScene::ToggleBossCover()
+{
+    bossCovered = !bossCovered;
+    const auto target = bossCovered ? boss_asset::supplyInteraction : boss.CoreCenter();
+    const auto d = glm::normalize(target - (CameraRoot() + glm::vec3(0, 1.65f, 0)));
+    yaw = glm::degrees(std::atan2(-d.x, -d.z));
+    pitch = glm::degrees(std::asin(d.y));
+    camera.SetPose(CameraRoot(), yaw, pitch);
+    lookHeld = false;
+}
+
+std::vector<combat::Collider> CombatScene::PlayerObstacles() const
+{
+    if (coreMode) return core.PlayerObstacles();
+    if (bossMode)
+    {
+        std::vector<combat::Collider> walls(boss_asset::walls.begin(), boss_asset::walls.end());
+        glm::vec3 low(std::numeric_limits<float>::max()), high(std::numeric_limits<float>::lowest());
+        for (int i = 0; i < boss_asset::partCount; ++i)
+        {
+            const auto& part = boss_asset::parts[i];
+            for (int corner = 0; corner < 8; ++corner)
+            {
+                const auto point =
+                    glm::vec3(boss.Pose().parts[i] * glm::vec4(corner & 1 ? part.high.x : part.low.x,
+                                                               corner & 2 ? part.high.y : part.low.y,
+                                                               corner & 4 ? part.high.z : part.low.z, 1));
+                low = glm::min(low, point);
+                high = glm::max(high, point);
+            }
+        }
+        walls.push_back({29000, combat::HitKind::Armor, low, high});
+        return walls;
+    }
+    if (combatMapMode)
+    {
+        std::vector<combat::Collider> walls(combat_map_asset::playerWalls.begin(),
+                                            combat_map_asset::playerWalls.end());
+        walls.push_back(TerminalCollider());
+        if (encounter.HasSupportTurret() && encounter.SupportTurret().Alive())
+        {
+            auto body = encounter.SupportTurret().Body();
+            body.kind = combat::HitKind::Armor;
+            walls.push_back(body);
+        }
+        return walls;
+    }
+    return encounter.Colliders();
+}
+
+} // namespace aegis

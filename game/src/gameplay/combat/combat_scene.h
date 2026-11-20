@@ -1,7 +1,6 @@
-// 전투 장면: 입력은 combat_input.cpp, 그리기는 combat_render.cpp, 검사는 combat_smoke_tests.cpp.
+// 전투 장면의 입력, 전투 갱신과 화면 표시를 연결한다.
 #pragma once
 
-#include "combat_range.h"
 #include "gameplay/player/player_camera.h"
 #include "gameplay/player/player_view.h"
 #include "gameplay/turret/turret_encounter.h"
@@ -54,24 +53,13 @@ public:
     }
 
     PlayerView CurrentPlayerView() const;
-    void PlayerViewSmokeFrame(int frame);
-    bool PlayerViewSmokePassed() const;
     void SampleInput(GLFWwindow* window, bool active);
     void Update(double realDeltaTime, double gameDeltaTime);
     void Draw(int width, int height,
               const std::function<void(const glm::mat4&, const glm::vec3&)>& drawEnvironment = {},
               bool showHud = true, const Camera* playerCamera = nullptr) const;
     void Clear();
-    void SetSmokeFrame(int frame);
-    bool SmokePassed() const;
-    bool SaveFrame(const std::filesystem::path& path, int width, int height) const;
 
-    const combat::CombatRange& Range() const
-    {
-        return range;
-    }
-
-    void SetTurretMode(bool enabled);
     void SetCorridorMode(bool enabled);
     void SetDroneMode(bool enabled);
     void SetCombatMapMode(bool enabled);
@@ -88,22 +76,8 @@ public:
     bool IsCoreMode() const { return coreMode; }
     const combat::CoreEncounter& CoreState() const { return core; }
 
-    void SetDebugControls(bool enabled)
-    {
-        debugControls = enabled;
-    }
+    combat::EncounterResult BattleResult() const;
 
-    combat::EncounterResult BattleResult() const
-    {
-        if (coreMode) return core.Result();
-        if (bossMode)
-        {
-            return boss.Result();
-        }
-        return encounter.Result();
-    }
-
-    void CampaignSmokeFrame(int frame);
     void PopulateHud(UiPage& page) const;
 
     bool DeathStarted() const
@@ -128,19 +102,7 @@ public:
 
     double PreviewTimeScale() const
     {
-        if (movementTimeAvailable)
-        {
-            if (manualNormalTime)
-            {
-                return 1.0;
-            }
-            return movementScale;
-        }
-        if (slowPreview)
-        {
-            return 0.05;
-        }
-        return 1.0;
+        return movementTimeAvailable ? movementScale : 1.0;
     }
 
     void SetMovementTimeScale(double scale)
@@ -173,7 +135,7 @@ public:
 
     bool IsDroneMode() const
     {
-        return !coreMode && !bossMode && turretMode && encounter.IsDroneMode();
+        return !coreMode && !bossMode && encounter.IsDroneMode();
     }
 
     bool AnalysisActive() const
@@ -193,7 +155,7 @@ public:
 
     bool CanAnalyze() const
     {
-        return !coreMode && !bossMode && turretMode && encounter.CanAnalyze();
+        return !coreMode && !bossMode && encounter.CanAnalyze();
     }
 
     float DoorProgress() const
@@ -206,35 +168,11 @@ public:
         return corridorMode;
     }
 
-    bool IsTurretMode() const
-    {
-        return coreMode || bossMode || turretMode;
-    }
-
-    int SmokeFrameCount() const
-    {
-        if (combatMapMode)
-        {
-            return 1800;
-        }
-        if (bossMode)
-        {
-            return 2400;
-        }
-        if (IsDroneMode())
-        {
-            return 1320;
-        }
-        if (turretMode)
-        {
-            return 780;
-        }
-        return 300;
-    }
-
     std::string StatusTitle(bool paused) const;
 
 private:
+    const combat::CombatEncounter* ActiveEncounter() const;
+    combat::CombatEncounter* ActiveEncounter();
     int PlayerHealth() const;
     void UpdateBattle(double realDeltaTime, double gameDeltaTime);
     void UpdateVisualEffects(double realDeltaTime, double gameDeltaTime);
@@ -277,11 +215,8 @@ private:
     void DrawBox(const glm::mat4& viewProjection, const glm::vec3& minimum, const glm::vec3& maximum,
                  const glm::vec3& color) const;
     combat::CombatTime time;
-    bool slowPreview{};
-    bool previewHeld{};
     bool forceNormal{};
     bool movementTimeAvailable{};
-    bool manualNormalTime{};
     double movementScale{0.05};
     combat::CombatFeedback feedback;
     combat::DestructionEffects destruction;
@@ -294,35 +229,15 @@ private:
     CoreView coreView;
     SingleTurretView singleTurretView;
     bool coreMode{};
-    bool debugControls{true};
     bool maintenanceMode{};
     bool combatMapMode{};
-    bool smokeMapSlow{};
-    bool smokeMapCoverBlocked{};
-    bool smokeMapDeath{};
-    bool smokeMapBoth{};
-    bool smokeMapTurretShot{};
-    bool smokeMapLocked{};
     bool bossMode{};
     bool bossCovered{};
-    bool bossToggleHeld{};
-    bool smokeBossFailureSeen{};
     combat::AnalysisSession analysis;
     std::vector<DrawMesh> terminalMeshes;
-    combat::CombatRange range;
     combat::TurretEncounter encounter;
     PlayerCamera camera;
     PlayerViewInput externalView;
-    bool smokeViewShot{};
-    bool smokeViewSupply{};
-    bool smokeViewPickup{};
-    bool smokeViewAnalysis{};
-    bool smokeViewRestored{};
-    bool smokeViewReset{};
-    bool smokeViewAim{};
-    bool smokeViewDodge{};
-    bool smokeViewDone{};
-    PlayerView smokeViewSnapshot;
     WeaponView weapon;
     Drone drone;
     TurretView turretView;
@@ -336,21 +251,9 @@ private:
     bool mouseHeld{};
     bool coverHeld{};
     bool lookHeld{};
-    bool turretHeld{};
-    bool droneToggleHeld{};
-    bool smokePatrolSeen{};
-    bool smokeWarningSeen{};
-    bool smokeShotSeen{};
-    bool smokeSecuringSeen{};
-    bool smokeAnalysisSeen{};
-    bool smokeAnalysisReturned{};
-    bool smokeWorldFrozen{};
-    float smokeDoorSnapshot{};
     bool dropHeld{};
     bool interactHeld{};
-    bool turretMode{};
     bool corridorMode{};
-    bool smokeFailureSeen{};
     double lastX{};
     double lastY{};
     float yaw{};

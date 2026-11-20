@@ -1,172 +1,76 @@
 #pragma once
-#include "combat_map/CombatMap.h"
-#include "game_options.h"
 
-#include "gameplay/player/player_camera.h"
-#include "gameplay/combat/combat_scene.h"
 #include "campaign_flow.h"
-#include "gameplay/ui/korean_ui.h"
-
-#include <array>
-#include <filesystem>
 #include <cstdint>
+#include <filesystem>
+#include <memory>
+#include <string>
+#include <vector>
+
+struct Camera;
+struct GLFWwindow;
 
 namespace aegis
 {
+class CampaignEnvironment;
+class CampaignMenu;
+class CombatScene;
+struct PlayerView;
+struct UiPage;
+enum class UiAction;
+namespace combat
+{
+class AnalysisSession;
+struct Collider;
+}
 
+// 캠페인 진행과 환경, 메뉴, 전투 장면을 연결한다.
 class GameScene
 {
 public:
-    bool Init(const std::filesystem::path& projectDirectory, const GameRunOptions& options = {});
+    GameScene();
+    ~GameScene();
+    GameScene(const GameScene&) = delete;
+    GameScene& operator=(const GameScene&) = delete;
+
+    bool Init(const std::filesystem::path& projectDirectory);
     void Update(double realDeltaTime, double baseGameDeltaTime);
-
-    bool SetPlayerView(const PlayerView& view)
-    {
-        if ((campaignMode && !flow.WorldRuns()) || AnalysisActive())
-        {
-            return false;
-        }
-        return combatScene.SetPlayerView(view);
-    }
-
-    void ClearPlayerView()
-    {
-        combatScene.ClearPlayerView();
-    }
-
-    bool PlayerControlsActive() const
-    {
-        return (!campaignMode || flow.WorldRuns()) && !AnalysisActive() && !combatScene.DeathStarted();
-    }
-
-    std::uint64_t PlayerSpawnRevision() const
-    {
-        return playerSpawnRevision;
-    }
-
-    bool HasExternalPlayerView() const
-    {
-        return combatScene.HasExternalPlayerView();
-    }
-
-    PlayerView CurrentPlayerView() const
-    {
-        return combatScene.CurrentPlayerView();
-    }
-
-    void SetMovementTimeScale(double scale)
-    {
-        combatScene.SetMovementTimeScale(scale);
-    }
-
-    std::vector<combat::Collider> PlayerObstacles() const
-    {
-        return combatScene.PlayerObstacles();
-    }
-
-    double PreviewTimeScale() const
-    {
-        return combatScene.PreviewTimeScale();
-    }
-
     void Draw(int width, int height, const Camera* playerCamera = nullptr) const;
+
+    void SampleInput(GLFWwindow* window, bool active);
     void Reset();
     void Clear();
-    void ToggleMode();
-    void SampleInput(GLFWwindow* window, bool active);
-
-    bool AnalysisActive() const
-    {
-        return combatScene.AnalysisActive();
-    }
-
-    bool CloseAnalysis()
-    {
-        return combatScene.CloseAnalysis();
-    }
-
-    const combat::AnalysisSession& AnalysisState() const
-    {
-        return combatScene.AnalysisState();
-    }
-
-    bool IsCampaign() const
-    {
-        return campaignMode;
-    }
-
     bool TogglePause();
+    bool QuitRequested() const { return quitRequested; }
+    std::string StatusTitle() const;
 
-    bool QuitRequested() const
-    {
-        return quitRequested;
-    }
-
-    std::string StatusTitle(bool paused) const;
-
-    int SmokeFrameCount() const
-    {
-        return playerViewTestMode ? 480 : campaignMode ? 3000 : combatScene.SmokeFrameCount();
-    }
-
-    bool SmokePassed() const;
-
-    bool IsCombatTest() const
-    {
-        return true;
-    }
-
-    const CombatScene& Combat() const
-    {
-        return combatScene;
-    }
-
-    void SmokeFrame(int frame);
+    bool SetPlayerView(const PlayerView& view);
+    void ClearPlayerView();
+    bool PlayerControlsActive() const;
+    std::uint64_t PlayerSpawnRevision() const { return playerSpawnRevision; }
+    bool HasExternalPlayerView() const;
+    PlayerView CurrentPlayerView() const;
+    std::vector<combat::Collider> PlayerObstacles() const;
+    void SetMovementTimeScale(double scale);
+    double PreviewTimeScale() const;
+    bool AnalysisActive() const;
+    bool CloseAnalysis();
+    const combat::AnalysisSession& AnalysisState() const;
+    const CombatScene& Combat() const;
 
 private:
-    struct CorridorObject
-    {
-        glm::mat4 model{1.0f};
-        std::vector<DrawMesh> meshes;
-    };
-
-    bool InitEntry(const std::filesystem::path& root);
-    void DrawEntry(int width, int height) const;
-    void DrawBattle(int width, int height, const Camera* playerCamera) const;
     void LoadStage();
+    bool ReadyToAdvance() const;
     void ApplyAction(UiAction action);
     UiPage Page() const;
-    bool ReadyToAdvance() const;
-    bool InitCorridor(const std::filesystem::path& projectDirectory);
+    void DrawBattle(int width, int height, const Camera* playerCamera) const;
 
-    std::uint64_t playerSpawnRevision{};
     CampaignFlow flow;
-    bool playerViewTestMode{};
-    bool showCredits{};
-    bool campaignMode{};
-    bool quitRequested{};
-    bool mouseHeld{};
-    bool enterHeld{};
-    bool escapeHeld{};
-    float mouseX{};
-    float mouseY{};
-    int stageSmokeFrame{};
-    int failedSmokeFrame{};
-    int victorySmokeFrame{};
-    int pausedSmokeFrame{};
-    bool smokeRetried{};
-    bool smokePaused{};
-    bool smokeVictory{};
-    bool smokeRestarted{};
-    bool smokeDone{};
-    mutable KoreanUi ui;
-    std::vector<DrawMesh> entryRoom, entryTerminal;
-    CombatMap combatMap;
-    MeshRenderer renderer;
-    std::array<CorridorObject, 5> corridor;
-    PlayerCamera camera;
-    CombatScene combatScene;
-    bool legacyTest{};
-};
+    std::unique_ptr<CampaignEnvironment> environment;
+    std::unique_ptr<CampaignMenu> menu;
+    std::unique_ptr<CombatScene> combatScene;
+    std::uint64_t playerSpawnRevision{};
 
+    bool quitRequested{};
+};
 } // namespace aegis

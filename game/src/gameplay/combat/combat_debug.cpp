@@ -33,7 +33,7 @@ std::string CombatScene::StatusTitle(bool paused) const
                " | Weapon: " + (Inventory().Armed() ? "READY" : "EMPTY") +
                " | Supplies: " + std::to_string(Inventory().Supplies()) +
                " | Cover: " + (bossCovered ? "ON" : "OFF") +
-               " | B test position / E refill / R reset / F4 corridor";
+               " | E refill / R reset / Esc menu";
     }
     if (analysis.Active())
     {
@@ -45,15 +45,6 @@ std::string CombatScene::StatusTitle(bool paused) const
                                      " | Supplies: " + std::to_string(Inventory().Supplies()) +
                                      " | Pickups: " + std::to_string(Inventory().Pickups()) +
                                      " | Drops: " + std::to_string(Inventory().Drops().size());
-    if (!turretMode)
-    {
-        return std::string("AEGIS RANGE | ") + (paused ? "PAUSED | " : "") +
-               "Targets: " + std::to_string(range.RemainingTargets()) +
-               "/3 | Shots: " + std::to_string(range.Shots()) +
-               " | Blocked: " + std::to_string(range.BlockedShots()) +
-               " | Cover: " + (range.CoverEnabled() ? "ON" : "OFF") + weaponStatus +
-               " | G drop / E pickup or supply / T turret / R reset";
-    }
     const char* state = encounter.Result() == combat::EncounterResult::Failed     ? "FAILED"
                         : encounter.Result() == combat::EncounterResult::Cleared  ? "CLEARED"
                         : encounter.Result() == combat::EncounterResult::Securing ? "SECURING"
@@ -82,8 +73,7 @@ std::string CombatScene::StatusTitle(bool paused) const
            " | Entries: " + std::to_string(analysis.Entries()) +
            " | Exits: " + std::to_string(analysis.Exits()) +
            " | Door: " + std::to_string(static_cast<int>(DoorProgress() * 100)) + weaponStatus +
-           (corridorMode ? " | F3 enemy / G drop / E use / R retry / F2 range"
-                         : " | G drop / E pickup or supply / R retry / T range");
+           " | G drop / E use / R retry";
 }
 
 } // namespace aegis

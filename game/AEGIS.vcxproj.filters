@@ -106,6 +106,15 @@
     <Filter Include="Resources"><UniqueIdentifier>{6bb8f126-f468-4d64-9ea1-839128d4dc4f}</UniqueIdentifier></Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\gameplay\campaign\campaign_environment.h"><Filter>Gameplay\Campaign\Environment</Filter></ClInclude>
+    <ClCompile Include="src\gameplay\campaign\campaign_environment.cpp"><Filter>Gameplay\Campaign\Environment</Filter></ClCompile>
+    <ClInclude Include="src\gameplay\campaign\campaign_menu.h"><Filter>Gameplay\Campaign\UI</Filter></ClInclude>
+    <ClCompile Include="src\gameplay\campaign\campaign_menu.cpp"><Filter>Gameplay\Campaign\UI</Filter></ClCompile>
+    <ClCompile Include="src\gameplay\campaign\game_scene_player.cpp"><Filter>Gameplay\Campaign\Scene</Filter></ClCompile>
+    <ClCompile Include="src\gameplay\campaign\game_scene_render.cpp"><Filter>Gameplay\Campaign\Scene</Filter></ClCompile>
+    <ClCompile Include="src\gameplay\campaign\game_scene_ui.cpp"><Filter>Gameplay\Campaign\Scene</Filter></ClCompile>
+    <ClCompile Include="src\gameplay\combat\combat_interaction.cpp"><Filter>Gameplay\Combat</Filter></ClCompile>
+    <ClCompile Include="src\gameplay\combat\combat_modes.cpp"><Filter>Gameplay\Combat</Filter></ClCompile>
     <ClCompile Include="src\gameplay\ui\analysis_session.cpp"><Filter>Gameplay\UI</Filter></ClCompile>
     <ClCompile Include="src\gameplay\rendering\atlas_model.cpp"><Filter>Gameplay\Rendering</Filter></ClCompile>
     <ClCompile Include="src\gameplay\boss\boss_encounter.cpp"><Filter>Gameplay\Boss</Filter></ClCompile>
@@ -113,6 +122,8 @@
     <ClCompile Include="src\gameplay\boss\boss_view.cpp"><Filter>Gameplay\Boss</Filter></ClCompile>
     <ClCompile Include="src\gameplay\campaign\campaign_flow.cpp"><Filter>Gameplay\Campaign\Flow</Filter></ClCompile>
     <ClCompile Include="src\gameplay\combat\combat.cpp"><Filter>Gameplay\Combat</Filter></ClCompile>
+    <ClCompile Include="src\gameplay\combat\combat_encounter.cpp"><Filter>Gameplay\Combat</Filter></ClCompile>
+    <ClInclude Include="src\gameplay\combat\combat_encounter.h"><Filter>Gameplay\Combat</Filter></ClInclude>
     <ClCompile Include="src\gameplay\combat\combat_debug.cpp"><Filter>Gameplay\Combat</Filter></ClCompile>
     <ClCompile Include="src\gameplay\combat\combat_hud.cpp"><Filter>Gameplay\Combat</Filter></ClCompile>
     <ClCompile Include="src\gameplay\combat\combat_input.cpp"><Filter>Gameplay\Combat</Filter></ClCompile>
@@ -127,6 +138,7 @@
     <ClCompile Include="src\gameplay\campaign\game_scene.cpp"><Filter>Gameplay\Campaign\Scene</Filter></ClCompile>
     <ClCompile Include="src\gameplay\ui\korean_ui.cpp"><Filter>Gameplay\UI</Filter></ClCompile>
     <ClCompile Include="src\gameplay\rendering\mesh_renderer.cpp"><Filter>Gameplay\Rendering</Filter></ClCompile>
+    <ClCompile Include="src\gameplay\rendering\primitive_view.cpp"><Filter>Gameplay\Rendering</Filter></ClCompile>
     <ClCompile Include="src\loader\model_binary.cpp"><Filter>Loader</Filter></ClCompile>
     <ClCompile Include="src\gameplay\player\player_camera.cpp"><Filter>Gameplay\Player</Filter></ClCompile>
     <ClCompile Include="src\gameplay\player\player_motion.cpp"><Filter>Gameplay\Player</Filter></ClCompile>
@@ -160,6 +172,7 @@
     <ClInclude Include="src\gameplay\campaign\game_scene.h"><Filter>Gameplay\Campaign\Scene</Filter></ClInclude>
     <ClInclude Include="src\gameplay\ui\korean_ui.h"><Filter>Gameplay\UI</Filter></ClInclude>
     <ClInclude Include="src\gameplay\rendering\mesh_renderer.h"><Filter>Gameplay\Rendering</Filter></ClInclude>
+    <ClInclude Include="src\gameplay\rendering\primitive_view.h"><Filter>Gameplay\Rendering</Filter></ClInclude>
     <ClInclude Include="src\loader\model_binary.h"><Filter>Loader</Filter></ClInclude>
     <ClInclude Include="src\gameplay\player\player_camera.h"><Filter>Gameplay\Player</Filter></ClInclude>
     <ClInclude Include="src\gameplay\player\player_motion.h"><Filter>Gameplay\Player</Filter></ClInclude>
@@ -185,17 +198,5 @@
     <None Include="shaders\weapon.vert"><Filter>Shaders</Filter></None>
     <None Include="shaders\weapon.frag"><Filter>Shaders</Filter></None>
     <None Include="runtime_assets.props"><Filter>Resources</Filter></None>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="src\gameplay\campaign\game_options.h"><Filter>Gameplay\Campaign\Flow</Filter></ClInclude>
-    <ClInclude Include="src\gameplay\combat\combat_range.h"><Filter>Gameplay\Combat</Filter></ClInclude>
-    <ClCompile Include="src\gameplay\combat\combat_range.cpp"><Filter>Gameplay\Combat</Filter></ClCompile>
-    <ClCompile Include="src\gameplay\combat\combat_smoke_tests.cpp"><Filter>Gameplay\Combat</Filter></ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="src\gameplay\combat\combat_encounter.cpp"><Filter>Gameplay\Combat</Filter></ClCompile>
-    <ClInclude Include="src\gameplay\combat\combat_encounter.h"><Filter>Gameplay\Combat</Filter></ClInclude>
-    <ClCompile Include="src\gameplay\rendering\primitive_view.cpp"><Filter>Gameplay\Rendering</Filter></ClCompile>
-    <ClInclude Include="src\gameplay\rendering\primitive_view.h"><Filter>Gameplay\Rendering</Filter></ClInclude>
   </ItemGroup>
 </Project>

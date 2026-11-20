@@ -148,9 +148,7 @@ void CombatScene::DrawHud(int width, int height) const
     }
     if (corridorMode)
     {
-        Label(!debugControls  ? "CORRIDOR COMBAT"
-              : IsDroneMode() ? "DRONE COMBAT / F3 TURRET / F2 RANGE"
-                              : "CORRIDOR COMBAT / F3 DRONE / F2 RANGE",
+        Label("CORRIDOR COMBAT",
               24, height - 135, 2, {0.3f, 0.9f, 1});
     }
     if (CanAnalyze())
@@ -165,12 +163,6 @@ void CombatScene::DrawHud(int width, int height) const
     {
         const std::string text = hint == combat::WeaponInteraction::Supply ? "E RESUPPLY" : "E PICK UP";
         Label(text, (width - static_cast<int>(text.size()) * 12) / 2, height / 2 - 50, 2, {0.3f, 1, 0.8f});
-    }
-    if (!turretMode)
-    {
-        Label("SHOOTING RANGE", 24, height - 40, scale, {0.2f, 1, 0.7f});
-        Label("LMB FIRE  RMB AIM  E USE  G DROP  B COVER  T TURRET  R RESET", 24, 24, 2, {0.8f, 0.9f, 1});
-        return;
     }
     const auto result = encounter.Result();
     const glm::vec3 hpColor =
@@ -234,9 +226,7 @@ void CombatScene::DrawHud(int width, int height) const
         glScissor(width - 6, 0, 6, height);
         glClear(GL_COLOR_BUFFER_BIT);
     }
-    Label(!debugControls ? "LMB FIRE  RMB AIM  E USE  G DROP  R RESET  ESC MENU"
-          : corridorMode ? "LMB FIRE  RMB AIM  E USE  G DROP  R RESET  F2 RANGE"
-                         : "LMB FIRE  RMB AIM  E USE  G DROP  B COVER  T RANGE  R RESET",
+    Label("LMB FIRE  RMB AIM  E USE  G DROP  R RESET  ESC MENU",
           24, 24, 2, {0.8f, 0.9f, 1});
 }
 
@@ -282,8 +272,7 @@ void CombatScene::DrawBossHud(int width, int height) const
         glScissor(0, height - 6, width, 6);
         glClear(GL_COLOR_BUFFER_BIT);
     }
-    Label(debugControls ? "LMB FIRE  RMB AIM  B COVER  E USE  R RESET  F4 CORRIDOR"
-                        : "LMB FIRE  RMB AIM  B COVER  E USE  R RESET  ESC MENU",
+    Label("LMB FIRE  RMB AIM  B COVER  E USE  R RESET  ESC MENU",
           24, 24, 2, {0.8f, 0.9f, 1});
 }
 
@@ -294,30 +283,23 @@ std::wstring CombatScene::TimeStatus() const
         return L"전투 정지 · 재시작하면 시간과 효과가 초기화됩니다.";
     }
     const auto current = std::to_wstring(static_cast<int>(time.Scale() * 100 + 0.5));
-    if (movementTimeAvailable)
-    {
-        return std::wstring(manualNormalTime ? L"시간: 1배 시험" : L"시간: 실제 이동에 연동") +
-               L"  /  기본 " + std::to_wstring(static_cast<int>(PreviewTimeScale() * 100 + 0.5)) +
-               L"%  /  현재 " + current +
-               L"%  /  Shift: 정상 진행  /  사격 후 0.25초 정상 진행  /  F5: 자동·1배 전환";
-    }
-    return std::wstring(L"수동 시간 시험 · F5: ") + (slowPreview ? L"0.05배" : L"1배") + L"  /  현재 " +
-           current + L"%  /  Shift: 정상 진행  /  사격 후 0.25초 정상 진행 · 이동 연동 전";
+    return std::wstring(L"시간: 실제 이동에 연동") +
+           L"  /  기본 " + std::to_wstring(static_cast<int>(PreviewTimeScale() * 100 + 0.5)) +
+           L"%  /  현재 " + current +
+           L"%  /  Shift: 정상 진행  /  사격 후 0.25초 정상 진행";
 }
 
 std::string CombatScene::TimeDebug() const
 {
     return std::string(" | TimeBase: ") +
-           (movementTimeAvailable ? std::to_string(PreviewTimeScale())
-            : slowPreview         ? "0.05"
-                                  : "1.00") +
+           std::to_string(PreviewTimeScale()) +
            " | TimeScale: " + std::to_string(DeathStarted() ? 0.0 : time.Scale()) +
            " | ShotWindow: " + std::to_string(time.ShotRemaining()) + " | DeathFX: " +
            (DeathPlaying()   ? "PLAYING"
             : DeathStarted() ? "DONE"
                              : "OFF") +
            " | Debris: " + std::to_string(destruction.Bursts()) +
-           " | TimeMode: " + (movementTimeAvailable ? manualNormalTime ? "NORMAL" : "AUTO" : "PREVIEW");
+           " | TimeMode: AUTO";
 }
 
 void CombatScene::PopulateHud(UiPage& page) const

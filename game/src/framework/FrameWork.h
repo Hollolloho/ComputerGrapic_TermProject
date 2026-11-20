@@ -2,26 +2,22 @@
 
 #include "camera/Camera.h"
 #include "gameplay/campaign/game_scene.h"
-#include "gameplay/campaign/game_options.h"
 
 struct GLFWwindow;
 
 class GameFrameWork
 {
 public:
-	int Run(const GameRunOptions& runOptions = {});
+	int Run();
 
 private:
 	Camera camera;
 	aegis::GameScene scene;
-	GameRunOptions options;
 
 	GLFWwindow* window = nullptr;
 	bool glfwReady = false;
 	bool sceneAttempted = false;
-	bool paused = false;
 	bool resetRequested = false;
-	bool toggleModeRequested = false;
 	bool restartFrameTime = true;
 	bool wasActive = false;
 	bool drawable = false;
@@ -32,7 +28,6 @@ private:
 	float actualTravel = 0.f;
 	int width = 1920;
 	int height = 1080;
-	int smokeFrame = 0;
 	
 	bool Init();
 	void Update(float deltaTime);
