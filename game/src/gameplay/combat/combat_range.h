@@ -8,12 +8,6 @@
 namespace aegis::combat
 {
 
-struct Flight
-{
-    Projectile projectile;
-    float age{};
-};
-
 // Small deterministic firing range, independent of OpenGL/input/camera.
 class CombatRange
 {

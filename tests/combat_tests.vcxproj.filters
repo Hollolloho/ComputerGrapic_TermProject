@@ -36,4 +36,8 @@
     <ClCompile Include="..\game\src\gameplay\turret\fixed_turret.cpp"><Filter>Gameplay</Filter></ClCompile>
     <ClCompile Include="..\game\src\gameplay\effects\destruction_effects.cpp"><Filter>Gameplay</Filter></ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\game\src\gameplay\combat\combat_encounter.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClInclude Include="..\game\src\gameplay\combat\combat_encounter.h"><Filter>Gameplay</Filter></ClInclude>
+  </ItemGroup>
 </Project>

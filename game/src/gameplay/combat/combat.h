@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <optional>
 #include <span>
+#include <vector>
 #include <glm/vec3.hpp>
 
 namespace aegis::combat
@@ -45,6 +46,15 @@ struct Projectile
     ObjectId sourceWeaponId{};
     bool active{true};
 };
+
+struct Flight
+{
+    Projectile projectile;
+    float age{};
+};
+
+bool IsFinite(const glm::vec3& value);
+void RemoveExpiredFlights(std::vector<Flight>& flights);
 
 // Rejects non-finite inputs, zero direction and non-positive speed.
 std::optional<Projectile> MakeProjectile(const glm::vec3& origin, const glm::vec3& direction, float speed,

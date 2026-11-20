@@ -192,4 +192,10 @@
     <ClCompile Include="src\gameplay\combat\combat_range.cpp"><Filter>Gameplay\Combat</Filter></ClCompile>
     <ClCompile Include="src\gameplay\combat\combat_smoke_tests.cpp"><Filter>Gameplay\Combat</Filter></ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\gameplay\combat\combat_encounter.cpp"><Filter>Gameplay\Combat</Filter></ClCompile>
+    <ClInclude Include="src\gameplay\combat\combat_encounter.h"><Filter>Gameplay\Combat</Filter></ClInclude>
+    <ClCompile Include="src\gameplay\rendering\primitive_view.cpp"><Filter>Gameplay\Rendering</Filter></ClCompile>
+    <ClInclude Include="src\gameplay\rendering\primitive_view.h"><Filter>Gameplay\Rendering</Filter></ClInclude>
+  </ItemGroup>
 </Project>

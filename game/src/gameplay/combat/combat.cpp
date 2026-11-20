@@ -7,15 +7,17 @@
 
 namespace aegis::combat
 {
-namespace
-{
 
 bool IsFinite(const glm::vec3& value)
 {
     return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
 }
 
-} // namespace
+void RemoveExpiredFlights(std::vector<Flight>& flights)
+{
+    std::erase_if(flights, [](const Flight& flight)
+                  { return !flight.projectile.active || flight.age >= 4.0f; });
+}
 
 // 선분에서 0은 출발점, 1은 도착점이다. 세 축에서 상자 안에 있는 구간을 겹쳐 본다.
 bool SegmentHitsBox(const glm::vec3& start, const glm::vec3& end, const Collider& box, float& hitFraction)

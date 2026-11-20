@@ -1,6 +1,6 @@
 #pragma once
 #include "boss_geometry.h"
-#include "gameplay/turret/turret_encounter.h"
+#include "gameplay/combat/combat_encounter.h"
 
 namespace aegis::combat
 {
@@ -15,22 +15,13 @@ enum class BossPhase
     Defeated
 };
 
-class BossEncounter
+class BossEncounter : public CombatEncounter
 {
 public:
     BossEncounter();
     void Reset();
     void Update(float realDeltaTime, float gameDeltaTime, const glm::vec3& eye,
-                const glm::vec3& forward = {0, 0, -1});
-    bool Fire(const glm::vec3& eye, const glm::vec3& direction);
-    bool DropWeapon(const glm::vec3& eye, const glm::vec3& direction);
-    bool Interact(const glm::vec3& eye, const glm::vec3& direction);
-    WeaponInteraction InteractionHint(const glm::vec3& eye, const glm::vec3& direction) const;
-
-    EncounterResult Result() const
-    {
-        return result;
-    }
+                const glm::vec3& forward = {0, 0, -1}) override;
 
     BossPhase Phase() const
     {
@@ -57,44 +48,9 @@ public:
         return coreHits;
     }
 
-    int Health() const
-    {
-        return health;
-    }
-
-    int PlayerShots() const
-    {
-        return playerShots;
-    }
-
-    int EnemyShots() const
-    {
-        return enemyShots;
-    }
-
     int BlockedShots() const
     {
         return blockedShots;
-    }
-
-    float DamageFlash() const
-    {
-        return damageFlash;
-    }
-
-    const WeaponInventory& Inventory() const
-    {
-        return inventory;
-    }
-
-    const std::vector<Flight>& PlayerFlights() const
-    {
-        return playerFlights;
-    }
-
-    const std::vector<Flight>& EnemyFlights() const
-    {
-        return enemyFlights;
     }
 
     static glm::vec3 FiringRoot()
@@ -108,24 +64,17 @@ public:
     }
 
 private:
+    std::span<const Collider> InteractionColliders(std::vector<Collider>& storage) const override;
     void UpdatePlayerBullets(float gameDeltaTime);
     void UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& eye, const glm::vec3& forward);
     void AdvancePattern(float dt, const glm::vec3& eye);
     void Shoot(const glm::vec3& eye);
-    WeaponInventory inventory;
     BossPose pose;
-    std::vector<Flight> playerFlights, enemyFlights;
-    EncounterResult result{EncounterResult::Running};
     BossPhase phase{BossPhase::Warning};
     glm::vec3 aimPoint{0, 1.05f, -2.4f};
     float timer{1.2f};
     float armorOpen{};
-    float cooldown{};
-    float damageFlash{};
-    int health{100};
     int coreHits{};
-    int playerShots{};
-    int enemyShots{};
     int blockedShots{};
 };
 } // namespace aegis::combat

@@ -6,19 +6,6 @@
 
 namespace aegis::combat
 {
-namespace
-{
-bool Finite(const glm::vec3& v)
-{
-    return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
-}
-
-void Expire(std::vector<Flight>& flights)
-{
-    std::erase_if(flights, [](const Flight& f) { return !f.projectile.active || f.age >= 4; });
-}
-} // namespace
-
 BossEncounter::BossEncounter()
 {
     Reset();
@@ -26,52 +13,18 @@ BossEncounter::BossEncounter()
 
 void BossEncounter::Reset()
 {
-    inventory.Reset();
-    inventory.SetSupplyPosition(boss_asset::supplyInteraction);
-    playerFlights.clear();
-    enemyFlights.clear();
-    result = EncounterResult::Running;
+    ResetCombat(boss_asset::supplyInteraction);
     phase = BossPhase::Warning;
     aimPoint = FiringRoot() + glm::vec3(0, 1.05f, 0);
     timer = 1.2f;
-    armorOpen = cooldown = damageFlash = 0;
-    health = 100;
-    coreHits = playerShots = enemyShots = blockedShots = 0;
+    armorOpen = 0;
+    coreHits = blockedShots = 0;
     pose = MakeBossPose(0, aimPoint);
 }
 
-bool BossEncounter::Fire(const glm::vec3& eye, const glm::vec3& direction)
+std::span<const Collider> BossEncounter::InteractionColliders(std::vector<Collider>&) const
 {
-    if (result != EncounterResult::Running || !inventory.Armed() || cooldown > 0 ||
-        playerFlights.size() >= 64)
-    {
-        return false;
-    }
-    const auto shot = MakeProjectile(eye, direction, 12, inventory.EquippedId());
-    if (!shot)
-    {
-        return false;
-    }
-    playerFlights.push_back({*shot, 0});
-    cooldown = 0.25f;
-    ++playerShots;
-    return true;
-}
-
-bool BossEncounter::DropWeapon(const glm::vec3& eye, const glm::vec3& direction)
-{
-    return result != EncounterResult::Failed && inventory.Drop(eye, direction);
-}
-
-bool BossEncounter::Interact(const glm::vec3& eye, const glm::vec3& direction)
-{
-    return result != EncounterResult::Failed && inventory.Interact(eye, direction, boss_asset::walls);
-}
-
-WeaponInteraction BossEncounter::InteractionHint(const glm::vec3& eye, const glm::vec3& direction) const
-{
-    return result == EncounterResult::Failed ? WeaponInteraction::None
-                                             : inventory.Hint(eye, direction, boss_asset::walls);
+    return boss_asset::walls;
 }
 
 void BossEncounter::Shoot(const glm::vec3& eye)
@@ -155,12 +108,12 @@ void BossEncounter::AdvancePattern(float dt, const glm::vec3& eye)
 void BossEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm::vec3& eye,
                            const glm::vec3& forward)
 {
-    if (result == EncounterResult::Failed || !Finite(eye) || !std::isfinite(realDeltaTime) ||
+    if (result == EncounterResult::Failed || !IsFinite(eye) || !std::isfinite(realDeltaTime) ||
         !std::isfinite(gameDeltaTime) || realDeltaTime < 0 || gameDeltaTime < 0)
     {
         return;
     }
-    cooldown = std::max(0.0f, cooldown - realDeltaTime);
+    UpdateShotCooldown(realDeltaTime);
     damageFlash = std::max(0.0f, damageFlash - gameDeltaTime);
     if (gameDeltaTime == 0 || result == EncounterResult::Cleared)
     {
@@ -224,7 +177,7 @@ void BossEncounter::UpdatePlayerBullets(float gameDeltaTime)
         }
         flight.age += gameDeltaTime;
     }
-    Expire(playerFlights);
+    RemoveExpiredFlights(playerFlights);
 }
 
 void BossEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& eye, const glm::vec3& forward)
@@ -249,7 +202,7 @@ void BossEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& eye
         }
         flight.age += gameDeltaTime;
     }
-    Expire(enemyFlights);
+    RemoveExpiredFlights(enemyFlights);
 }
 
 } // namespace aegis::combat

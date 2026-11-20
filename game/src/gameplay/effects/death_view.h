@@ -1,21 +1,13 @@
 #pragma once
-#include <filesystem>
-#include <GL/glew.h>
+#include "gameplay/rendering/primitive_view.h"
 
 namespace aegis
 {
-class DeathView
+class DeathView : private PrimitiveView
 {
 public:
     bool Init(const std::filesystem::path& root);
     void Draw(float progress, float aspect) const;
-    void Clear();
-
-private:
-    GLuint program{};
-    GLuint vao{};
-    GLuint vbo{};
-    GLint transformLocation{-1};
-    GLint colorLocation{-1};
+    using PrimitiveView::Clear;
 };
 } // namespace aegis

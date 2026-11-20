@@ -1,23 +1,14 @@
 #pragma once
 
-#include "gameplay/combat/combat_range.h"
-#include "gameplay/weapons/weapon_inventory.h"
+#include "gameplay/combat/combat_encounter.h"
 #include "drone/drone_behavior.h"
 #include "fixed_turret.h"
 
 namespace aegis::combat
 {
 
-enum class EncounterResult
-{
-    Running,
-    Securing,
-    Failed,
-    Cleared
-};
-
 // A fixed-turret encounter. Input, camera, drawing and global time are external.
-class TurretEncounter
+class TurretEncounter : public CombatEncounter
 {
 public:
     TurretEncounter();
@@ -80,43 +71,13 @@ public:
         return drone;
     }
 
-    bool Fire(const glm::vec3& eye, const glm::vec3& direction);
     void Update(float realDeltaTime, float gameDeltaTime, const glm::vec3& eye,
-                const glm::vec3& forward = glm::vec3(0, 0, -1));
+                const glm::vec3& forward = glm::vec3(0, 0, -1)) override;
     void ToggleCover();
-
-    const WeaponInventory& Inventory() const
-    {
-        return inventory;
-    }
-
-    bool DropWeapon(const glm::vec3& eye, const glm::vec3& direction);
-    bool Interact(const glm::vec3& eye, const glm::vec3& direction);
-    WeaponInteraction InteractionHint(const glm::vec3& eye, const glm::vec3& direction) const;
-
-    EncounterResult Result() const
-    {
-        return result;
-    }
 
     TurretPhase Phase() const
     {
         return phase;
-    }
-
-    int Health() const
-    {
-        return health;
-    }
-
-    int PlayerShots() const
-    {
-        return playerShots;
-    }
-
-    int EnemyShots() const
-    {
-        return enemyShots;
     }
 
     int HitsTaken() const
@@ -129,11 +90,6 @@ public:
         return blockedEnemyShots;
     }
 
-    float DamageFlash() const
-    {
-        return damageFlash;
-    }
-
     bool CoverEnabled() const
     {
         return colliders[TestCoverIndex].enabled;
@@ -144,17 +100,8 @@ public:
         return colliders;
     }
 
-    const std::vector<Flight>& PlayerFlights() const
-    {
-        return playerFlights;
-    }
-
-    const std::vector<Flight>& EnemyFlights() const
-    {
-        return enemyFlights;
-    }
-
 private:
+    std::span<const Collider> InteractionColliders(std::vector<Collider>& storage) const override;
     // 한 프레임의 전투를 아래 함수들로 나누어 처리한다.
     bool UpdateDrone(float gameDeltaTime, const glm::vec3& eye);
     bool UpdateSupportTurret(float gameDeltaTime, const glm::vec3& eye);
@@ -185,20 +132,11 @@ private:
     bool supportEnabled{};
     DroneBehavior drone;
     bool droneMode{};
-    WeaponInventory inventory;
     std::vector<Collider> colliders;
     std::vector<Collider> environment;
-    std::vector<Flight> playerFlights;
-    std::vector<Flight> enemyFlights;
     glm::vec3 aimPoint{0.0f};
-    EncounterResult result{EncounterResult::Running};
     TurretPhase phase{TurretPhase::Idle};
     float phaseTime{};
-    float playerCooldown{};
-    float damageFlash{};
-    int health{100};
-    int playerShots{};
-    int enemyShots{};
     int hitsTaken{};
     int blockedEnemyShots{};
 };

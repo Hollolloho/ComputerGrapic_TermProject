@@ -1,6 +1,6 @@
 #pragma once
 #include "gameplay/rendering/atlas_model.h"
-#include "boss_encounter.h"
+#include "gameplay/boss/boss_encounter.h"
 #include "gameplay/rendering/mesh_renderer.h"
 
 namespace aegis

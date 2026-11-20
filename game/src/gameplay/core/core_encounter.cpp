@@ -10,13 +10,8 @@ namespace aegis::combat
 namespace
 {
 constexpr ObjectId GuardBodyBase = 62000, GuardShotBase = 62500;
-constexpr float ShotSpeed = 12, EnemyShotSpeed = 7, FlightLifetime = 4;
+constexpr float EnemyShotSpeed = 7;
 constexpr int CoreHitDamage = 10, BulletDamage = 25;
-
-bool Finite(const glm::vec3& value)
-{
-    return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
-}
 
 ObjectId BodyId(std::size_t guard) { return GuardBodyBase + static_cast<ObjectId>(guard) * 2; }
 ObjectId WeaponId(std::size_t guard) { return BodyId(guard) + 1; }
@@ -27,11 +22,6 @@ Collider GuardCollider(Collider collider, ObjectId id)
     return collider;
 }
 
-void Expire(std::vector<Flight>& flights)
-{
-    std::erase_if(flights, [](const Flight& flight)
-                  { return !flight.projectile.active || flight.age >= FlightLifetime; });
-}
 } // namespace
 
 CoreEncounter::CoreEncounter()
@@ -51,8 +41,7 @@ void CoreEncounter::SetEnvironment(std::span<const Collider> shotWalls,
 
 void CoreEncounter::Reset()
 {
-    inventory.Reset();
-    inventory.SetSupplyPosition(SupplyPosition());
+    ResetCombat(SupplyPosition());
     for (std::size_t i = 0; i < drones.size(); ++i)
     {
         const auto& placement = combat_map_asset::friendDrones[i + 2];
@@ -62,14 +51,11 @@ void CoreEncounter::Reset()
     turrets[0].SetPosition({3.95f, 0, -61.5f});
     turrets[1].SetPosition({11.6f, 0, -61.2f});
     for (auto& turret : turrets) turret.SetModelSize(0.81f, 2.18f, 1.62f, 1.115f);
-    playerFlights.clear();
-    enemyFlights.clear();
-    result = EncounterResult::Running;
     phase = MagneticPhase::Dormant;
-    phaseTime = cooldown = damageFlash = 0;
+    phaseTime = 0;
     pulseHit = false;
-    health = coreHealth = 100;
-    coreHits = playerShots = enemyShots = 0;
+    coreHealth = 100;
+    coreHits = 0;
 }
 
 Collider CoreEncounter::CoreTarget()
@@ -126,32 +112,10 @@ int CoreEncounter::RemainingEnemies() const
     return count;
 }
 
-bool CoreEncounter::Fire(const glm::vec3& eye, const glm::vec3& direction)
+std::span<const Collider> CoreEncounter::InteractionColliders(std::vector<Collider>& storage) const
 {
-    if (result != EncounterResult::Running || !inventory.Armed() || cooldown > 0 ||
-        playerFlights.size() >= 64) return false;
-    const auto shot = MakeProjectile(eye, direction, ShotSpeed, inventory.EquippedId());
-    if (!shot) return false;
-    playerFlights.push_back({*shot, 0});
-    cooldown = 0.25f;
-    ++playerShots;
-    return true;
-}
-
-bool CoreEncounter::DropWeapon(const glm::vec3& eye, const glm::vec3& direction)
-{
-    return result != EncounterResult::Failed && inventory.Drop(eye, direction);
-}
-
-bool CoreEncounter::Interact(const glm::vec3& eye, const glm::vec3& direction)
-{
-    return result != EncounterResult::Failed && inventory.Interact(eye, direction, Targets());
-}
-
-WeaponInteraction CoreEncounter::InteractionHint(const glm::vec3& eye, const glm::vec3& direction) const
-{
-    return result == EncounterResult::Failed ? WeaponInteraction::None
-                                             : inventory.Hint(eye, direction, Targets());
+    storage = Targets();
+    return storage;
 }
 
 bool CoreEncounter::DamageCore(int damage)
@@ -213,7 +177,7 @@ void CoreEncounter::UpdatePlayerBullets(float dt)
         }
         flight.age += dt;
     }
-    Expire(playerFlights);
+    RemoveExpiredFlights(playerFlights);
 }
 
 void CoreEncounter::UpdateEnemyBullets(float dt, const glm::vec3& eye, const glm::vec3& forward)
@@ -241,7 +205,7 @@ void CoreEncounter::UpdateEnemyBullets(float dt, const glm::vec3& eye, const glm
         flight.age += dt;
         if (health == 0) break;
     }
-    Expire(enemyFlights);
+    RemoveExpiredFlights(enemyFlights);
 }
 
 void CoreEncounter::SpawnEnemyBullet(const glm::vec3& muzzle, const glm::vec3& target, ObjectId source)
@@ -326,8 +290,8 @@ void CoreEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm::
 {
     if (result == EncounterResult::Failed || result == EncounterResult::Cleared ||
         !std::isfinite(realDeltaTime) || !std::isfinite(gameDeltaTime) ||
-        realDeltaTime < 0 || gameDeltaTime < 0 || !Finite(eye) || !Finite(forward)) return;
-    cooldown = std::max(0.0f, cooldown - realDeltaTime);
+        realDeltaTime < 0 || gameDeltaTime < 0 || !IsFinite(eye) || !IsFinite(forward)) return;
+    UpdateShotCooldown(realDeltaTime);
     damageFlash = std::max(0.0f, damageFlash - gameDeltaTime);
     if (gameDeltaTime == 0) return;
 

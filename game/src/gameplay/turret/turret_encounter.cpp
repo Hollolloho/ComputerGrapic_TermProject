@@ -13,16 +13,6 @@ constexpr ObjectId playerId = 600;
 constexpr ObjectId turretWeaponId = 501;
 const glm::vec3 muzzle{0.85f, 1.65f, -9.05f};
 
-bool Finite(const glm::vec3& p)
-{
-    return std::isfinite(p.x) && std::isfinite(p.y) && std::isfinite(p.z);
-}
-
-void RemoveExpired(std::vector<Flight>& flights)
-{
-    std::erase_if(flights,
-                  [](const Flight& flight) { return !flight.projectile.active || flight.age >= 4.0f; });
-}
 } // namespace
 
 TurretEncounter::TurretEncounter()
@@ -55,15 +45,10 @@ void TurretEncounter::Reset()
         colliders[PrimaryBodyIndex] = drone.Body();
         colliders[PrimaryWeaponIndex] = drone.Weapon();
     }
-    inventory.Reset();
-    inventory.SetSupplyPosition(supplyPosition);
-    playerFlights.clear();
-    enemyFlights.clear();
-    result = EncounterResult::Running;
+    ResetCombat(supplyPosition);
     phase = TurretPhase::Idle;
-    phaseTime = playerCooldown = damageFlash = doorProgress = 0;
-    health = 100;
-    playerShots = enemyShots = hitsTaken = blockedEnemyShots = 0;
+    phaseTime = doorProgress = 0;
+    hitsTaken = blockedEnemyShots = 0;
     aimPoint = glm::vec3(0);
 }
 
@@ -124,7 +109,7 @@ bool TurretEncounter::SetDroneSpawn(const glm::vec3& point, float yawRadians, fl
 
 bool TurretEncounter::SetSupply(const glm::vec3& point)
 {
-    if (!Finite(point))
+    if (!IsFinite(point))
     {
         return false;
     }
@@ -139,38 +124,9 @@ void TurretEncounter::SetDroneMode(bool enabled)
     Reset();
 }
 
-bool TurretEncounter::Fire(const glm::vec3& eye, const glm::vec3& direction)
+std::span<const Collider> TurretEncounter::InteractionColliders(std::vector<Collider>&) const
 {
-    if (!inventory.Armed() || result != EncounterResult::Running || playerCooldown > 0 ||
-        playerFlights.size() >= 64)
-    {
-        return false;
-    }
-    auto projectile = MakeProjectile(eye, direction, 12.0f, inventory.EquippedId());
-    if (!projectile)
-    {
-        return false;
-    }
-    playerFlights.push_back({*projectile, 0});
-    playerCooldown = 0.25f;
-    ++playerShots;
-    return true;
-}
-
-bool TurretEncounter::DropWeapon(const glm::vec3& eye, const glm::vec3& direction)
-{
-    return result != EncounterResult::Failed && inventory.Drop(eye, direction);
-}
-
-bool TurretEncounter::Interact(const glm::vec3& eye, const glm::vec3& direction)
-{
-    return result != EncounterResult::Failed && inventory.Interact(eye, direction, colliders);
-}
-
-WeaponInteraction TurretEncounter::InteractionHint(const glm::vec3& eye, const glm::vec3& direction) const
-{
-    return result == EncounterResult::Failed ? WeaponInteraction::None
-                                             : inventory.Hint(eye, direction, colliders);
+    return colliders;
 }
 
 void TurretEncounter::ToggleCover()
@@ -185,12 +141,12 @@ void TurretEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm
                              const glm::vec3& forward)
 {
     if (result == EncounterResult::Failed || !std::isfinite(realDeltaTime) || !std::isfinite(gameDeltaTime) ||
-        realDeltaTime < 0 || gameDeltaTime < 0 || !Finite(eye))
+        realDeltaTime < 0 || gameDeltaTime < 0 || !IsFinite(eye))
     {
         return;
     }
 
-    playerCooldown = std::max(0.0f, playerCooldown - realDeltaTime);
+    UpdateShotCooldown(realDeltaTime);
     damageFlash = std::max(0.0f, damageFlash - gameDeltaTime);
     if (gameDeltaTime == 0)
     {
@@ -364,7 +320,7 @@ void TurretEncounter::UpdatePlayerBullets(float gameDeltaTime)
         }
         flight.age += gameDeltaTime;
     }
-    RemoveExpired(playerFlights);
+    RemoveExpiredFlights(playerFlights);
     if (RemainingEnemies() == 0)
     {
         result = EncounterResult::Securing;
@@ -423,7 +379,7 @@ void TurretEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& e
             break;
         }
     }
-    RemoveExpired(enemyFlights);
+    RemoveExpiredFlights(enemyFlights);
 }
 
 void TurretEncounter::FailEncounter()

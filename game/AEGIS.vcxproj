@@ -171,4 +171,10 @@
     <Copy SourceFiles="$(SolutionDir)external\glew-2.3.1\bin\Release\x64\glew32.dll;$(SolutionDir)external\assimp\bin\x64\assimp-vc145-mt.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
   </Target>
   <Import Project="runtime_assets.props" />
+  <ItemGroup>
+    <ClCompile Include="src\gameplay\combat\combat_encounter.cpp" />
+    <ClInclude Include="src\gameplay\combat\combat_encounter.h" />
+    <ClCompile Include="src\gameplay\rendering\primitive_view.cpp" />
+    <ClInclude Include="src\gameplay\rendering\primitive_view.h" />
+  </ItemGroup>
 </Project>
