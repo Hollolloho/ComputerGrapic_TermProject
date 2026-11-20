@@ -145,19 +145,19 @@ void CoreEncounter::UpdatePlayerBullets(float dt)
 {
     for (auto& flight : playerFlights)
     {
-        if (const auto hit = AdvanceProjectile(flight.projectile, dt, Targets()))
+        if (const auto hit = AdvanceBullet(flight.bullet, dt, Targets()))
         {
             if (hit->objectId == CoreId && CoreAlive())
             {
                 DamageCore(CoreHitDamage);
-                inventory.Break(flight.projectile.sourceWeaponId);
+                inventory.Break(flight.bullet.sourceWeaponId);
             }
             for (std::size_t i = 0; i < drones.size(); ++i)
             {
                 if (hit->objectId == WeaponId(i)) drones[i].Disarm();
                 if (hit->objectId == BodyId(i))
                 {
-                    inventory.Break(flight.projectile.sourceWeaponId);
+                    inventory.Break(flight.bullet.sourceWeaponId);
                     if (drones[i].Armed())
                         inventory.SpawnDrop({drones[i].Muzzle().x, 0.12f, drones[i].Muzzle().z});
                     drones[i].Destroy();
@@ -168,7 +168,7 @@ void CoreEncounter::UpdatePlayerBullets(float dt)
                 if (hit->objectId == WeaponId(i + 2)) turrets[i].Disarm();
                 if (hit->objectId == BodyId(i + 2))
                 {
-                    inventory.Break(flight.projectile.sourceWeaponId);
+                    inventory.Break(flight.bullet.sourceWeaponId);
                     if (turrets[i].Armed())
                         inventory.SpawnDrop(turrets[i].Position() + glm::vec3(0, 0.12f, 0.9f));
                     turrets[i].Destroy();
@@ -186,13 +186,13 @@ void CoreEncounter::UpdateEnemyBullets(float dt, const glm::vec3& eye, const glm
     {
         auto targets = Targets();
         // 발사한 수호기의 몸·무기는 자기 탄환의 충돌 대상에서 뺀다.
-        const auto guard = flight.projectile.sourceWeaponId - GuardShotBase;
+        const auto guard = flight.bullet.sourceWeaponId - GuardShotBase;
         for (auto& target : targets)
             if (target.id == BodyId(guard) || target.id == WeaponId(guard)) target.enabled = false;
         targets.push_back({PlayerId, HitKind::Body, eye + glm::vec3(-0.3f, -1.65f, -0.3f),
                             eye + glm::vec3(0.3f, 0.15f, 0.3f)});
         targets.push_back(inventory.HeldCollider(eye, forward));
-        if (const auto hit = AdvanceProjectile(flight.projectile, dt, targets))
+        if (const auto hit = AdvanceBullet(flight.bullet, dt, targets))
         {
             if (hit->objectId == PlayerId && hit->kind == HitKind::Body)
             {
@@ -211,7 +211,7 @@ void CoreEncounter::UpdateEnemyBullets(float dt, const glm::vec3& eye, const glm
 void CoreEncounter::SpawnEnemyBullet(const glm::vec3& muzzle, const glm::vec3& target, ObjectId source)
 {
     if (enemyFlights.size() >= 128) return;
-    if (const auto shot = MakeProjectile(muzzle, target - muzzle, EnemyShotSpeed, source))
+    if (const auto shot = MakeBullet(muzzle, target - muzzle, EnemyShotSpeed, source))
     {
         enemyFlights.push_back({*shot, 0});
         ++enemyShots;

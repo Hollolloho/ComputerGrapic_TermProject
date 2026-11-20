@@ -28,7 +28,7 @@ bool CombatEncounter::Fire(const glm::vec3& eye, const glm::vec3& direction)
     {
         return false;
     }
-    const auto shot = MakeProjectile(eye, direction, 12.0f, inventory.EquippedId());
+    const auto shot = MakeBullet(eye, direction, 12.0f, inventory.EquippedId());
     if (!shot)
     {
         return false;

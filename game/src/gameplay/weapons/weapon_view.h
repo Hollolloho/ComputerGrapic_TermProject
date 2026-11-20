@@ -10,7 +10,7 @@
 namespace aegis
 {
 
-// Camera-local viewmodel only; gameplay projectile origin stays in the camera.
+// Camera-local viewmodel only; gameplay bullet origin stays in the camera.
 class WeaponView
 {
 public:

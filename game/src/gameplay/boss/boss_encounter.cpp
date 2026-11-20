@@ -38,7 +38,7 @@ void BossEncounter::Shoot(const glm::vec3& eye)
             continue;
         }
         const auto node = side ? boss_asset::muzzle_R : boss_asset::muzzle_L;
-        if (auto shot = MakeProjectile(muzzle, glm::vec3(pose.nodes[node][2]), 7, 23000 + side))
+        if (auto shot = MakeBullet(muzzle, glm::vec3(pose.nodes[node][2]), 7, 23000 + side))
         {
             enemyFlights.push_back({*shot, 0});
             ++enemyShots;
@@ -143,7 +143,7 @@ void BossEncounter::UpdatePlayerBullets(float gameDeltaTime)
 {
     for (auto& flight : playerFlights)
     {
-        auto& bullet = flight.projectile;
+        auto& bullet = flight.bullet;
         const auto end = bullet.position + bullet.velocity * gameDeltaTime;
         auto hit = FindFirstHit(bullet.position, end, boss_asset::walls);
         const auto bossHit = FindBossHit(bullet.position, end, pose, phase == BossPhase::Exposed);
@@ -188,7 +188,7 @@ void BossEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& eye
         boxes.push_back({24000, HitKind::Body, eye + glm::vec3(-0.3f, -1.65f, -0.3f),
                          eye + glm::vec3(0.3f, 0.15f, 0.3f)});
         boxes.push_back(inventory.HeldCollider(eye, forward));
-        if (auto hit = AdvanceProjectile(flight.projectile, gameDeltaTime, boxes))
+        if (auto hit = AdvanceBullet(flight.bullet, gameDeltaTime, boxes))
         {
             if (hit->kind == HitKind::Body && hit->objectId == 24000)
             {

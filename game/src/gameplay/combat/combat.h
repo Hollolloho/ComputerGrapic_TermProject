@@ -39,7 +39,7 @@ struct Hit
     glm::vec3 position{0.0f};
 };
 
-struct Projectile
+struct Bullet
 {
     glm::vec3 position{0.0f};
     glm::vec3 velocity{0.0f}; // World units per game-time second.
@@ -49,7 +49,7 @@ struct Projectile
 
 struct Flight
 {
-    Projectile projectile;
+    Bullet bullet;
     float age{};
 };
 
@@ -57,7 +57,7 @@ bool IsFinite(const glm::vec3& value);
 void RemoveExpiredFlights(std::vector<Flight>& flights);
 
 // Rejects non-finite inputs, zero direction and non-positive speed.
-std::optional<Projectile> MakeProjectile(const glm::vec3& origin, const glm::vec3& direction, float speed,
+std::optional<Bullet> MakeBullet(const glm::vec3& origin, const glm::vec3& direction, float speed,
                                          ObjectId sourceWeaponId);
 
 // 상자 하나와의 충돌 검사. 충돌하면 true, hitFraction에 선분의 충돌 비율(0~1)을 넣는다.
@@ -70,8 +70,8 @@ std::optional<Hit> FindFirstHit(const glm::vec3& start, const glm::vec3& end,
 
 // Caller supplies the shared gameDeltaTime (not raw wall-clock dt).
 // Stops/deactivates at the first hit; damage and weapon state belong to caller.
-// No work for inactive projectiles, paused time or invalid dt.
-std::optional<Hit> AdvanceProjectile(Projectile& projectile, float gameDeltaTime,
+// No work for inactive bullets, paused time or invalid dt.
+std::optional<Hit> AdvanceBullet(Bullet& bullet, float gameDeltaTime,
                                      std::span<const Collider> colliders);
 
 } // namespace aegis::combat

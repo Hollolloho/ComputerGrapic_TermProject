@@ -18,7 +18,7 @@ enum class WeaponInteraction
     Supply
 };
 
-// One equipped instance. IDs travel with projectiles and intact dropped weapons.
+// One equipped instance. IDs travel with bullets and intact dropped weapons.
 class WeaponInventory
 {
 public:

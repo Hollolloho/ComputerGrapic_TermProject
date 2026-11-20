@@ -16,7 +16,7 @@ bool IsFinite(const glm::vec3& value)
 void RemoveExpiredFlights(std::vector<Flight>& flights)
 {
     std::erase_if(flights, [](const Flight& flight)
-                  { return !flight.projectile.active || flight.age >= 4.0f; });
+                  { return !flight.bullet.active || flight.age >= 4.0f; });
 }
 
 // 선분에서 0은 출발점, 1은 도착점이다. 세 축에서 상자 안에 있는 구간을 겹쳐 본다.
@@ -62,7 +62,7 @@ bool SegmentHitsBox(const glm::vec3& start, const glm::vec3& end, const Collider
     return true;
 }
 
-std::optional<Projectile> MakeProjectile(const glm::vec3& origin, const glm::vec3& direction, float speed,
+std::optional<Bullet> MakeBullet(const glm::vec3& origin, const glm::vec3& direction, float speed,
                                          ObjectId sourceWeaponId)
 {
     if (!IsFinite(origin) || !IsFinite(direction) || !std::isfinite(speed) || speed <= 0)
@@ -79,7 +79,7 @@ std::optional<Projectile> MakeProjectile(const glm::vec3& origin, const glm::vec
     const glm::vec3 velocity{static_cast<float>(direction.x / length * speed),
                              static_cast<float>(direction.y / length * speed),
                              static_cast<float>(direction.z / length * speed)};
-    return Projectile{origin, velocity, sourceWeaponId, true};
+    return Bullet{origin, velocity, sourceWeaponId, true};
 }
 
 std::optional<Hit> FindFirstHit(const glm::vec3& start, const glm::vec3& end,
@@ -134,29 +134,29 @@ std::optional<Hit> FindFirstHit(const glm::vec3& start, const glm::vec3& end,
     return nearestHit;
 }
 
-std::optional<Hit> AdvanceProjectile(Projectile& projectile, float gameDeltaTime,
+std::optional<Hit> AdvanceBullet(Bullet& bullet, float gameDeltaTime,
                                      std::span<const Collider> colliders)
 {
-    if (!projectile.active || !std::isfinite(gameDeltaTime) || gameDeltaTime <= 0 ||
-        !IsFinite(projectile.position) || !IsFinite(projectile.velocity))
+    if (!bullet.active || !std::isfinite(gameDeltaTime) || gameDeltaTime <= 0 ||
+        !IsFinite(bullet.position) || !IsFinite(bullet.velocity))
     {
         return std::nullopt;
     }
     // 위치 = 이전 위치 + 속도 × 경과시간. 두 위치 사이도 검사해 얇은 벽을 건너뛰지 않는다.
-    const glm::vec3 next = projectile.position + projectile.velocity * gameDeltaTime;
+    const glm::vec3 next = bullet.position + bullet.velocity * gameDeltaTime;
     if (!IsFinite(next))
     {
         return std::nullopt;
     }
-    const auto hit = FindFirstHit(projectile.position, next, colliders);
+    const auto hit = FindFirstHit(bullet.position, next, colliders);
     if (hit)
     {
-        projectile.position = hit->position;
-        projectile.active = false;
+        bullet.position = hit->position;
+        bullet.active = false;
     }
     else
     {
-        projectile.position = next;
+        bullet.position = next;
     }
     return hit;
 }

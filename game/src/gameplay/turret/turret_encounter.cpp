@@ -270,7 +270,7 @@ void TurretEncounter::UpdatePlayerBullets(float gameDeltaTime)
     // Player shots never collide with the shooter's body. One impact per bullet.
     for (auto& flight : playerFlights)
     {
-        if (auto hit = AdvanceProjectile(flight.projectile, gameDeltaTime, colliders))
+        if (auto hit = AdvanceBullet(flight.bullet, gameDeltaTime, colliders))
         {
             if (supportEnabled && hit->objectId == FixedTurret::WeaponId)
             {
@@ -279,7 +279,7 @@ void TurretEncounter::UpdatePlayerBullets(float gameDeltaTime)
             }
             else if (supportEnabled && hit->objectId == FixedTurret::BodyId)
             {
-                inventory.Break(flight.projectile.sourceWeaponId);
+                inventory.Break(flight.bullet.sourceWeaponId);
                 if (support.Armed())
                 {
                     inventory.SpawnDrop(support.Position() + glm::vec3(0, 0.12f, 0.9f));
@@ -299,7 +299,7 @@ void TurretEncounter::UpdatePlayerBullets(float gameDeltaTime)
             }
             else if (hit->objectId == turretId)
             {
-                inventory.Break(flight.projectile.sourceWeaponId);
+                inventory.Break(flight.bullet.sourceWeaponId);
                 if (colliders[PrimaryWeaponIndex].enabled)
                 {
                     const auto drop = droneMode ? drone.Muzzle() : glm::vec3(0.85f, 0.12f, -9.3f);
@@ -344,7 +344,7 @@ void TurretEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& e
     for (auto& flight : enemyFlights)
     {
         // 적탄은 자신을 발사한 적의 몸과 총을 무시한다.
-        const bool fromSupport = flight.projectile.sourceWeaponId == FixedTurret::ShotId;
+        const bool fromSupport = flight.bullet.sourceWeaponId == FixedTurret::ShotId;
         enemyColliders[PrimaryBodyIndex].enabled = fromSupport && colliders[PrimaryBodyIndex].enabled;
         enemyColliders[PrimaryWeaponIndex].enabled = fromSupport && colliders[PrimaryWeaponIndex].enabled;
         if (supportEnabled)
@@ -354,7 +354,7 @@ void TurretEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& e
                 !fromSupport && colliders[SupportWeaponIndex].enabled;
         }
         enemyColliders[heldWeaponIndex] = inventory.HeldCollider(eye, forward);
-        const auto hit = AdvanceProjectile(flight.projectile, gameDeltaTime, enemyColliders);
+        const auto hit = AdvanceBullet(flight.bullet, gameDeltaTime, enemyColliders);
         if (hit)
         {
             if (hit->kind == HitKind::Body && hit->objectId == playerId)
@@ -392,7 +392,7 @@ void TurretEncounter::FailEncounter()
 void TurretEncounter::SpawnEnemyBullet(const glm::vec3& origin, const glm::vec3& target,
                                        ObjectId sourceWeapon)
 {
-    const auto bullet = MakeProjectile(origin, target - origin, 7.0f, sourceWeapon);
+    const auto bullet = MakeBullet(origin, target - origin, 7.0f, sourceWeapon);
     if (!bullet)
     {
         return;
@@ -434,9 +434,9 @@ void TurretEncounter::UpdatePrimaryTurret(float gameDeltaTime, const glm::vec3& 
     phaseTime -= gameDeltaTime;
     if (phaseTime <= 0)
     {
-        if (auto projectile = MakeProjectile(muzzle, aimPoint - muzzle, 7.0f, 900))
+        if (auto bullet = MakeBullet(muzzle, aimPoint - muzzle, 7.0f, 900))
         {
-            enemyFlights.push_back({*projectile, 0});
+            enemyFlights.push_back({*bullet, 0});
             ++enemyShots;
         }
         phase = TurretPhase::Cooldown;
