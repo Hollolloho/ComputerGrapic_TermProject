@@ -6,6 +6,18 @@ namespace aegis
 {
 std::string CombatScene::StatusTitle(bool paused) const
 {
+    if (coreMode)
+    {
+        const char* phase = core.Phase() == combat::MagneticPhase::Warning ? "MAGNETIC WARNING"
+                            : core.Phase() == combat::MagneticPhase::Pulse ? "MAGNETIC PULSE"
+                            : core.CoreAlive() ? "CORE ACTIVE" : "CORE DESTROYED";
+        return std::string("AEGIS CORE | ") + (paused ? "PAUSED | " : "") + phase +
+               " | Core HP: " + std::to_string(core.CoreHealth()) + "/100 | HP: " +
+               std::to_string(core.Health()) + " | Guards: " +
+               std::to_string(core.RemainingEnemies() - (core.CoreAlive() ? 1 : 0)) +
+               " | Shots: " + std::to_string(core.PlayerShots()) +
+               " | Supplies: " + std::to_string(Inventory().Supplies());
+    }
     if (bossMode)
     {
         return std::string("AEGIS BOSS | ") + (paused ? "PAUSED | " : "") +

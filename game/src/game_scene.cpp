@@ -350,7 +350,7 @@ void GameScene::LoadStage()
     }
     if (flow.Stage() == CampaignStage::Boss)
     {
-        combatScene.SetBossMode(true);
+        combatScene.SetCoreMode();
     }
     camera.SetPose(campaign_asset::playerStart, campaign_asset::playerYaw, campaign_asset::playerPitch);
     legacyTest = false;
@@ -487,7 +487,7 @@ UiPage GameScene::Page() const
         page.title = L"조작 안내";
         page.body = L"WASD 이동 · 마우스 조준 · 왼쪽 클릭 사격\n정지: 느린 시간 / 이동: 시간 진행\n사격 후 "
                     L"0.25초는 적도 정상 진행\n본체 명중 → 내 총 파손 / 빈손 + E: 재무장\n모든 적과 적탄 "
-                    L"정리 → 다음 구역\nShift 정상 진행 · R 재시작 · Esc 메뉴\n보스: 열린 코어에 세 번 명중";
+                    L"정리 → 다음 구역\nShift 정상 진행 · R 재시작 · Esc 메뉴\n보스: 코어를 공격하고 50% 이하 자기장을 피하세요.";
         add(UiAction::Title, L"시작 화면으로", 2);
         page.footer = L"G: 총 내려놓기 · E: 회수·보급·분석 · Enter: 안전 확보 후 다음 구역";
         break;
@@ -561,8 +561,8 @@ UiPage GameScene::Page() const
         else
         {
             page.title = L"4 / 4  코어실 보스전";
-            page.body = L"장갑이 완전히 열렸을 때만 코어를 공격하세요. 세 번의 유효타가 필요합니다.\nB로 "
-                        L"엄폐·사격 위치 전환  /  빈손일 때 E로 보급  /  Esc로 메뉴";
+            page.body = L"호위 드론과 포탑을 피하며 중앙 코어를 파괴하세요. 코어 체력 50% 이하에서는 "
+                        L"자기장이 발동합니다.\n빈손일 때 입구 보급대 조준 + E  /  Esc로 메뉴";
         }
         if (flow.Stage() != CampaignStage::Entry)
         {
@@ -693,7 +693,8 @@ void GameScene::SmokeFrame(int frame)
     }
     else if (flow.Screen() == CampaignScreen::Victory)
     {
-        smokeVictory = combatScene.BossCoreHits() == 3;
+        smokeVictory = combatScene.IsCoreMode() ? !combatScene.CoreState().CoreAlive()
+                                               : combatScene.BossCoreHits() == 3;
         if (++victorySmokeFrame == 20)
         {
             ApplyAction(UiAction::Restart);

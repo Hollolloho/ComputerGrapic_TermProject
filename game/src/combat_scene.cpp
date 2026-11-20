@@ -105,7 +105,8 @@ void main() {
     Reset();
     if (!signs.Init() || !deathView.Init(projectDirectory) || !turretView.Init(projectDirectory) ||
         !weapon.Init(projectDirectory) || !terminalRenderer.Init(projectDirectory / "shaders") ||
-        !drone.Init(projectDirectory) || !InitTerminal(projectDirectory) || !bossView.Init(projectDirectory))
+        !drone.Init(projectDirectory) || !InitTerminal(projectDirectory) || !bossView.Init(projectDirectory) ||
+        !coreView.Init(projectDirectory) || !singleTurretView.Init(projectDirectory))
     {
         Clear();
         return false;
@@ -168,11 +169,13 @@ void CombatScene::Reset()
     weapon.Reset();
     drone.Reset();
     boss.Reset();
+    core.Reset();
     bossCovered = false;
     yaw = pitch = 0;
-    if (bossMode)
+    if (bossMode || coreMode)
     {
-        const auto d = glm::normalize(boss.CoreCenter() - (CameraRoot() + glm::vec3(0, 1.65f, 0)));
+        const auto target = coreMode ? core.CoreCenter() : boss.CoreCenter();
+        const auto d = glm::normalize(target - (CameraRoot() + glm::vec3(0, 1.65f, 0)));
         pitch = glm::degrees(std::asin(d.y));
     }
     camera.SetPose(CameraRoot(), yaw, pitch);
@@ -182,6 +185,7 @@ void CombatScene::Reset()
 
 void CombatScene::SetCorridorMode(bool enabled)
 {
+    coreMode = false;
     bossMode = false;
     combatMapMode = false;
     maintenanceMode = false;
@@ -210,6 +214,7 @@ void CombatScene::SetCombatMapMode(bool enabled)
         SetCorridorMode(true);
         return;
     }
+    coreMode = false;
     maintenanceMode = false;
     encounter.SetDroneScale(1);
     combatMapMode = true;
@@ -265,6 +270,7 @@ void CombatScene::SetTurretMode(bool enabled)
 
 glm::vec3 CombatScene::CameraRoot() const
 {
+    if (coreMode) return combat::CoreEncounter::PlayerRoot();
     if (bossMode)
     {
         if (bossCovered)
@@ -286,6 +292,7 @@ glm::vec3 CombatScene::CameraRoot() const
 
 void CombatScene::SetBossMode(bool enabled)
 {
+    coreMode = false;
     bossMode = enabled;
     if (enabled)
     {
@@ -294,6 +301,14 @@ void CombatScene::SetBossMode(bool enabled)
     }
     Reset();
     smokeBossFailureSeen = false;
+}
+
+void CombatScene::SetCoreMode()
+{
+    bossMode = maintenanceMode = false;
+    coreMode = combatMapMode = corridorMode = turretMode = true;
+    core.SetEnvironment(combat_map_asset::playerWalls, combat_map_asset::playerWalls);
+    Reset();
 }
 
 void CombatScene::ToggleBossCover()
@@ -314,7 +329,11 @@ bool CombatScene::Fire(const glm::vec3& direction)
         return false;
     }
     bool fired = false;
-    if (bossMode)
+    if (coreMode)
+    {
+        fired = core.Fire(PlayerEye(), direction);
+    }
+    else if (bossMode)
     {
         fired = boss.Fire(PlayerEye(), direction);
     }
@@ -336,6 +355,7 @@ bool CombatScene::Fire(const glm::vec3& direction)
 
 const combat::WeaponInventory& CombatScene::Inventory() const
 {
+    if (coreMode) return core.Inventory();
     if (bossMode)
     {
         return boss.Inventory();
@@ -349,6 +369,7 @@ const combat::WeaponInventory& CombatScene::Inventory() const
 
 bool CombatScene::Interact(const glm::vec3& direction)
 {
+    if (coreMode) return core.Interact(PlayerEye(), direction);
     if (bossMode)
     {
         return boss.Interact(PlayerEye(), direction);
@@ -380,6 +401,7 @@ combat::Collider CombatScene::TerminalCollider() const
 
 glm::vec3 CombatScene::SupplyPosition() const
 {
+    if (coreMode) return combat::CoreEncounter::SupplyPosition();
     if (maintenanceMode)
     {
         return combat_map_asset::maintenanceSupply;
@@ -389,6 +411,7 @@ glm::vec3 CombatScene::SupplyPosition() const
 
 std::vector<combat::Collider> CombatScene::PlayerObstacles() const
 {
+    if (coreMode) return core.PlayerObstacles();
     if (bossMode)
     {
         std::vector<combat::Collider> walls(boss_asset::walls.begin(), boss_asset::walls.end());
@@ -433,7 +456,7 @@ bool CombatScene::TerminalTarget() const
 
 bool CombatScene::TerminalTarget(const glm::vec3& direction) const
 {
-    if (!corridorMode || bossMode)
+    if (!corridorMode || bossMode || coreMode)
     {
         return false;
     }
@@ -444,6 +467,7 @@ bool CombatScene::TerminalTarget(const glm::vec3& direction) const
 
 combat::WeaponInteraction CombatScene::InteractionHint() const
 {
+    if (coreMode) return core.InteractionHint(PlayerEye(), PlayerForward());
     if (bossMode)
     {
         return boss.InteractionHint(PlayerEye(), PlayerForward());
@@ -482,6 +506,7 @@ void CombatScene::Update(double realDeltaTime, double gameDeltaTime)
 
 int CombatScene::PlayerHealth() const
 {
+    if (coreMode) return core.Health();
     if (bossMode)
     {
         return boss.Health();
@@ -495,7 +520,12 @@ int CombatScene::PlayerHealth() const
 
 void CombatScene::UpdateBattle(double realDeltaTime, double gameDeltaTime)
 {
-    if (bossMode)
+    if (coreMode)
+    {
+        core.Update(static_cast<float>(realDeltaTime), static_cast<float>(gameDeltaTime),
+                    PlayerEye(), PlayerForward());
+    }
+    else if (bossMode)
     {
         boss.Update(static_cast<float>(realDeltaTime), static_cast<float>(gameDeltaTime), PlayerEye(),
                     PlayerForward());
@@ -516,7 +546,8 @@ void CombatScene::UpdateVisualEffects(double realDeltaTime, double gameDeltaTime
     destruction.UpdateWorld(static_cast<float>(gameDeltaTime));
     ObserveDestruction();
     destruction.ObserveHealth(PlayerHealth());
-    if (IsDroneMode() && encounter.EnemyAlive() && encounter.Result() == combat::EncounterResult::Running)
+    if ((coreMode && core.Result() == combat::EncounterResult::Running) ||
+        (IsDroneMode() && encounter.EnemyAlive() && encounter.Result() == combat::EncounterResult::Running))
     {
         drone.UpdateCombat(gameDeltaTime);
     }
@@ -530,6 +561,7 @@ void CombatScene::UpdateVisualEffects(double realDeltaTime, double gameDeltaTime
 
 void CombatScene::ObserveDestruction()
 {
+    if (coreMode) return;
     const auto& state = encounter.DroneState();
     // 실습과 같은 순서로 위치 → 회전 → 크기를 적용한다.
     glm::mat4 droneWorld = glm::translate(glm::mat4(1), state.Position());
@@ -547,6 +579,8 @@ void CombatScene::Clear()
     ClearPlayerView();
     feedback.Reset();
     bossView.Clear();
+    coreView.Clear();
+    singleTurretView.Clear();
     for (auto& mesh : terminalMeshes)
     {
         mesh.Clear();

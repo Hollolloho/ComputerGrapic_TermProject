@@ -76,12 +76,15 @@ void CombatScene::SampleInput(GLFWwindow* window, bool active)
         {
             SetTurretMode(!turretMode);
         }
-        const bool playing = bossMode
+        const bool playing = coreMode ? core.Result() == combat::EncounterResult::Running ||
+                                        core.Result() == combat::EncounterResult::Securing
+                             : bossMode
                                  ? boss.Result() == combat::EncounterResult::Running ||
                                        boss.Result() == combat::EncounterResult::Securing
                                  : !turretMode || encounter.Result() == combat::EncounterResult::Running ||
                                        encounter.Result() == combat::EncounterResult::Securing;
-        const bool canEquip = bossMode ? boss.Result() != combat::EncounterResult::Failed
+        const bool canEquip = coreMode ? core.Result() != combat::EncounterResult::Failed
+                              : bossMode ? boss.Result() != combat::EncounterResult::Failed
                                        : !turretMode || encounter.Result() != combat::EncounterResult::Failed;
         if (!HasExternalPlayerView() && canEquip && right && lookHeld)
         {
@@ -89,7 +92,7 @@ void CombatScene::SampleInput(GLFWwindow* window, bool active)
             pitch = std::clamp(pitch - static_cast<float>(y - lastY) * 0.14f, -65.0f, 65.0f);
             camera.SetPose(CameraRoot(), yaw, pitch);
         }
-        if (!HasExternalPlayerView() && playing && cover && !coverHeld)
+        if (!coreMode && !HasExternalPlayerView() && playing && cover && !coverHeld)
         {
             if (bossMode)
             {
@@ -106,7 +109,11 @@ void CombatScene::SampleInput(GLFWwindow* window, bool active)
         }
         if (canEquip && drop && !dropHeld)
         {
-            if (bossMode)
+            if (coreMode)
+            {
+                core.DropWeapon(PlayerEye(), PlayerForward());
+            }
+            else if (bossMode)
             {
                 boss.DropWeapon(PlayerEye(), PlayerForward());
             }

@@ -118,6 +118,17 @@ void Label(const std::string& text, int x, int y, int scale, const glm::vec3& co
 void CombatScene::DrawHud(int width, int height) const
 {
     const int scale = width < 900 ? 2 : 3;
+    if (coreMode)
+    {
+        Label("CORE " + std::to_string(core.CoreHealth()) + "/100", 24, height - 40, scale, {0.2f, 1, 0.8f});
+        Label("HP " + std::to_string(core.Health()) + "/100", 24, height - 75, scale, {1, 0.8f, 0.3f});
+        const char* magnetic = core.Phase() == combat::MagneticPhase::Warning ? "MAGNETIC WARNING / LEAVE RING"
+                               : core.Phase() == combat::MagneticPhase::Pulse ? "MAGNETIC PULSE"
+                               : core.CoreAlive() ? "DESTROY THE AI CORE" : "CORE DESTROYED";
+        Label(magnetic, 24, height - 110, 2, {1, 0.4f, 0.2f});
+        Label("LMB FIRE  E SUPPLY  G DROP  R RETRY  ESC MENU", 24, 24, 2, {0.8f, 0.9f, 1});
+        return;
+    }
     if (bossMode)
     {
         DrawBossHud(width, height);
@@ -313,11 +324,17 @@ void CombatScene::PopulateHud(UiPage& page) const
 {
     page.timeStatus = TimeStatus();
     const auto& inventory = Inventory();
-    page.health = bossMode ? boss.Health() : encounter.Health();
+    page.health = PlayerHealth();
     page.status = L"체력 " + std::to_wstring(page.health) + L" / 100  |  ";
     page.status += inventory.Armed() ? L"무기: 장착 중" : L"무기: 빈손";
     page.status += L"  |  누적 파손 " + std::to_wstring(inventory.Breaks());
-    if (!bossMode && encounter.HasSupportTurret())
+    if (coreMode)
+    {
+        page.status += L"  |  코어 " + std::to_wstring(core.CoreHealth()) +
+                       L" / 100  |  호위 " +
+                       std::to_wstring(core.RemainingEnemies() - (core.CoreAlive() ? 1 : 0)) + L" / 4";
+    }
+    if (!coreMode && !bossMode && encounter.HasSupportTurret())
     {
         page.status += L"  |  남은 적 " + std::to_wstring(encounter.RemainingEnemies()) + L" / 2";
     }
@@ -331,17 +348,30 @@ void CombatScene::PopulateHud(UiPage& page) const
     {
         page.warning = L"적은 쓰러졌지만 날아오는 적탄이 남아 있습니다!";
         page.body = L"남은 적탄 " +
-                    std::to_wstring(bossMode ? boss.EnemyFlights().size() : encounter.EnemyFlights().size()) +
+                    std::to_wstring(coreMode ? core.EnemyFlights().size()
+                                    : bossMode ? boss.EnemyFlights().size() : encounter.EnemyFlights().size()) +
                     L"발 · 탄환이 사라지기 전에는 분석과 구역 이동이 잠깁니다.";
         page.danger = true;
     }
     else if (result == combat::EncounterResult::Cleared)
     {
         page.warning = L"구역 안전 확보 완료";
-        page.body = (combatMapMode || DoorProgress() >= 1)
+        page.body = coreMode ? L"중앙 AI 코어를 파괴했습니다. 임무를 완료했습니다."
+                    : (combatMapMode || DoorProgress() >= 1)
                         ? (maintenanceMode ? L"Enter: 코어실로 진행  /  가까운 단말 조준 + E: 분석"
                                            : L"Enter: 정비 복도로 진행  /  가까운 단말 조준 + E: 분석")
                         : L"출구 문이 열리고 있습니다. 잠시 기다리세요.";
+    }
+    else if (coreMode)
+    {
+        const auto phase = core.Phase();
+        page.warning = phase == combat::MagneticPhase::Warning
+                           ? L"자기장 예고! 주황색 원 밖으로 피하세요."
+                       : phase == combat::MagneticPhase::Pulse
+                           ? L"자기장 방출 중! 붉은 원 안은 위험합니다."
+                           : L"중앙 AI 코어를 파괴하세요. 호위 드론과 포탑을 조심하세요.";
+        page.danger = phase == combat::MagneticPhase::Warning || phase == combat::MagneticPhase::Pulse;
+        page.body = L"WASD 이동 · 마우스 조준 · 왼쪽 클릭 사격 · 빈손으로 입구 보급대 조준 + E";
     }
     else if (bossMode)
     {
@@ -393,7 +423,7 @@ void CombatScene::PopulateHud(UiPage& page) const
         }
         page.body = L"왼쪽 클릭: 사격  /  오른쪽 드래그: 조준  /  G: 무기 내려놓기  /  Esc: 메뉴";
     }
-    if (!bossMode && encounter.HasSupportTurret() && result == combat::EncounterResult::Running)
+    if (!coreMode && !bossMode && encounter.HasSupportTurret() && result == combat::EncounterResult::Running)
     {
         const auto& turret = encounter.SupportTurret();
         if (turret.Phase() == combat::TurretPhase::Warning)
@@ -411,7 +441,7 @@ void CombatScene::PopulateHud(UiPage& page) const
             page.warning = L"드론과 고정 포탑을 모두 파괴하세요. 엄폐물을 활용하세요.";
         }
     }
-    if (!bossMode && HasExternalPlayerView() && result == combat::EncounterResult::Running)
+    if (!coreMode && !bossMode && HasExternalPlayerView() && result == combat::EncounterResult::Running)
     {
         page.body = L"WASD: 이동  /  마우스: 조준  /  왼쪽 클릭: 사격  /  G: 내려놓기  /  Esc: 메뉴";
     }

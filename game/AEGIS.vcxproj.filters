@@ -106,6 +106,8 @@
     <ClCompile Include="src\combat_render.cpp"><Filter>Gameplay</Filter></ClCompile>
     <ClCompile Include="src\combat_scene.cpp"><Filter>Gameplay</Filter></ClCompile>
     <ClCompile Include="src\combat_smoke_tests.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\core_encounter.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\core_view.cpp"><Filter>Gameplay</Filter></ClCompile>
     <ClCompile Include="src\death_view.cpp"><Filter>Gameplay</Filter></ClCompile>
     <ClCompile Include="src\destruction_effects.cpp"><Filter>Gameplay</Filter></ClCompile>
     <ClCompile Include="src\drone_behavior.cpp"><Filter>Gameplay</Filter></ClCompile>
@@ -116,6 +118,7 @@
     <ClCompile Include="src\model_binary.cpp"><Filter>Gameplay</Filter></ClCompile>
     <ClCompile Include="src\player_camera.cpp"><Filter>Gameplay</Filter></ClCompile>
     <ClCompile Include="src\player_motion.cpp"><Filter>Gameplay</Filter></ClCompile>
+    <ClCompile Include="src\single_turret_view.cpp"><Filter>Gameplay</Filter></ClCompile>
     <ClCompile Include="src\turret_encounter.cpp"><Filter>Gameplay</Filter></ClCompile>
     <ClCompile Include="src\turret_view.cpp"><Filter>Gameplay</Filter></ClCompile>
     <ClCompile Include="src\weapon_inventory.cpp"><Filter>Gameplay</Filter></ClCompile>
@@ -134,6 +137,8 @@
     <ClInclude Include="src\combat_range.h"><Filter>Gameplay</Filter></ClInclude>
     <ClInclude Include="src\combat_scene.h"><Filter>Gameplay</Filter></ClInclude>
     <ClInclude Include="src\combat_time.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\core_encounter.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\core_view.h"><Filter>Gameplay</Filter></ClInclude>
     <ClInclude Include="src\corridor_layout.generated.h"><Filter>Gameplay</Filter></ClInclude>
     <ClInclude Include="src\cw01c_layout.generated.h"><Filter>Gameplay</Filter></ClInclude>
     <ClInclude Include="src\death_view.h"><Filter>Gameplay</Filter></ClInclude>
@@ -148,6 +153,7 @@
     <ClInclude Include="src\player_camera.h"><Filter>Gameplay</Filter></ClInclude>
     <ClInclude Include="src\player_motion.h"><Filter>Gameplay</Filter></ClInclude>
     <ClInclude Include="src\player_view.h"><Filter>Gameplay</Filter></ClInclude>
+    <ClInclude Include="src\single_turret_view.h"><Filter>Gameplay</Filter></ClInclude>
     <ClInclude Include="src\terminal_layout.generated.h"><Filter>Gameplay</Filter></ClInclude>
     <ClInclude Include="src\turret_encounter.h"><Filter>Gameplay</Filter></ClInclude>
     <ClInclude Include="src\turret_view.h"><Filter>Gameplay</Filter></ClInclude>
@@ -157,8 +163,12 @@
     <None Include="src\boss_triangles.generated.inc"><Filter>Gameplay</Filter></None>
     <None Include="shaders\death_effect.vert"><Filter>Shaders</Filter></None>
     <None Include="shaders\death_effect.frag"><Filter>Shaders</Filter></None>
+    <None Include="shaders\core.vert"><Filter>Shaders</Filter></None>
+    <None Include="shaders\core.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\mesh.vert"><Filter>Shaders</Filter></None>
     <None Include="shaders\mesh.frag"><Filter>Shaders</Filter></None>
+    <None Include="shaders\single_turret.vert"><Filter>Shaders</Filter></None>
+    <None Include="shaders\single_turret.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\turret.vert"><Filter>Shaders</Filter></None>
     <None Include="shaders\turret.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\weapon.vert"><Filter>Shaders</Filter></None>

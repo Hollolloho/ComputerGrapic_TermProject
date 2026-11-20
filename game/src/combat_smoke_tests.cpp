@@ -102,6 +102,69 @@ bool CombatScene::PlayerViewSmokePassed() const
 
 void CombatScene::CampaignSmokeFrame(int frame)
 {
+    if (coreMode)
+    {
+        // 실제 사격·보급 경로로 호위 네 기와 코어를 정리한다.
+        forceNormal = true;
+        if (core.Result() != combat::EncounterResult::Running || !core.PlayerFlights().empty())
+        {
+            return;
+        }
+        const auto entrance = combat::CoreEncounter::PlayerRoot() + glm::vec3(0, 1.65f, 0);
+        if (!Inventory().Armed())
+        {
+            const auto direction = combat::CoreEncounter::SupplyPosition() - entrance;
+            if (SetPlayerView({entrance, direction, {0, 1, 0}, 60}))
+            {
+                Interact(direction);
+            }
+            return;
+        }
+
+        const auto shootGuard = [&](const combat::Collider& body)
+        {
+            const auto target = (body.minimum + body.maximum) * .5f;
+            const glm::vec3 offsets[] = {{0, 0, 2}, {2, 0, 0}, {-2, 0, 0}, {0, 0, -2}};
+            for (const auto& offset : offsets)
+            {
+                const auto eye = target + offset;
+                if (combat::FindFirstHit(eye, target, combat_map_asset::playerWalls))
+                {
+                    continue;
+                }
+                const auto direction = target - eye;
+                if (SetPlayerView({eye, direction, {0, 1, 0}, 60}))
+                {
+                    Fire(direction);
+                    return true;
+                }
+            }
+            return false;
+        };
+        for (const auto& drone : core.Drones())
+        {
+            if (drone.Phase() != combat::DronePhase::Destroyed)
+            {
+                shootGuard(drone.Body());
+                return;
+            }
+        }
+        for (const auto& turret : core.Turrets())
+        {
+            if (turret.Alive())
+            {
+                shootGuard(turret.Body());
+                return;
+            }
+        }
+        // 입구는 반경 6m 밖이다. 자기장을 피하면서 열 발을 명중시킨다.
+        const auto direction = core.CoreCenter() - entrance;
+        if (SetPlayerView({entrance, direction, {0, 1, 0}, 60}))
+        {
+            Fire(direction);
+        }
+        return;
+    }
     if (bossMode)
     {
         if (frame == 1)

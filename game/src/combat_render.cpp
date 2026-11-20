@@ -15,6 +15,27 @@ namespace aegis
 // 전투 화면과 분석 화면을 그린다. 피해 판정은 이 파일에서 변경하지 않는다.
 void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
 {
+    if (coreMode)
+    {
+        for (const auto& state : core.Drones())
+        {
+            if (state.Phase() == combat::DronePhase::Destroyed) continue;
+            auto world = glm::translate(glm::mat4(1), state.Position());
+            world = glm::rotate(world, state.Yaw(), glm::vec3(0, 1, 0));
+            world = glm::scale(world, glm::vec3(state.Scale()));
+            drone.Draw(viewProjection, world, state.Phase() == combat::DronePhase::Warning, state.Armed());
+        }
+        const float yaw[] = {3.28f, -3.81f};
+        for (std::size_t i = 0; i < core.Turrets().size(); ++i)
+        {
+            singleTurretView.Draw(viewProjection, PlayerEye(), core.Turrets()[i], yaw[i]);
+        }
+        const int magneticStage = core.Phase() == combat::MagneticPhase::Warning ? 1
+                                  : core.Phase() == combat::MagneticPhase::Pulse ? 2 : 0;
+        coreView.Draw(viewProjection, PlayerEye(), core.CoreAlive(), magneticStage,
+                      core.PhaseProgress(), core.Config().radius);
+        return;
+    }
     if (IsDroneMode() && encounter.EnemyAlive())
     {
         const auto& state = encounter.DroneState();
@@ -42,6 +63,7 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
 
 void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
 {
+    if (coreMode) return;
     const std::span<const combat::Collider> boxes =
         bossMode     ? std::span<const combat::Collider>()
         : turretMode ? std::span<const combat::Collider>(encounter.Colliders())
@@ -83,7 +105,8 @@ void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
 
 void CombatScene::DrawProjectiles(const glm::mat4& viewProjection) const
 {
-    const auto& shots = bossMode     ? boss.PlayerFlights()
+    const auto& shots = coreMode     ? core.PlayerFlights()
+                        : bossMode     ? boss.PlayerFlights()
                         : turretMode ? encounter.PlayerFlights()
                                      : range.Flights();
     for (const auto& flight : shots)
@@ -91,9 +114,11 @@ void CombatScene::DrawProjectiles(const glm::mat4& viewProjection) const
         const auto p = flight.projectile.position;
         DrawBox(viewProjection, p - glm::vec3(0.055f), p + glm::vec3(0.055f), {1, 0.85f, 0.15f});
     }
-    if (bossMode || turretMode)
+    if (coreMode || bossMode || turretMode)
     {
-        for (const auto& flight : (bossMode ? boss.EnemyFlights() : encounter.EnemyFlights()))
+        const auto& enemyShots = coreMode ? core.EnemyFlights()
+                                : bossMode ? boss.EnemyFlights() : encounter.EnemyFlights();
+        for (const auto& flight : enemyShots)
         {
             const auto p = flight.projectile.position;
             DrawBox(viewProjection, p - glm::vec3(0.08f), p + glm::vec3(0.08f), {1, 0.15f, 0.08f});
@@ -176,12 +201,12 @@ void CombatScene::Draw(int width, int height,
     {
         drawEnvironment(scene, PlayerEye());
     }
-    if (corridorMode && !bossMode)
+    if (corridorMode && !bossMode && !coreMode)
     {
         terminalRenderer.Begin(PlayerEye(), {0.45f, 0.9f, 0.7f}, {1, 1, 1}, 3, 0.3f);
         terminalRenderer.Draw(terminalMeshes, scene, glm::translate(glm::mat4(1), TerminalPosition()));
     }
-    if (combatMapMode)
+    if (combatMapMode && !coreMode)
     {
         signs.Draw(scene, SupplyPosition(), TerminalPosition(), CanAnalyze(), maintenanceMode);
     }

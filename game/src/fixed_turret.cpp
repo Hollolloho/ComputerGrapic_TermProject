@@ -26,12 +26,26 @@ bool FixedTurret::SetPosition(const glm::vec3& point)
     return true;
 }
 
+void FixedTurret::SetModelSize(float modelHalfWidth, float modelHeight, float modelPivotHeight,
+                              float modelBarrelReach)
+{
+    if (std::isfinite(modelHalfWidth) && std::isfinite(modelHeight) && std::isfinite(modelPivotHeight) &&
+        std::isfinite(modelBarrelReach) && modelHalfWidth > 0 && modelHeight > 0 &&
+        modelPivotHeight > 0 && modelBarrelReach > 0)
+    {
+        halfWidth = modelHalfWidth;
+        height = modelHeight;
+        pivotHeight = modelPivotHeight;
+        barrelReach = modelBarrelReach;
+    }
+}
+
 void FixedTurret::Reset()
 {
     phase = TurretPhase::Idle;
     timer = 0;
     direction = {0, 0, 1};
-    aimPoint = position + glm::vec3(0, 1.65f, 5);
+    aimPoint = position + glm::vec3(0, pivotHeight, 5);
 }
 
 void FixedTurret::Disarm()
@@ -51,14 +65,14 @@ void FixedTurret::Destroy()
 
 glm::vec3 FixedTurret::Muzzle() const
 {
-    return position + glm::vec3(0, 1.65f, 0) + direction * 0.85f;
+    return position + glm::vec3(0, pivotHeight, 0) + direction * barrelReach;
 }
 
 glm::mat4 FixedTurret::BarrelTransform() const
 {
     const float yaw = std::atan2(direction.x, direction.z);
     const float pitch = -std::asin(std::clamp(direction.y, -1.0f, 1.0f));
-    glm::mat4 transform = glm::translate(glm::mat4(1), position + glm::vec3(0, 1.65f, 0));
+    glm::mat4 transform = glm::translate(glm::mat4(1), position + glm::vec3(0, pivotHeight, 0));
     transform = glm::rotate(transform, yaw, glm::vec3(0, 1, 0));
     transform = glm::rotate(transform, pitch, glm::vec3(1, 0, 0));
     return transform;
@@ -66,17 +80,18 @@ glm::mat4 FixedTurret::BarrelTransform() const
 
 Collider FixedTurret::Body() const
 {
-    return {BodyId, HitKind::Body, position + glm::vec3(-0.5f, 0, -0.5f),
-            position + glm::vec3(0.5f, 2.2f, 0.5f), Alive()};
+    return {BodyId, HitKind::Body, position + glm::vec3(-halfWidth, 0, -halfWidth),
+            position + glm::vec3(halfWidth, height, halfWidth), Alive()};
 }
 
 Collider FixedTurret::Weapon() const
 {
     // 총신의 여덟 꼭짓점을 변환하고, 월드 좌표의 충돌 상자를 구한다.
+    const float front = barrelReach - 0.05f;
     const glm::vec4 corners[8] = {{-0.14f, -0.14f, -0.1f, 1}, {0.14f, -0.14f, -0.1f, 1},
                                   {-0.14f, 0.14f, -0.1f, 1},  {0.14f, 0.14f, -0.1f, 1},
-                                  {-0.14f, -0.14f, 0.8f, 1},  {0.14f, -0.14f, 0.8f, 1},
-                                  {-0.14f, 0.14f, 0.8f, 1},   {0.14f, 0.14f, 0.8f, 1}};
+                                  {-0.14f, -0.14f, front, 1},  {0.14f, -0.14f, front, 1},
+                                  {-0.14f, 0.14f, front, 1},   {0.14f, 0.14f, front, 1}};
     glm::vec3 low(std::numeric_limits<float>::max());
     glm::vec3 high(std::numeric_limits<float>::lowest());
     const glm::mat4 transform = BarrelTransform();
@@ -113,7 +128,7 @@ bool FixedTurret::Update(float gameDeltaTime, const glm::vec3& eye, std::span<co
     }
     if (phase == TurretPhase::Idle)
     {
-        const auto delta = eye - (position + glm::vec3(0, 1.65f, 0));
+        const auto delta = eye - (position + glm::vec3(0, pivotHeight, 0));
         if (glm::dot(delta, delta) < 1e-8f)
         {
             return false;

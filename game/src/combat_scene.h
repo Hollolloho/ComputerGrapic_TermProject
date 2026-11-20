@@ -10,6 +10,9 @@
 #include "turret_view.h"
 #include "analysis_session.h"
 #include "boss_view.h"
+#include "core_encounter.h"
+#include "core_view.h"
+#include "single_turret_view.h"
 #include "korean_ui.h"
 #include "world_signs.h"
 #include "combat_feedback.h"
@@ -81,6 +84,9 @@ public:
     }
 
     void SetBossMode(bool enabled);
+    void SetCoreMode();
+    bool IsCoreMode() const { return coreMode; }
+    const combat::CoreEncounter& CoreState() const { return core; }
 
     void SetDebugControls(bool enabled)
     {
@@ -89,6 +95,7 @@ public:
 
     combat::EncounterResult BattleResult() const
     {
+        if (coreMode) return core.Result();
         if (bossMode)
         {
             return boss.Result();
@@ -156,7 +163,7 @@ public:
 
     int BossCoreHits() const
     {
-        return boss.CoreHits();
+        return coreMode ? core.CoreHits() : boss.CoreHits();
     }
 
     bool IsBossMode() const
@@ -166,7 +173,7 @@ public:
 
     bool IsDroneMode() const
     {
-        return !bossMode && turretMode && encounter.IsDroneMode();
+        return !coreMode && !bossMode && turretMode && encounter.IsDroneMode();
     }
 
     bool AnalysisActive() const
@@ -186,7 +193,7 @@ public:
 
     bool CanAnalyze() const
     {
-        return !bossMode && turretMode && encounter.CanAnalyze();
+        return !coreMode && !bossMode && turretMode && encounter.CanAnalyze();
     }
 
     float DoorProgress() const
@@ -201,7 +208,7 @@ public:
 
     bool IsTurretMode() const
     {
-        return bossMode || turretMode;
+        return coreMode || bossMode || turretMode;
     }
 
     int SmokeFrameCount() const
@@ -283,6 +290,10 @@ private:
     void ObserveDestruction();
     combat::BossEncounter boss;
     BossView bossView;
+    combat::CoreEncounter core;
+    CoreView coreView;
+    SingleTurretView singleTurretView;
+    bool coreMode{};
     bool debugControls{true};
     bool maintenanceMode{};
     bool combatMapMode{};
