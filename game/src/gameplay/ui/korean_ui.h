@@ -14,6 +14,7 @@ enum class UiAction
     Credits,
     Title,
     Advance,
+    Analyze,
     Resume,
     Retry,
     Restart,

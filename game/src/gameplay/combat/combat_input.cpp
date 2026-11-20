@@ -30,10 +30,15 @@ void CombatScene::SampleInput(GLFWwindow* window, bool active)
     glfwGetCursorPos(window, &x, &y);
     if (analysis.Active())
     {
+        if (active && left && analysisDragHeld)
+        {
+            analysis.Orbit(static_cast<float>(x - lastX), static_cast<float>(y - lastY));
+        }
         if (active && interact && !interactHeld)
         {
             analysis.Close();
         }
+        analysisDragHeld = analysis.Active() && active && left;
         mouseHeld = left;
         coverHeld = cover;
         lookHeld = false;
@@ -43,6 +48,7 @@ void CombatScene::SampleInput(GLFWwindow* window, bool active)
         lastY = y;
         return;
     }
+    analysisDragHeld = false;
     if (active)
     {
         auto* battle = ActiveEncounter();

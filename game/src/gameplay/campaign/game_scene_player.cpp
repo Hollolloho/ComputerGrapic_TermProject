@@ -58,6 +58,11 @@ bool GameScene::CloseAnalysis()
     return combatScene->CloseAnalysis();
 }
 
+void GameScene::ScrollAnalysis(double wheelSteps)
+{
+    combatScene->ScrollAnalysis(wheelSteps);
+}
+
 const combat::AnalysisSession& GameScene::AnalysisState() const
 {
     return combatScene->AnalysisState();

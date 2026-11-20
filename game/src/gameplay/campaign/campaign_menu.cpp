@@ -138,9 +138,10 @@ UiPage CampaignMenu::Page(const CampaignFlow& flow, bool readyToAdvance) const
         if (flow.Stage() == CampaignStage::Entry)
         {
             page.title = L"1 / 4  안전 진입실";
-            page.body = L"이동: 시간 진행 / 적 본체 명중: 내 총 파손\n빈손으로 총 조준 + E: 재무장 / Enter: "
-                        L"복도 진입";
-            page.buttons.push_back({UiAction::Advance, L"복도로 진입", 744, 640, 232, 54, true});
+            page.body = L"이동: 시간 진행 · 본체 명중: 내 총 파손 · 빈손 + E: 재무장\n"
+                        L"분석: 드래그 공전 · 휠 확대 · E/Esc 닫기";
+            page.buttons.push_back({UiAction::Advance, L"Enter · 복도로 진입", 744, 616, 232, 44, true});
+            page.buttons.push_back({UiAction::Analyze, L"드론 분석", 744, 668, 232, 44, true});
         }
         else if (flow.Stage() == CampaignStage::Corridor)
         {

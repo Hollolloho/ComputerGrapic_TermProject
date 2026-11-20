@@ -55,6 +55,7 @@ public:
     double PreviewTimeScale() const;
     bool AnalysisActive() const;
     bool CloseAnalysis();
+    void ScrollAnalysis(double wheelSteps);
     const combat::AnalysisSession& AnalysisState() const;
     const CombatScene& Combat() const;
 

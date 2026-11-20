@@ -143,6 +143,9 @@ public:
         return analysis.Active();
     }
 
+    void OpenEntryAnalysis() { analysis.Open(); }
+    void ScrollAnalysis(double wheelSteps) { analysis.Zoom(wheelSteps); }
+
     bool CloseAnalysis()
     {
         return analysis.Close();
@@ -251,6 +254,7 @@ private:
     bool mouseHeld{};
     bool coverHeld{};
     bool lookHeld{};
+    bool analysisDragHeld{};
     bool dropHeld{};
     bool interactHeld{};
     bool corridorMode{};

@@ -14,7 +14,12 @@ public:
                        std::span<const Collider> obstacles, std::optional<float> weaponDistance) const;
     bool Open(bool safe, const Collider& terminal, const glm::vec3& eye, const glm::vec3& direction,
               std::span<const Collider> obstacles, std::optional<float> weaponDistance = {});
+    bool Open();
     bool Close();
+    void Orbit(float mouseX, float mouseY);
+    void Zoom(double wheelSteps);
+    glm::vec3 EyePosition() const;
+    float FieldOfView() const { return fov; }
 
     void Reset()
     {
@@ -39,5 +44,8 @@ public:
 private:
     bool active{};
     std::uint64_t entries{}, exits{};
+    float yaw{35.f};
+    float pitch{18.f};
+    float fov{45.f};
 };
 } // namespace aegis::combat

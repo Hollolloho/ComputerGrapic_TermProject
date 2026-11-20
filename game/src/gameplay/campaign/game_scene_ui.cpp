@@ -10,7 +10,7 @@ void GameScene::SampleInput(GLFWwindow* window, bool active)
     bool consumed = false;
     const auto action = menu->SampleInput(window, active && !AnalysisActive(), Page(), consumed);
     ApplyAction(action);
-    combatScene->SampleInput(window, active && flow.WorldRuns() && !consumed);
+    combatScene->SampleInput(window, active && (flow.WorldRuns() || AnalysisActive()) && !consumed);
 }
 
 void GameScene::ApplyAction(UiAction action)
@@ -41,6 +41,12 @@ void GameScene::ApplyAction(UiAction action)
         if (ReadyToAdvance() && flow.Advance(true))
         {
             LoadStage();
+        }
+        break;
+    case UiAction::Analyze:
+        if (flow.Screen() == CampaignScreen::Playing && flow.Stage() == CampaignStage::Entry)
+        {
+            combatScene->OpenEntryAnalysis();
         }
         break;
     case UiAction::Resume:

@@ -75,6 +75,7 @@ bool GameFrameWork::Init()
 	glfwSetWindowUserPointer(window, this);
 	glfwSetKeyCallback(window, KeyCallBack);
 	glfwSetCursorPosCallback(window, CursorPosCallback);
+	glfwSetScrollCallback(window, ScrollCallback);
 	glfwSetWindowFocusCallback(window, WindowFocusCallback);
 	glfwSetWindowIconifyCallback(window, WindowFocusCallback);
 	WindowFocusCallback(window, glfwGetWindowAttrib(window, GLFW_FOCUSED));
@@ -254,6 +255,13 @@ void GameFrameWork::CursorPosCallback(GLFWwindow* window, double x, double y)
 	lastMouseX = x;
 	lastMouseY = y;
 	firstMouse = false;
+}
+
+void GameFrameWork::ScrollCallback(GLFWwindow* window, double, double yOffset)
+{
+	auto& game = *static_cast<GameFrameWork*>(glfwGetWindowUserPointer(window));
+	if (mouseFocused)
+		game.scene.ScrollAnalysis(yOffset);
 }
 
 void GameFrameWork::WindowFocusCallback(GLFWwindow* window, int)

@@ -289,9 +289,9 @@ void CombatScene::DrawAnalysis(int width, int height) const
     glDisable(GL_CULL_FACE);
     glClearColor(0.025f, 0.055f, 0.09f, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    const glm::vec3 eye{3.2f, 1.8f, 4.5f};
+    const glm::vec3 eye = analysis.EyePosition();
     const auto viewProjection =
-        glm::perspective(glm::radians(45.0f), static_cast<float>(width) / height, 0.05f, 30.0f) *
+        glm::perspective(glm::radians(analysis.FieldOfView()), static_cast<float>(width) / height, 0.05f, 30.0f) *
         glm::lookAt(eye, glm::vec3(0), glm::vec3(0, 1, 0));
     drone.Draw(viewProjection, glm::mat4(1), false, true, true);
     glEnable(GL_SCISSOR_TEST);

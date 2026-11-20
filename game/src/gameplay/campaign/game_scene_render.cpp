@@ -24,6 +24,11 @@ void GameScene::Draw(int width, int height, const Camera* playerCamera) const
     {
         return;
     }
+    if (AnalysisActive())
+    {
+        DrawBattle(width, height, playerCamera);
+        return;
+    }
     if (flow.Stage() == CampaignStage::Entry || flow.Screen() == CampaignScreen::Title ||
         flow.Screen() == CampaignScreen::Help)
     {
