@@ -68,6 +68,8 @@
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\ai_core\obj\core_glass.obj" TargetPath="asset\ai_core\obj\core_glass.obj" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\ai_core\obj\core_hologram.obj" TargetPath="asset\ai_core\obj\core_hologram.obj" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\ai_core\obj\ai_core.mtl" TargetPath="asset\ai_core\obj\ai_core.mtl" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\AEGIS_Turrets\Twin\Twin.obj" TargetPath="asset\AEGIS_Turrets\Twin\Twin.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\AEGIS_Turrets\Twin\Twin.mtl" TargetPath="asset\AEGIS_Turrets\Twin\Twin.mtl" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\AEGIS_Turrets\Single_C\Single_C.obj" TargetPath="asset\AEGIS_Turrets\Single_C\Single_C.obj" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\AEGIS_Turrets\Single_C\Single_C.mtl" TargetPath="asset\AEGIS_Turrets\Single_C\Single_C.mtl" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\AEGIS_Turrets\Single_C\BaseColor.png" TargetPath="asset\AEGIS_Turrets\Single_C\BaseColor.png" />

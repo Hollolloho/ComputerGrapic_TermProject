@@ -1,0 +1,8 @@
+newmtl Hull
+Kd 0.30 0.36 0.40
+
+newmtl Gunmetal
+Kd 0.085 0.10 0.12
+
+newmtl Sensor
+Kd 0.85 0.018 0.012
