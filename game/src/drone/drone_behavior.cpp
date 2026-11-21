@@ -151,6 +151,11 @@ void DroneBehavior::MovingDrone(float gameDeltaTime, std::span<const Collider> w
     isTurning = position.z == targetZ;
 }
 
+bool DroneBehavior::DetectPlayer(const glm::vec3& eye, std::span<const Collider> walls) const
+{
+    return false; // 정면 시야 판정을 작성하기 전의 임시 반환값
+}
+
 bool DroneBehavior::Update(float gameDeltaTime, const glm::vec3& eye, std::span<const Collider> walls)
 {
     if (!std::isfinite(gameDeltaTime) || gameDeltaTime <= 0 || !Finite(eye))

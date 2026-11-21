@@ -64,6 +64,9 @@ private:
     Collider Bounds(ObjectId id, HitKind kind, const glm::vec3& low, const glm::vec3& high) const;
     bool Visible(const glm::vec3& eye, std::span<const Collider> walls) const;
     void MovingDrone(float gameDeltaTime, std::span<const Collider> walls);
+    //std::span()이미 있는 배열이나 vector의 원소들을 복사하지 않고 볼 수 있게 해주는 타입
+    bool DetectPlayer(const glm::vec3& eye, std::span<const Collider> walls) const;
+
     glm::vec3 spawn{-0.65f, 1.8f, -10};
     float spawnYaw{};
     float patrolEndZ{-10.f};
