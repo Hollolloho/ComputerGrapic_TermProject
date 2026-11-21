@@ -62,12 +62,12 @@ BossPose MakeBossPose(float armorOpen, const glm::vec3& aim)
         }
         auto model = glm::translate(parent, offset);
         auto angles = node.rotation;
-        if (i == boss_asset::turret_L_yaw || i == boss_asset::turret_R_yaw)
+        if (i == boss_asset::turret_L_rotY || i == boss_asset::turret_R_rotY)
         {
             const auto d = aim - glm::vec3(model[3]);
             angles.y = std::clamp(glm::degrees(std::atan2(d.x, d.z)), -25.0f, 25.0f);
         }
-        if (i == boss_asset::turret_L_pitch || i == boss_asset::turret_R_pitch)
+        if (i == boss_asset::turret_L_rotX || i == boss_asset::turret_R_rotX)
         {
             const auto local = glm::vec3(glm::inverse(parent) * glm::vec4(aim, 1));
             angles.x = std::clamp(

@@ -53,7 +53,6 @@ struct Flight
     float age{};
 };
 
-bool IsFinite(const glm::vec3& value);
 void RemoveExpiredFlights(std::vector<Flight>& flights);
 
 // Rejects non-finite inputs, zero direction and non-positive speed.

@@ -104,8 +104,8 @@ void Turret::Draw(const glm::mat4& viewProjection, const glm::vec3& eye,
     const auto base = position;
     const auto barrel = turret.BarrelTransform();
     const auto forward = glm::vec3(barrel[2]);
-    const float yaw = std::atan2(forward.x, forward.z);
-    const auto head = glm::rotate(position, yaw, glm::vec3(0, 1, 0));
+    const float rotY = std::atan2(forward.x, forward.z);
+    const auto head = glm::rotate(position, rotY, glm::vec3(0, 1, 0));
     const std::array<glm::mat4, 3> transforms{
         base * axes, head * axes, glm::translate(barrel, glm::vec3(0, -1.62f, 0)) * axes};
 

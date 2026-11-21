@@ -1,5 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
+#include "main/GameMath.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
 #include <optional>
@@ -23,9 +24,7 @@ class PlayerViewInput
 public:
     bool Set(const PlayerView& input)
     {
-        const auto finite = [](const glm::vec3& v)
-        { return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z); };
-        if (!finite(input.eye) || !finite(input.forward) || !finite(input.up) ||
+        if (!IsFinite(input.eye) || !IsFinite(input.forward) || !IsFinite(input.up) ||
             !std::isfinite(input.verticalFovDegrees) || input.verticalFovDegrees < 35 ||
             input.verticalFovDegrees > 70)
         {

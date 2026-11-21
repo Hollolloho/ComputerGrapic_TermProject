@@ -44,8 +44,8 @@ public:
 private:
     bool active{};
     std::uint64_t entries{}, exits{};
-    float yaw{35.f};
-    float pitch{18.f};
+    float rotY{35.f};
+    float rotX{18.f};
     float fov{45.f};
 };
 } // namespace aegis::combat

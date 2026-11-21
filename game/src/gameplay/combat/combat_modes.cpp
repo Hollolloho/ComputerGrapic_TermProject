@@ -74,7 +74,7 @@ void CombatScene::SetCombatMapMode(bool enabled)
     // 순찰 끝의 엄폐물(Cover_A02) 위로 무기까지 통과할 높이를 확보한다.
     glm::vec3 droneStart = combat_map_asset::droneSpawn;
     droneStart.y += 0.4f;
-    encounter.SetDroneSpawn(droneStart, glm::radians(combat_map_asset::droneYawDegrees), -14.40f);
+    encounter.SetDroneSpawn(droneStart, glm::radians(combat_map_asset::droneRotYDegrees), -14.40f);
     encounter.SetSupply(combat_map_asset::supply);
     encounter.SetDroneMode(true);
     encounter.SetTurrets(combat::TurretType::SingleC, {{-1.55f, 0, -15.9f}});
@@ -98,7 +98,7 @@ void CombatScene::SetMaintenanceMode(bool coreApproach)
     encounter.SetEnvironment(walls);
 
     const auto& placement = combat_map_asset::friendDrones[1];
-    encounter.SetDroneSpawn(placement.position, glm::radians(placement.yawDegrees), placement.position.z);
+    encounter.SetDroneSpawn(placement.position, glm::radians(placement.rotYDegrees), placement.position.z);
     encounter.SetDroneScale(placement.scale);
     encounter.SetSupply(SupplyPosition());
     Reset();
@@ -178,9 +178,9 @@ void CombatScene::ToggleBossCover()
     bossCovered = !bossCovered;
     const auto target = bossCovered ? boss_asset::supplyInteraction : boss.CoreCenter();
     const auto d = glm::normalize(target - (CameraRoot() + glm::vec3(0, 1.65f, 0)));
-    yaw = glm::degrees(std::atan2(-d.x, -d.z));
-    pitch = glm::degrees(std::asin(d.y));
-    camera.SetPose(CameraRoot(), yaw, pitch);
+    rotY = glm::degrees(std::atan2(-d.x, -d.z));
+    rotX = glm::degrees(std::asin(d.y));
+    camera.SetPose(CameraRoot(), rotY, rotX);
     lookHeld = false;
 }
 

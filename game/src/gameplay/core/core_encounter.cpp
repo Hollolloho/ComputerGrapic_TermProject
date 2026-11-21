@@ -1,4 +1,5 @@
 #include "core_encounter.h"
+#include "main/GameMath.h"
 #include "combat_map/combat_map_layout.generated.h"
 #include <algorithm>
 #include <cmath>
@@ -46,7 +47,7 @@ void CoreEncounter::Reset()
     for (std::size_t i = 0; i < drones.size(); ++i)
     {
         const auto& placement = combat_map_asset::friendDrones[i + 2];
-        drones[i].SetSpawn(placement.position, glm::radians(placement.yawDegrees), patrolEndZ[i]);
+        drones[i].SetSpawn(placement.position, glm::radians(placement.rotYDegrees), patrolEndZ[i]);
         drones[i].SetScale(placement.scale);
     }
     turrets[0].Configure(TurretType::Twin, {4.4f, 0, -60.9f}, 0, 3.28f);

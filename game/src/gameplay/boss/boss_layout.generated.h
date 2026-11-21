@@ -41,10 +41,10 @@ inline const std::array<Part,14> parts{{
 }};
 inline constexpr int lower_armor_L_slide=6;
 inline constexpr int lower_armor_R_slide=10;
-inline constexpr int turret_L_yaw=7;
-inline constexpr int turret_L_pitch=8;
-inline constexpr int turret_R_yaw=11;
-inline constexpr int turret_R_pitch=12;
+inline constexpr int turret_L_rotY=7;
+inline constexpr int turret_L_rotX=8;
+inline constexpr int turret_R_rotY=11;
+inline constexpr int turret_R_rotX=12;
 inline constexpr int muzzle_L=9;
 inline constexpr int muzzle_R=13;
 inline constexpr int core_visual=4;
@@ -73,7 +73,7 @@ inline const std::array<combat::Collider,12> walls{{
     {22010,combat::HitKind::Wall,{2.02000000f,0.00000000f,-4.06000000f},{3.42000000f,0.90000000f,-3.31750000f}},
     {22011,combat::HitKind::Wall,{-3.09500000f,-0.05600000f,-0.02300000f},{3.09500000f,0.00000000f,0.23200000f}},
 }};
-struct Cover { glm::vec3 translation,scale; float yaw; };
+struct Cover { glm::vec3 translation,scale; float rotYDegrees; };
 inline const std::array<Cover,2> covers{{
     {{-2.71000000f,0.00000000f,-4.70000000f},{1.00000000f,1.55000000f,1.00000000f},90.00000000f},
     {{2.71000000f,0.00000000f,-4.70000000f},{1.00000000f,1.55000000f,1.00000000f},90.00000000f},

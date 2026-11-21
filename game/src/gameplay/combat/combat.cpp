@@ -1,5 +1,6 @@
 // 탄환의 이전 위치와 다음 위치 사이에서 가장 가까운 충돌을 찾는다.
 #include "combat.h"
+#include "main/GameMath.h"
 
 #include <algorithm>
 #include <cmath>
@@ -7,11 +8,6 @@
 
 namespace aegis::combat
 {
-
-bool IsFinite(const glm::vec3& value)
-{
-    return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
-}
 
 void RemoveExpiredFlights(std::vector<Flight>& flights)
 {

@@ -1,37 +1,24 @@
 // 드론의 순찰 → 조준 경고 → 사격 → 대기와 무장 해제·파괴 상태를 관리한다.
 #include "drone_behavior.h"
+#include "main/GameMath.h"
 #include <algorithm>
 #include <cmath>
 #include <limits>
 #include <glm/geometric.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/trigonometric.hpp>
 
-namespace aegis::combat{
-
-namespace
+namespace aegis::combat
 {
 
-bool Finite(const glm::vec3& v)
+bool DroneBehavior::SetSpawn(const glm::vec3& point, float rotYRadians, float endZ)
 {
-    return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
-}
-
-glm::vec3 Rotate(const glm::vec3& v, float yaw)
-{
-    const auto c = std::cos(yaw), s = std::sin(yaw);
-    return {c * v.x + s * v.z, v.y, -s * v.x + c * v.z};
-}
-
-} // namespace
-
-bool DroneBehavior::SetSpawn(const glm::vec3& point, float yawRadians, float endZ)
-{
-    if (!Finite(point) || !std::isfinite(yawRadians) || !std::isfinite(endZ))
+    if (!IsFinite(point) || !std::isfinite(rotYRadians) || !std::isfinite(endZ))
     {
         return false;
     }
     spawn = point;
-    spawnYaw = yawRadians;
+    spawnRotY = rotYRadians;
     patrolEndZ = endZ;
     Reset();
     return true;
@@ -53,10 +40,10 @@ void DroneBehavior::Reset()
     position = spawn;
     aimPoint = {0, 0, 0};
     phase = DronePhase::Patrol;
-    patrolYaw = spawnYaw;
+    patrolRotY = spawnRotY;
     if (patrolEndZ < spawn.z)
-        patrolYaw += glm::radians(180.f);
-    yaw = patrolYaw;
+        patrolRotY += glm::radians(180.f);
+    rotY = patrolRotY;
     timer = 1.5f;
     movingToEnd = true;
     isTurning = false;
@@ -75,7 +62,7 @@ Collider DroneBehavior::Bounds(ObjectId id, HitKind kind, const glm::vec3& low, 
 
     for (const glm::vec3& corner : corners)
     {
-        glm::vec3 worldCorner = position + Rotate(corner * scale, yaw);
+        glm::vec3 worldCorner = position + RotateY(corner * scale, rotY);
         minimum = glm::min(minimum, worldCorner);
         maximum = glm::max(maximum, worldCorner);
     }
@@ -94,9 +81,16 @@ Collider DroneBehavior::Weapon() const
     return box;
 }
 
+glm::mat4 DroneBehavior::WorldTransform() const
+{
+    glm::mat4 world = glm::translate(glm::mat4(1), position);
+    world = glm::rotate(world, rotY, glm::vec3(0, 1, 0));
+    return glm::scale(world, glm::vec3(scale));
+}
+
 glm::vec3 DroneBehavior::Muzzle() const
 {
-    return position + Rotate(glm::vec3(0, -0.35f, 0.68f) * scale, yaw);
+    return position + RotateY(glm::vec3(0, -0.35f, 0.68f) * scale, rotY);
 }
 
 bool DroneBehavior::Visible(const glm::vec3& eye, std::span<const Collider> walls) const
@@ -108,17 +102,17 @@ void DroneBehavior::MovingDrone(float gameDeltaTime, std::span<const Collider> w
 {
     // 조준이 끝나면 멈췄던 순찰 방향과 회전 각도에서 이어간다.
 
-    yaw = patrolYaw;
+    rotY = patrolRotY;
     if (patrolEndZ == spawn.z)
         return;
 
     if (isTurning)
     {
         turnDegrees = std::min(180.f, turnDegrees + 60.f * gameDeltaTime);
-        yaw += glm::radians(turnDegrees);
+        rotY += glm::radians(turnDegrees);
         if (turnDegrees >= 180.f)
         {
-            patrolYaw = std::remainder(yaw, glm::radians(360.f));
+            patrolRotY = std::remainder(rotY, glm::radians(360.f));
             movingToEnd = !movingToEnd;
             isTurning = false;
             turnDegrees = 0.f;
@@ -160,15 +154,15 @@ void DroneBehavior::MovingDrone(float gameDeltaTime, std::span<const Collider> w
 bool DroneBehavior::DetectPlayer(const glm::vec3& eye, std::span<const Collider> walls) const
 {
     glm::vec3 sensor_offset(0.f, -0.015f, 0.49f);
-    glm::vec3 sensor_pos = position + Rotate(sensor_offset * scale, yaw);
+    glm::vec3 sensor_pos = position + RotateY(sensor_offset * scale, rotY);
     glm::vec3 to_player = eye - sensor_pos;
 
     const float distance = glm::length(to_player);
 
     if (distance < 0.0001f || distance >= 18.f)
         return false;
-    // 0,0,1은 모델의 정면, yaw만큼 돌리면 현재 드론이 보는 방향이 됨
-    glm::vec3 forward = Rotate(glm::vec3(0.f, 0.f, 1.f), yaw);
+    // 0,0,1은 모델의 정면, rotY만큼 돌리면 현재 드론이 보는 방향이 됨
+    glm::vec3 forward = RotateY(glm::vec3(0.f, 0.f, 1.f), rotY);
     glm::vec3 player_dir = to_player / distance;
 
     float facing = glm::dot(forward, player_dir);
@@ -182,7 +176,7 @@ bool DroneBehavior::DetectPlayer(const glm::vec3& eye, std::span<const Collider>
 
 bool DroneBehavior::Update(float gameDeltaTime, const glm::vec3& eye, std::span<const Collider> walls)
 {
-    if (!std::isfinite(gameDeltaTime) || gameDeltaTime <= 0 || !Finite(eye))
+    if (!std::isfinite(gameDeltaTime) || gameDeltaTime <= 0 || !IsFinite(eye))
     {
         return false;
     }
@@ -205,11 +199,11 @@ bool DroneBehavior::Update(float gameDeltaTime, const glm::vec3& eye, std::span<
         if (direction.x * direction.x + direction.z * direction.z < 0.000001f)
             break;
 
-        const float targetYaw = std::atan2(direction.x, direction.z);
+        const float targetRotY = std::atan2(direction.x, direction.z);
         // +179도에서 -179도를 볼 때도 짧은 방향으로 회전한다.
-        const float angleDiff = std::remainder(targetYaw - yaw, glm::radians(360.0f));
+        const float angleDiff = std::remainder(targetRotY - rotY, glm::radians(360.0f));
         const float maxStep = glm::radians(90.0f) * gameDeltaTime;
-        yaw += std::clamp(angleDiff, -maxStep, maxStep);
+        rotY += std::clamp(angleDiff, -maxStep, maxStep);
 
         if (Visible(eye, walls))
         {

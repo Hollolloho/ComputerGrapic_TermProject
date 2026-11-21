@@ -34,7 +34,7 @@ void BossView::Draw(const glm::mat4& projection, const glm::mat4& view, const gl
     for (const auto& p : boss_asset::covers)
     {
         const auto matrix = glm::scale(
-            glm::rotate(glm::translate(glm::mat4(1), p.translation), glm::radians(p.yaw), {0, 1, 0}),
+            glm::rotate(glm::translate(glm::mat4(1), p.translation), glm::radians(p.rotYDegrees), {0, 1, 0}),
             p.scale);
         renderer.Draw(cover, viewProjection, matrix);
     }

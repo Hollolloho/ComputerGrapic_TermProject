@@ -23,7 +23,7 @@ public:
     void Update(double realDeltaTime);
     void Draw(float aspect) const;
     void DrawWorld(const glm::mat4& projection, const glm::mat4& view, const glm::vec3& position,
-                   float yawDegrees = 90) const;
+                   float rotYDegrees = 90) const;
     void Clear();
 
     int ShotCount() const

@@ -51,8 +51,8 @@ bool AnalysisSession::Open()
     {
         return false;
     }
-    yaw = 35.f;
-    pitch = 18.f;
+    rotY = 35.f;
+    rotX = 18.f;
     fov = 45.f;
     active = true;
     ++entries;
@@ -77,8 +77,8 @@ void AnalysisSession::Orbit(float mouseX, float mouseY)
         return;
     }
     const float sensitivity = 0.35f;
-    yaw = std::fmod(yaw + mouseX * sensitivity, 360.f);
-    pitch = std::clamp(pitch - mouseY * sensitivity, -60.f, 60.f);
+    rotY = std::fmod(rotY + mouseX * sensitivity, 360.f);
+    rotX = std::clamp(rotX - mouseY * sensitivity, -60.f, 60.f);
 }
 
 void AnalysisSession::Zoom(double wheelSteps)
@@ -92,8 +92,8 @@ void AnalysisSession::Zoom(double wheelSteps)
 glm::vec3 AnalysisSession::EyePosition() const
 {
     // 실습처럼 고정 반경의 카메라 위치만 피벗 주위로 회전한다.
-    glm::mat4 orbit = glm::rotate(glm::mat4(1), glm::radians(yaw), glm::vec3(0, 1, 0));
-    orbit = glm::rotate(orbit, glm::radians(-pitch), glm::vec3(1, 0, 0));
+    glm::mat4 orbit = glm::rotate(glm::mat4(1), glm::radians(rotY), glm::vec3(0, 1, 0));
+    orbit = glm::rotate(orbit, glm::radians(-rotX), glm::vec3(1, 0, 0));
     return glm::vec3(orbit * glm::vec4(0, 0, 5.8f, 1));
 }
 } // namespace aegis::combat

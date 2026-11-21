@@ -141,14 +141,14 @@ void CombatScene::Reset()
     boss.Reset();
     core.Reset();
     bossCovered = false;
-    yaw = pitch = 0;
+    rotY = rotX = 0;
     if (bossMode || coreMode)
     {
         const auto target = coreMode ? core.CoreCenter() : boss.CoreCenter();
         const auto d = glm::normalize(target - (CameraRoot() + glm::vec3(0, 1.65f, 0)));
-        pitch = glm::degrees(std::asin(d.y));
+        rotX = glm::degrees(std::asin(d.y));
     }
-    camera.SetPose(CameraRoot(), yaw, pitch);
+    camera.SetPose(CameraRoot(), rotY, rotX);
     // Held input remains latched until release (R must not create a fresh shot).
     lookHeld = false;
 }
@@ -211,11 +211,7 @@ void CombatScene::ObserveDestruction()
 {
     if (coreMode) return;
     const auto& state = encounter.DroneState();
-    // 실습과 같은 순서로 위치 → 회전 → 크기를 적용한다.
-    glm::mat4 droneWorld = glm::translate(glm::mat4(1), state.Position());
-    droneWorld = glm::rotate(droneWorld, state.Yaw(), glm::vec3(0, 1, 0));
-    droneWorld = glm::scale(droneWorld, glm::vec3(state.Scale()));
-    destruction.ObserveEnemy(0, IsDroneMode() && encounter.EnemyAlive(), droneWorld);
+    destruction.ObserveEnemy(0, IsDroneMode() && encounter.EnemyAlive(), state.WorldTransform());
     for (std::size_t i = 0; !bossMode && i < encounter.Turrets().size(); ++i)
     {
         const auto& turret = encounter.Turrets()[i];

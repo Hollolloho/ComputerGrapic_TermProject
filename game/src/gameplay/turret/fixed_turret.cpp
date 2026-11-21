@@ -1,5 +1,6 @@
 // 제자리 포탑의 조준 경고와 사격 간격을 세계 시간으로 갱신한다.
 #include "fixed_turret.h"
+#include "main/GameMath.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 #include <cmath>
@@ -9,10 +10,6 @@ namespace aegis::combat
 {
 namespace
 {
-bool Finite(const glm::vec3& v)
-{
-    return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
-}
 const float pivotHeight = 1.62f;
 const float barrelReach = 1.115f;
 const float twinBarrelOffset = 0.57f;
@@ -20,7 +17,7 @@ const float twinBarrelOffset = 0.57f;
 
 bool FixedTurret::SetPosition(const glm::vec3& point)
 {
-    if (!Finite(point))
+    if (!IsFinite(point))
     {
         return false;
     }
@@ -29,11 +26,11 @@ bool FixedTurret::SetPosition(const glm::vec3& point)
     return true;
 }
 
-void FixedTurret::Configure(TurretType model, const glm::vec3& point, ObjectId index, float yawDegrees)
+void FixedTurret::Configure(TurretType model, const glm::vec3& point, ObjectId index, float rotYDegrees)
 {
     type = model;
     number = index;
-    spawnYaw = glm::radians(yawDegrees);
+    spawnRotY = glm::radians(rotYDegrees);
     SetPosition(point);
 }
 
@@ -41,7 +38,7 @@ void FixedTurret::Reset()
 {
     phase = TurretPhase::Idle;
     timer = 0;
-    direction = {std::sin(spawnYaw), 0, std::cos(spawnYaw)};
+    direction = RotateY({0, 0, 1}, spawnRotY);
     firingBarrel = 0;
     aimPoint = position + glm::vec3(0, pivotHeight, 0) + direction * 5.0f;
 }
@@ -74,11 +71,11 @@ glm::vec3 FixedTurret::Muzzle() const
 
 glm::mat4 FixedTurret::BarrelTransform() const
 {
-    const float yaw = std::atan2(direction.x, direction.z);
-    const float pitch = -std::asin(std::clamp(direction.y, -1.0f, 1.0f));
+    const float rotY = std::atan2(direction.x, direction.z);
+    const float rotX = -std::asin(std::clamp(direction.y, -1.0f, 1.0f));
     glm::mat4 transform = glm::translate(glm::mat4(1), position + glm::vec3(0, pivotHeight, 0));
-    transform = glm::rotate(transform, yaw, glm::vec3(0, 1, 0));
-    transform = glm::rotate(transform, pitch, glm::vec3(1, 0, 0));
+    transform = glm::rotate(transform, rotY, glm::vec3(0, 1, 0));
+    transform = glm::rotate(transform, rotX, glm::vec3(1, 0, 0));
     return transform;
 }
 
@@ -112,7 +109,7 @@ Collider FixedTurret::Weapon(int barrel) const
 
 bool FixedTurret::Update(float gameDeltaTime, const glm::vec3& eye, std::span<const Collider> walls)
 {
-    if (!Armed() || !std::isfinite(gameDeltaTime) || gameDeltaTime <= 0 || !Finite(eye))
+    if (!Armed() || !std::isfinite(gameDeltaTime) || gameDeltaTime <= 0 || !IsFinite(eye))
     {
         return false;
     }

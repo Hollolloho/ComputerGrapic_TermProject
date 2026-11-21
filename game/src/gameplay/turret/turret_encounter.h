@@ -27,7 +27,7 @@ public:
         return true;
     }
 
-    bool SetDroneSpawn(const glm::vec3& point, float yawRadians, float endZ);
+    bool SetDroneSpawn(const glm::vec3& point, float rotYRadians, float endZ);
     bool SetSupply(const glm::vec3& point);
     void SetExitDoors(ObjectId left, ObjectId right, float distance);
     void SetTurrets(TurretType type, std::initializer_list<glm::vec3> positions, bool primary = true);

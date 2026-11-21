@@ -65,12 +65,14 @@
     <ClCompile Include="src\drone\drone.cpp" />
     <ClCompile Include="src\framework\Game_FrameWork.cpp" />
     <ClCompile Include="src\main\main.cpp" />
+    <ClCompile Include="src\main\GameMath.cpp" />
     <ClCompile Include="src\loader\model_loader.cpp" />
     <ClCompile Include="src\loader\RenderMesh.cpp" />
     <ClCompile Include="src\loader\Shader.cpp" />
     <ClCompile Include="src\loader\Texture.cpp" />
     <ClInclude Include="src\camera\Camera.h" />
     <ClInclude Include="src\combat_map\CombatMap.h" />
+    <ClInclude Include="src\main\GameMath.h" />
     <ClInclude Include="src\main\Common.h" />
     <ClInclude Include="src\drone\drone.h" />
     <ClInclude Include="src\framework\FrameWork.h" />

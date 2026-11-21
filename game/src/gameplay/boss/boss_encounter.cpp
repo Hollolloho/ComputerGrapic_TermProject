@@ -1,5 +1,6 @@
 // 보스의 공격 패턴, 약점 명중과 승패를 관리한다.
 #include "boss_encounter.h"
+#include "main/GameMath.h"
 #include <algorithm>
 #include <cmath>
 #include <glm/geometric.hpp>

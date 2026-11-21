@@ -62,6 +62,8 @@
     <ClInclude Include="src\combat_map\CombatMap.h">
       <Filter>CombatMap</Filter>
     </ClInclude>
+    <ClCompile Include="src\main\GameMath.cpp"><Filter>main</Filter></ClCompile>
+    <ClInclude Include="src\main\GameMath.h"><Filter>main</Filter></ClInclude>
     <ClInclude Include="src\main\Common.h">
       <Filter>main</Filter>
     </ClInclude>

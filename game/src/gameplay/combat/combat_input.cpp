@@ -64,9 +64,9 @@ void CombatScene::SampleInput(GLFWwindow* window, bool canReceiveInput, bool fir
 
         if (!HasExternalPlayerView() && canEquip && right && lookHeld)
         {
-            yaw -= static_cast<float>(x - lastX) * 0.14f;
-            pitch = std::clamp(pitch - static_cast<float>(y - lastY) * 0.14f, -65.0f, 65.0f);
-            camera.SetPose(CameraRoot(), yaw, pitch);
+            rotY -= static_cast<float>(x - lastX) * 0.14f;
+            rotX = std::clamp(rotX - static_cast<float>(y - lastY) * 0.14f, -65.0f, 65.0f);
+            camera.SetPose(CameraRoot(), rotY, rotX);
         }
 
         if (!coreMode && !HasExternalPlayerView() && playing && cover && !coverHeld)

@@ -1,5 +1,6 @@
 // 드론·포탑 전투의 상태를 관리한다. Update에서 처리 순서를 확인할 수 있다.
 #include "turret_encounter.h"
+#include "main/GameMath.h"
 
 #include <algorithm>
 #include <cmath>
@@ -117,9 +118,9 @@ void TurretEncounter::UpdateDoors(float gameDeltaTime)
     }
 }
 
-bool TurretEncounter::SetDroneSpawn(const glm::vec3& point, float yawRadians, float endZ)
+bool TurretEncounter::SetDroneSpawn(const glm::vec3& point, float rotYRadians, float endZ)
 {
-    if (!drone.SetSpawn(point, yawRadians, endZ))
+    if (!drone.SetSpawn(point, rotYRadians, endZ))
     {
         return false;
     }

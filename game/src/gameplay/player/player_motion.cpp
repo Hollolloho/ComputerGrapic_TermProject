@@ -1,5 +1,6 @@
 // 플레이어를 벽에 닿기 직전까지만 이동시키고, 막히지 않은 방향으로 미끄러지게 한다.
 #include "player_motion.h"
+#include "main/GameMath.h"
 #include <glm/glm.hpp>
 #include <algorithm>
 #include <array>
@@ -12,15 +13,10 @@ namespace
 {
 constexpr float Radius = 0.3f, Skin = 0.001f;
 
-bool Finite(const glm::vec3& v)
-{
-    return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
-}
-
 bool Blocks(const Collider& wall, float eyeY)
 {
     return wall.enabled && (wall.kind == HitKind::Wall || wall.kind == HitKind::Armor) &&
-           Finite(wall.minimum) && Finite(wall.maximum) &&
+           IsFinite(wall.minimum) && IsFinite(wall.maximum) &&
            glm::all(glm::lessThanEqual(wall.minimum, wall.maximum)) &&
            wall.maximum.y > eyeY - 1.65f + 0.18f && wall.minimum.y < eyeY + 0.15f - Skin;
 }
@@ -74,7 +70,7 @@ bool Sweep(const glm::vec2& p, const glm::vec2& d, const glm::vec2& low, const g
 glm::vec3 RequestedPlayerMovement(const glm::vec3& viewDirection, float forwardInput, float rightInput,
                                  float distance)
 {
-    if (!Finite(viewDirection) || !std::isfinite(forwardInput) || !std::isfinite(rightInput) ||
+    if (!IsFinite(viewDirection) || !std::isfinite(forwardInput) || !std::isfinite(rightInput) ||
         !std::isfinite(distance) || distance <= 0)
     {
         return glm::vec3(0.f);
@@ -99,7 +95,7 @@ glm::vec3 RequestedPlayerMovement(const glm::vec3& viewDirection, float forwardI
 PlayerMove MovePlayer(const glm::vec3& eye, const glm::vec3& desired, std::span<const Collider> walls)
 {
     PlayerMove result{eye, glm::vec3(0), false};
-    if (!Finite(eye) || !Finite(desired))
+    if (!IsFinite(eye) || !IsFinite(desired))
     {
         return result;
     }
@@ -206,7 +202,7 @@ PlayerMove MovePlayer(const glm::vec3& eye, const glm::vec3& desired, std::span<
 
 double MovementTimeScale(const glm::vec3& actual, double realDeltaTime, double normalSpeed)
 {
-    if (!Finite(actual) || !std::isfinite(realDeltaTime) || realDeltaTime <= 0 ||
+    if (!IsFinite(actual) || !std::isfinite(realDeltaTime) || realDeltaTime <= 0 ||
         !std::isfinite(normalSpeed) || normalSpeed <= 0)
     {
         return 0.05;

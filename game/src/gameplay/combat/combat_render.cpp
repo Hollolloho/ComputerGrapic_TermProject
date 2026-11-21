@@ -20,10 +20,7 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
         for (const auto& state : core.Drones())
         {
             if (state.Phase() == combat::DronePhase::Destroyed) continue;
-            auto world = glm::translate(glm::mat4(1), state.Position());
-            world = glm::rotate(world, state.Yaw(), glm::vec3(0, 1, 0));
-            world = glm::scale(world, glm::vec3(state.Scale()));
-            drone.Draw(viewProjection, world, state.Phase() == combat::DronePhase::Warning, state.Armed());
+            drone.Draw(viewProjection, state.WorldTransform(), state.Phase() == combat::DronePhase::Warning, state.Armed());
         }
         for (const auto& turret : core.Turrets())
             twinModel.Draw(viewProjection, PlayerEye(), turret);
@@ -36,11 +33,7 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
     if (IsDroneMode() && encounter.EnemyAlive())
     {
         const auto& state = encounter.DroneState();
-        // 실습과 같은 순서로 위치 → 회전 → 크기를 적용한다.
-        glm::mat4 world = glm::translate(glm::mat4(1), state.Position());
-        world = glm::rotate(world, state.Yaw(), glm::vec3(0, 1, 0));
-        world = glm::scale(world, glm::vec3(state.Scale()));
-        drone.Draw(viewProjection, world, state.Phase() == combat::DronePhase::Warning, state.Armed());
+        drone.Draw(viewProjection, state.WorldTransform(), state.Phase() == combat::DronePhase::Warning, state.Armed());
     }
     if (!bossMode)
     {

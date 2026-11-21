@@ -10,7 +10,7 @@ class PlayerCamera
 public:
     PlayerCamera();
     void Reset();
-    void SetPose(const glm::vec3& position, float yawDegrees, float pitchDegrees);
+    void SetPose(const glm::vec3& position, float rotYDegrees, float rotXDegrees);
     glm::mat4 ParentTransform() const;
     glm::vec3 EyePosition() const;
     glm::vec3 ViewDirection() const;
@@ -18,8 +18,8 @@ public:
 
 private:
     glm::vec3 rootPosition{};
-    float yaw{};
-    float pitch{};
+    float rotY{};
+    float rotX{};
     const float eyeHeight = 1.65f;
 };
 

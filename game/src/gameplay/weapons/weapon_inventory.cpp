@@ -1,5 +1,6 @@
 // 장착 총, 떨어진 총, 보급과 총 파손을 관리한다. 무기 ID로 같은 총을 중복 처리하지 않는다.
 #include "weapon_inventory.h"
+#include "main/GameMath.h"
 #include <algorithm>
 #include <cmath>
 #include <glm/geometric.hpp>
@@ -10,15 +11,10 @@ namespace
 {
 constexpr ObjectId supplyId = 0xffffffffu;
 
-bool Finite(const glm::vec3& v)
-{
-    return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
-}
-
 bool Direction(const glm::vec3& v)
 {
     const auto length2 = glm::dot(v, v);
-    return Finite(v) && std::isfinite(length2) && length2 > 1e-8f;
+    return IsFinite(v) && std::isfinite(length2) && length2 > 1e-8f;
 }
 } // namespace
 
@@ -32,7 +28,7 @@ void WeaponInventory::Reset()
 
 bool WeaponInventory::SetSupplyPosition(const glm::vec3& point)
 {
-    if (!Finite(point))
+    if (!IsFinite(point))
     {
         return false;
     }
@@ -53,7 +49,7 @@ bool WeaponInventory::Break(ObjectId sourceId)
 
 bool WeaponInventory::Drop(const glm::vec3& eye, const glm::vec3& direction)
 {
-    if (!Armed() || !Finite(eye) || !Direction(direction) || drops.size() >= 64)
+    if (!Armed() || !IsFinite(eye) || !Direction(direction) || drops.size() >= 64)
     {
         return false;
     }
@@ -66,7 +62,7 @@ bool WeaponInventory::Drop(const glm::vec3& eye, const glm::vec3& direction)
 
 bool WeaponInventory::SpawnDrop(const glm::vec3& position)
 {
-    if (!Finite(position) || drops.size() >= 64 || nextId == supplyId)
+    if (!IsFinite(position) || drops.size() >= 64 || nextId == supplyId)
     {
         return false;
     }
@@ -77,7 +73,7 @@ bool WeaponInventory::SpawnDrop(const glm::vec3& position)
 std::optional<Hit> WeaponInventory::FindInteraction(const glm::vec3& eye, const glm::vec3& direction,
                                                     std::span<const Collider> obstacles) const
 {
-    if (Armed() || !Finite(eye) || !Direction(direction))
+    if (Armed() || !IsFinite(eye) || !Direction(direction))
     {
         return {};
     }
@@ -165,7 +161,7 @@ bool WeaponInventory::Interact(const glm::vec3& eye, const glm::vec3& direction,
 
 Collider WeaponInventory::HeldCollider(const glm::vec3& eye, const glm::vec3& direction) const
 {
-    if (!Armed() || !Finite(eye) || !Direction(direction))
+    if (!Armed() || !IsFinite(eye) || !Direction(direction))
     {
         return {0, HitKind::Weapon, {0, 0, 0}, {0, 0, 0}, false};
     }

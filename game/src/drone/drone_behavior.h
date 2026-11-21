@@ -1,6 +1,7 @@
 // 드론의 순찰, 경고, 조준과 사격 시점을 계산한다.
 #pragma once
 #include "gameplay/combat/combat.h"
+#include <glm/mat4x4.hpp>
 
 namespace aegis::combat
 {
@@ -26,7 +27,7 @@ public:
     }
 
     void Reset();
-    bool SetSpawn(const glm::vec3& point, float yawRadians, float endZ);
+    bool SetSpawn(const glm::vec3& point, float rotYRadians, float endZ);
     bool Update(float gameDeltaTime, const glm::vec3& eye, std::span<const Collider> walls);
     void Disarm();
     void Destroy();
@@ -46,11 +47,12 @@ public:
         return aimPoint;
     }
 
-    float Yaw() const
+    float RotationYRadians() const
     {
-        return yaw;
+        return rotY;
     } // Radians; model front is +Z.
 
+    glm::mat4 WorldTransform() const;
     glm::vec3 Muzzle() const;
     Collider Body() const;
     Collider Weapon() const;
@@ -68,14 +70,14 @@ private:
     bool DetectPlayer(const glm::vec3& eye, std::span<const Collider> walls) const;
 
     glm::vec3 spawn{-0.65f, 1.8f, -10};
-    float spawnYaw{};
+    float spawnRotY{};
     float patrolEndZ{-10.f};
-    float patrolYaw{};
+    float patrolRotY{};
     float scale{1};
     glm::vec3 position{-0.65f, 1.8f, -10};
     glm::vec3 aimPoint{0};
     DronePhase phase{DronePhase::Patrol};
-    float yaw{};
+    float rotY{};
     float timer{1.5f};
     bool movingToEnd{true};
     bool isTurning{};

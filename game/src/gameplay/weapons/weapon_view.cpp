@@ -63,10 +63,10 @@ void WeaponView::Draw(float aspect) const
 }
 
 void WeaponView::DrawWorld(const glm::mat4& projection, const glm::mat4& view, const glm::vec3& position,
-                           float yawDegrees) const
+                           float rotYDegrees) const
 {
     const auto model =
-        glm::rotate(glm::translate(glm::mat4(1), position), glm::radians(yawDegrees), glm::vec3(0, 1, 0));
+        glm::rotate(glm::translate(glm::mat4(1), position), glm::radians(rotYDegrees), glm::vec3(0, 1, 0));
     DrawMeshes(projection, view * model, 0);
 }
 

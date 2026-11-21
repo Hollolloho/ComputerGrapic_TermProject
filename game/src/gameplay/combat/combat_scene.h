@@ -260,8 +260,8 @@ private:
     bool corridorMode{};
     double lastX{};
     double lastY{};
-    float yaw{};
-    float pitch{};
+    float rotY{};
+    float rotX{};
 };
 
 } // namespace aegis

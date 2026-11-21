@@ -32,7 +32,7 @@ bool CampaignEnvironment::Init(const std::filesystem::path& root)
 
 void CampaignEnvironment::SetEntryCamera()
 {
-    camera.SetPose(campaign_asset::playerStart, campaign_asset::playerYaw, campaign_asset::playerPitch);
+    camera.SetPose(campaign_asset::playerStart, campaign_asset::playerRotYDegrees, campaign_asset::playerRotXDegrees);
 }
 
 bool CampaignEnvironment::InitCorridor(const std::filesystem::path& projectDirectory)
@@ -53,7 +53,7 @@ bool CampaignEnvironment::InitCorridor(const std::filesystem::path& projectDirec
         const auto& placement = placements[i];
         const glm::mat4 parent = placement.parent >= 0 ? corridor[placement.parent].model : glm::mat4(1.0f);
         object.model = glm::rotate(glm::translate(parent, placement.translation),
-                                   glm::radians(placement.yawDegrees), Up);
+                                   glm::radians(placement.rotYDegrees), Up);
 
         const auto path = directory / placement.file;
         ModelData model;
@@ -122,7 +122,7 @@ void CampaignEnvironment::DrawEntry(int width, int height) const
     }
     renderer.Draw(entryTerminal, viewProjection,
                   glm::rotate(glm::translate(glm::mat4(1), campaign_asset::terminalPosition),
-                              glm::radians(campaign_asset::terminalYaw), Up));
+                              glm::radians(campaign_asset::terminalRotYDegrees), Up));
 }
 
 void CampaignEnvironment::DrawBattle(const glm::mat4& viewProjection, const glm::vec3& eye,
