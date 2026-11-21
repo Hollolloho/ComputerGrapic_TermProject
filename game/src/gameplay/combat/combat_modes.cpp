@@ -38,7 +38,7 @@ void CombatScene::SetCorridorMode(bool enabled)
     maintenanceMode = false;
     encounter.SetDroneScale(1);
     encounter.SetSupportTurret(false);
-    encounter.SetDroneSpawn({-0.65f, 1.8f, -10}, 0, 0);
+    encounter.SetDroneSpawn({-0.65f, 1.8f, -10}, 0, -10.f);
     encounter.SetSupply(combat::WeaponInventory::SupplyPosition());
     corridorMode = enabled;
     std::vector<combat::Collider> walls;
@@ -71,8 +71,10 @@ void CombatScene::SetCombatMapMode(bool enabled)
     walls.push_back(TerminalCollider());
     encounter.SetEnvironment(walls);
     encounter.SetExitDoors(0, 0, 0);
-    encounter.SetDroneSpawn(combat_map_asset::droneSpawn, glm::radians(combat_map_asset::droneYawDegrees),
-                            combat_map_asset::droneSpawn.x);
+    // 순찰 끝의 엄폐물(Cover_A02) 위로 무기까지 통과할 높이를 확보한다.
+    glm::vec3 droneStart = combat_map_asset::droneSpawn;
+    droneStart.y += 0.4f;
+    encounter.SetDroneSpawn(droneStart, glm::radians(combat_map_asset::droneYawDegrees), -14.40f);
     encounter.SetSupply(combat_map_asset::supply);
     encounter.SetDroneMode(true);
     encounter.SetSupportTurret(true);
@@ -92,7 +94,7 @@ void CombatScene::SetMaintenanceMode()
     encounter.SetEnvironment(walls);
 
     const auto& placement = combat_map_asset::friendDrones[1];
-    encounter.SetDroneSpawn(placement.position, glm::radians(placement.yawDegrees), placement.position.x);
+    encounter.SetDroneSpawn(placement.position, glm::radians(placement.yawDegrees), placement.position.z);
     encounter.SetDroneScale(placement.scale);
     encounter.SetSupply(SupplyPosition());
     Reset();

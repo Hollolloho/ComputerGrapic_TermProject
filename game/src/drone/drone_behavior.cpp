@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <glm/geometric.hpp>
+#include <glm/trigonometric.hpp>
 
 namespace aegis::combat
 {
@@ -21,16 +22,15 @@ glm::vec3 Rotate(const glm::vec3& v, float yaw)
 }
 } // namespace
 
-bool DroneBehavior::SetSpawn(const glm::vec3& point, float yawRadians, float patrolCenterX)
+bool DroneBehavior::SetSpawn(const glm::vec3& point, float yawRadians, float endZ)
 {
-    if (!Finite(point) || !std::isfinite(yawRadians) || !std::isfinite(patrolCenterX) ||
-        std::abs(point.x - patrolCenterX) > 0.65f)
+    if (!Finite(point) || !std::isfinite(yawRadians) || !std::isfinite(endZ))
     {
         return false;
     }
     spawn = point;
     spawnYaw = yawRadians;
-    patrolCenter = patrolCenterX;
+    patrolEndZ = endZ;
     Reset();
     return true;
 }
@@ -51,9 +51,14 @@ void DroneBehavior::Reset()
     position = spawn;
     aimPoint = {0, 0, 0};
     phase = DronePhase::Patrol;
-    yaw = spawnYaw;
+    patrolYaw = spawnYaw;
+    if (patrolEndZ < spawn.z)
+        patrolYaw += glm::radians(180.f);
+    yaw = patrolYaw;
     timer = 1.5f;
-    movingRight = true;
+    movingToEnd = true;
+    isTurning = false;
+    turnDegrees = 0.f;
 }
 
 Collider DroneBehavior::Bounds(ObjectId id, HitKind kind, const glm::vec3& low, const glm::vec3& high) const
@@ -95,75 +100,55 @@ bool DroneBehavior::Visible(const glm::vec3& eye, std::span<const Collider> wall
     return glm::length(eye - position) < 18 && !FindFirstHit(Muzzle(), eye, walls);
 }
 
-bool DroneBehavior::Move(float gameDeltaTime, std::span<const Collider> walls)
+void DroneBehavior::MovingDrone(float gameDeltaTime, std::span<const Collider> walls)
 {
-    // 중심에서 좌우 0.65만큼 왕복한다. 속도 × 시간으로 이번 이동 거리를 구한다.
-    const double leftEnd = -0.65;
-    const double rightEnd = 0.65;
-    const double routeLength = rightEnd - leftEnd;
-    const double travelDistance = 0.65 * gameDeltaTime;
-    double nextX = position.x - patrolCenter;
-    bool nextMovingRight = movingRight;
+    // 조준이 끝나면 멈췄던 순찰 방향과 회전 각도에서 이어간다.
+    yaw = patrolYaw;
+    if (patrolEndZ == spawn.z)
+        return;
 
-    // 한 바퀴를 돌아오면 위치가 같으므로, 긴 프레임도 끝없이 반복하지 않는다.
-    double distanceLeft = std::fmod(travelDistance, routeLength * 2);
-    double lowestX = nextX;
-    double highestX = nextX;
-    while (distanceLeft > 0)
+    if (isTurning)
     {
-        double targetX = leftEnd;
-        if (nextMovingRight)
+        turnDegrees = std::min(180.f, turnDegrees + 60.f * gameDeltaTime);
+        yaw += glm::radians(turnDegrees);
+        if (turnDegrees >= 180.f)
         {
-            targetX = rightEnd;
+            patrolYaw = std::remainder(yaw, glm::radians(360.f));
+            movingToEnd = !movingToEnd;
+            isTurning = false;
+            turnDegrees = 0.f;
         }
-        double distanceToEnd = std::abs(targetX - nextX);
-        double step = std::min(distanceLeft, distanceToEnd);
-        if (nextMovingRight)
-        {
-            nextX += step;
-        }
-        else
-        {
-            nextX -= step;
-        }
-        distanceLeft -= step;
-        lowestX = std::min(lowestX, nextX);
-        highestX = std::max(highestX, nextX);
-        if (step == distanceToEnd)
-        {
-            nextMovingRight = !nextMovingRight;
-        }
-    }
-    if (travelDistance >= routeLength)
-    {
-        lowestX = leftEnd;
-        highestX = rightEnd;
+        return;
     }
 
-    // 드론 크기만큼 벽을 넓혀 검사하면, 중심뿐 아니라 날개도 벽을 통과하지 않는다.
+    const float targetZ = movingToEnd ? patrolEndZ : spawn.z;
+    const float remaining = targetZ - position.z;
+    const float distance = 1.2f * gameDeltaTime;
+    glm::vec3 next = position;
+    if (std::abs(remaining) <= distance)
+        next.z = targetZ;
+    else
+        next.z += std::copysign(distance, remaining);
+
+    // 몸통과 무기의 크기까지 포함해 이번 이동 구간에 벽이 있는지 검사한다.
     const Collider body = Body();
     const Collider weapon = Weapon();
-    const glm::vec3 localMinimum = glm::min(body.minimum, weapon.minimum) - position;
-    const glm::vec3 localMaximum = glm::max(body.maximum, weapon.maximum) - position;
-    glm::vec3 pathStart = position;
-    glm::vec3 pathEnd = position;
-    pathStart.x = patrolCenter + static_cast<float>(lowestX);
-    pathEnd.x = patrolCenter + static_cast<float>(highestX);
+    const glm::vec3 low = glm::min(body.minimum, weapon.minimum) - position;
+    const glm::vec3 high = glm::max(body.maximum, weapon.maximum) - position;
     for (const Collider& wall : walls)
     {
         Collider expandedWall = wall;
-        expandedWall.minimum -= localMaximum;
-        expandedWall.maximum -= localMinimum;
-        float hitFraction = 0;
-        if (SegmentHitsBox(pathStart, pathEnd, expandedWall, hitFraction))
+        expandedWall.minimum -= high;
+        expandedWall.maximum -= low;
+        float fraction = 0;
+        if (SegmentHitsBox(position, next, expandedWall, fraction))
         {
-            movingRight = !movingRight;
-            return false;
+            isTurning = true;
+            return;
         }
     }
-    position.x = patrolCenter + static_cast<float>(nextX);
-    movingRight = nextMovingRight;
-    return true;
+    position = next;
+    isTurning = position.z == targetZ;
 }
 
 bool DroneBehavior::Update(float gameDeltaTime, const glm::vec3& eye, std::span<const Collider> walls)
@@ -177,8 +162,7 @@ bool DroneBehavior::Update(float gameDeltaTime, const glm::vec3& eye, std::span<
     switch (phase)
     {
     case DronePhase::Patrol:
-        yaw = spawnYaw;
-        Move(gameDeltaTime, walls);
+        MovingDrone(gameDeltaTime, walls);
         timer = std::max(0.0f, timer - gameDeltaTime);
         if (timer <= 0 && Visible(eye, walls))
         {

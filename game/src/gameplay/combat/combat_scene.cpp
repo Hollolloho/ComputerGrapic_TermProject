@@ -196,7 +196,7 @@ void CombatScene::UpdateVisualEffects(double realDeltaTime, double gameDeltaTime
     if ((coreMode && core.Result() == combat::EncounterResult::Running) ||
         (IsDroneMode() && encounter.EnemyAlive() && encounter.Result() == combat::EncounterResult::Running))
     {
-        drone.UpdateCombat(gameDeltaTime);
+        drone.UpdateRotor(gameDeltaTime);
     }
     weapon.Update(realDeltaTime);
     feedback.Update(static_cast<float>(gameDeltaTime));

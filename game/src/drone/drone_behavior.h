@@ -25,7 +25,7 @@ public:
     }
 
     void Reset();
-    bool SetSpawn(const glm::vec3& point, float yawRadians, float patrolCenterX);
+    bool SetSpawn(const glm::vec3& point, float yawRadians, float endZ);
     bool Update(float gameDeltaTime, const glm::vec3& eye, std::span<const Collider> walls);
     void Disarm();
     void Destroy();
@@ -62,16 +62,19 @@ public:
 private:
     Collider Bounds(ObjectId id, HitKind kind, const glm::vec3& low, const glm::vec3& high) const;
     bool Visible(const glm::vec3& eye, std::span<const Collider> walls) const;
-    bool Move(float gameDeltaTime, std::span<const Collider> walls);
+    void MovingDrone(float gameDeltaTime, std::span<const Collider> walls);
     glm::vec3 spawn{-0.65f, 1.8f, -10};
     float spawnYaw{};
-    float patrolCenter{};
+    float patrolEndZ{-10.f};
+    float patrolYaw{};
     float scale{1};
     glm::vec3 position{-0.65f, 1.8f, -10};
     glm::vec3 aimPoint{0};
     DronePhase phase{DronePhase::Patrol};
     float yaw{};
     float timer{1.5f};
-    bool movingRight{true}; // true: 오른쪽 끝으로, false: 왼쪽 끝으로 이동
+    bool movingToEnd{true};
+    bool isTurning{};
+    float turnDegrees{};
 };
 } // namespace aegis::combat

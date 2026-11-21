@@ -42,10 +42,11 @@ void CoreEncounter::SetEnvironment(std::span<const Collider> shotWalls,
 void CoreEncounter::Reset()
 {
     ResetCombat(SupplyPosition());
+    const float patrolEndZ[] = {-56.8f, -55.8f};
     for (std::size_t i = 0; i < drones.size(); ++i)
     {
         const auto& placement = combat_map_asset::friendDrones[i + 2];
-        drones[i].SetSpawn(placement.position, glm::radians(placement.yawDegrees), placement.position.x);
+        drones[i].SetSpawn(placement.position, glm::radians(placement.yawDegrees), patrolEndZ[i]);
         drones[i].SetScale(placement.scale);
     }
     turrets[0].SetPosition({3.95f, 0, -61.5f});

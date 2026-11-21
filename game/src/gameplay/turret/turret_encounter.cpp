@@ -97,9 +97,9 @@ void TurretEncounter::UpdateDoors(float gameDeltaTime)
     }
 }
 
-bool TurretEncounter::SetDroneSpawn(const glm::vec3& point, float yawRadians, float patrolCenterX)
+bool TurretEncounter::SetDroneSpawn(const glm::vec3& point, float yawRadians, float endZ)
 {
-    if (!drone.SetSpawn(point, yawRadians, patrolCenterX))
+    if (!drone.SetSpawn(point, yawRadians, endZ))
     {
         return false;
     }

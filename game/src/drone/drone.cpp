@@ -67,58 +67,8 @@ bool Drone::Init(const std::filesystem::path& runtimeRoot)
 			rotors[i] = RotorSide::Right;
 	}
 
-	DroneInit();
+	Reset();
 	return true;
-}
-
-void Drone::DroneInit()
-{
-	drones.clear();
-	rotorAngle = 0.f;
-
-	// 첫 직선 복도
-	drones.push_back({ { 0.65f, 1.95f, -11.40f }, { 1.00f, 1.00f, 1.00f }, { 0.f,  -4.42f, 0.f } });
-	drones.back().patrolEndZ = -14.40f;
-
-	// 정비 복도 첫 코너 감지 드론
-	drones.push_back({ { 1.56f, 2.30f, -40.69f }, { 1.00f, 0.55f, 0.55f }, { 0.f,  12.38f, 0.f } });
-
-	// 원형 보스방 왼쪽
-	drones.push_back({ { 2.55f, 2.30f, -58.80f }, { 0.55f, 1.00f, 0.90f }, { 0.f,  19.95f, 0.f } });
-	drones.back().patrolEndZ = -56.8f;
-
-	// 원형 보스방 오른쪽
-	drones.push_back({ { 12.50f, 2.40f, -54.00f }, { 0.60f, 0.80f, 1.00f }, { 0.f, -41.82f, 0.f } });
-	drones.back().patrolEndZ = -55.8f;
-
-	for (DroneState& drone : drones)
-	{
-		if (drone.patrolEndZ < drone.patrolStartZ)
-		{
-			drone.rotation.y += 180.f;
-		}
-	}
-}
-
-glm::mat4 Drone::CalculateMat(const DroneState& drone) const
-{
-	const glm::vec3 rotationAxis(0.f, 1.f, 0.f);
-	glm::mat4 model = glm::translate(glm::mat4(1.f), drone.pos);
-	model = glm::rotate(model, glm::radians(drone.rotation.y), rotationAxis);
-
-	if (drone.is_turning)
-	{
-		model = glm::rotate(model, glm::radians(drone.turn_rotate), rotationAxis);
-	}
-
-	model = glm::scale(model, glm::vec3(0.5f));
-	return model;
-}
-
-void Drone::Draw(const glm::mat4& scene) const
-{
-	for (const DroneState& drone : drones)
-		Draw(scene, CalculateMat(drone));
 }
 
 void Drone::Draw(const glm::mat4& scene, const glm::mat4& model, bool warning,
@@ -170,13 +120,7 @@ void Drone::Draw(const glm::mat4& scene, const glm::mat4& model, bool warning,
 	glUseProgram(0);
 }
 
-void Drone::Update(float deltaTime)
-{
-	UpdateCombat(deltaTime);
-	MovingDrone(deltaTime);
-}
-
-void Drone::UpdateCombat(double gameDeltaTime)
+void Drone::UpdateRotor(double gameDeltaTime)
 {
 	if (!std::isfinite(gameDeltaTime) || gameDeltaTime <= 0)
 		return;
@@ -186,43 +130,7 @@ void Drone::UpdateCombat(double gameDeltaTime)
 
 void Drone::Reset()
 {
-	DroneInit();
-}
-
-void Drone::MovingDrone(float deltaTime)
-{
-	const float distanceFrame = 1.2f * deltaTime;
-	for (auto& drone : drones)
-	{
-		if (drone.patrolStartZ == drone.patrolEndZ)
-			continue;
-
-		if (drone.is_turning)
-		{
-			drone.turn_rotate += 60.f * deltaTime;
-			if (drone.turn_rotate >= 180.f)
-			{
-				drone.rotation.y = std::fmod(drone.rotation.y + 180.f, 360.f);
-				drone.turn_rotate = 0.f;
-				drone.is_turning = false;
-				drone.movingToEnd = !drone.movingToEnd;
-			}
-			continue;
-		}
-
-		const float targetZ = drone.movingToEnd ? drone.patrolEndZ : drone.patrolStartZ;
-		const float remaining = targetZ - drone.pos.z;
-
-		if (std::abs(remaining) <= distanceFrame)
-		{
-			drone.pos.z = targetZ;
-			drone.is_turning = true;
-		}
-		else
-		{
-			drone.pos.z += std::copysign(distanceFrame, remaining);
-		}
-	}
+	rotorAngle = 0.f;
 }
 
 void Drone::Clear()
@@ -230,7 +138,6 @@ void Drone::Clear()
 	ClearMeshes(meshes);
 	parts.clear();
 	rotors.clear();
-	drones.clear();
 	if (shaderProgram)
 	{
 		glUseProgram(0);
