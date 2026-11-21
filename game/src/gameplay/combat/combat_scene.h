@@ -53,7 +53,7 @@ public:
     }
 
     PlayerView CurrentPlayerView() const;
-    void SampleInput(GLFWwindow* window, bool active);
+    void SampleInput(GLFWwindow* window, bool canReceiveInput, bool fireClicked);
     void Update(double realDeltaTime, double gameDeltaTime);
     void Draw(int width, int height,
               const std::function<void(const glm::mat4&, const glm::vec3&)>& drawEnvironment = {},
@@ -251,7 +251,6 @@ private:
     GLint transformLocation{-1};
     GLint colorLocation{-1};
     GLint opacityLocation{-1};
-    bool mouseHeld{};
     bool coverHeld{};
     bool lookHeld{};
     bool analysisDragHeld{};

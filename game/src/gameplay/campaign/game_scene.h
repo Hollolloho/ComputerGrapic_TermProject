@@ -37,7 +37,7 @@ public:
     void Update(double realDeltaTime, double baseGameDeltaTime);
     void Draw(int width, int height, const Camera* playerCamera = nullptr) const;
 
-    void SampleInput(GLFWwindow* window, bool active);
+    void SampleInput(GLFWwindow* window, bool canReceiveInput, bool fireClicked);
     void Reset();
     void Clear();
     bool TogglePause();

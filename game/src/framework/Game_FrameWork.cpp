@@ -74,6 +74,7 @@ bool GameFrameWork::Init()
 		return false;
 	glfwSetWindowUserPointer(window, this);
 	glfwSetKeyCallback(window, KeyCallBack);
+	glfwSetMouseButtonCallback(window, MouseButtonCallback);
 	glfwSetCursorPosCallback(window, CursorPosCallback);
 	glfwSetScrollCallback(window, ScrollCallback);
 	glfwSetWindowFocusCallback(window, WindowFocusCallback);
@@ -97,7 +98,8 @@ void GameFrameWork::Update(float deltaTime)
 
 	const bool inputActive = active && wasActive && !restartFrameTime;
 	UpdatePlayerCamera(deltaTime, inputActive);
-	scene.SampleInput(window, inputActive);
+	scene.SampleInput(window, inputActive, fireClicked);
+	fireClicked = false;
 	SyncPlayerCamera(inputActive);
 	if (scene.QuitRequested())
 	{
@@ -255,6 +257,13 @@ void GameFrameWork::CursorPosCallback(GLFWwindow* window, double x, double y)
 	lastMouseX = x;
 	lastMouseY = y;
 	firstMouse = false;
+}
+
+void GameFrameWork::MouseButtonCallback(GLFWwindow* window, int button, int action, int)
+{
+	auto& game = *static_cast<GameFrameWork*>(glfwGetWindowUserPointer(window));
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS && game.cursorCaptured)
+		game.fireClicked = true;
 }
 
 void GameFrameWork::ScrollCallback(GLFWwindow* window, double, double yOffset)

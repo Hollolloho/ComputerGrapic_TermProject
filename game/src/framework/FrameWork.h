@@ -21,6 +21,7 @@ private:
 	bool restartFrameTime = true;
 	bool wasActive = false;
 	bool drawable = false;
+	bool fireClicked = false;
 	bool cursorCaptured = false;
 	bool cameraSynced = false;
 	std::uint64_t cameraSpawnRevision = 0;
@@ -40,6 +41,7 @@ private:
 	void UpdateWindowTitle();
 	glm::vec3 CalculateCameraMovement(float deltaTime) const;
 	static void CursorPosCallback(GLFWwindow* window, double x, double y);
+	static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 	static void ScrollCallback(GLFWwindow* window, double xOffset, double yOffset);
 	static void WindowFocusCallback(GLFWwindow* window, int focused);
 	static void KeyCallBack(GLFWwindow* window, int key, int scancode, int action, int mods);

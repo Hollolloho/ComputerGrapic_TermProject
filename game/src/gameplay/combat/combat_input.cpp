@@ -12,16 +12,15 @@
 namespace aegis
 {
 // 키를 읽고 사격·회수·분석 명령을 전달한다.
-void CombatScene::SampleInput(GLFWwindow* window, bool active)
+void CombatScene::SampleInput(GLFWwindow* window, bool canReceiveInput, bool fireClicked)
 {
     if (DeathStarted())
     {
-        active = false;
+        canReceiveInput = false;
     }
-    forceNormal = active && !analysis.Active() &&
+    forceNormal = canReceiveInput && !analysis.Active() &&
                   (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
                    glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS);
-    const bool left = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
     const bool right = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
     const bool cover = glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS;
     const bool drop = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
@@ -30,16 +29,16 @@ void CombatScene::SampleInput(GLFWwindow* window, bool active)
     glfwGetCursorPos(window, &x, &y);
     if (analysis.Active())
     {
-        if (active && left && analysisDragHeld)
+        const bool leftMouseDown = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+        if (canReceiveInput && leftMouseDown && analysisDragHeld)
         {
             analysis.Orbit(static_cast<float>(x - lastX), static_cast<float>(y - lastY));
         }
-        if (active && interact && !interactHeld)
+        if (canReceiveInput && interact && !interactHeld)
         {
             analysis.Close();
         }
-        analysisDragHeld = analysis.Active() && active && left;
-        mouseHeld = left;
+        analysisDragHeld = analysis.Active() && canReceiveInput && leftMouseDown;
         coverHeld = cover;
         lookHeld = false;
         dropHeld = drop;
@@ -49,7 +48,8 @@ void CombatScene::SampleInput(GLFWwindow* window, bool active)
         return;
     }
     analysisDragHeld = false;
-    if (active)
+    // 분석 화면은 위에서 입력 처리를 끝낸다. 여기부터는 일반 전투 입력이다.
+    if (canReceiveInput)
     {
         auto* battle = ActiveEncounter();
         const auto result = battle->Result();
@@ -81,14 +81,13 @@ void CombatScene::SampleInput(GLFWwindow* window, bool active)
         {
             Interact(PlayerForward());
         }
-        if (playing && left && !mouseHeld)
+        if (fireClicked && !analysis.Active())
         {
             Fire(PlayerForward());
         }
     }
-    mouseHeld = left;
     coverHeld = cover;
-    lookHeld = active && right;
+    lookHeld = canReceiveInput && right;
     dropHeld = drop;
     interactHeld = interact;
     lastX = x;

@@ -5,12 +5,13 @@
 
 namespace aegis
 {
-void GameScene::SampleInput(GLFWwindow* window, bool active)
+void GameScene::SampleInput(GLFWwindow* window, bool canReceiveInput, bool fireClicked)
 {
     bool consumed = false;
-    const auto action = menu->SampleInput(window, active && !AnalysisActive(), Page(), consumed);
+    const auto action = menu->SampleInput(window, canReceiveInput && !AnalysisActive(), Page(), consumed);
     ApplyAction(action);
-    combatScene->SampleInput(window, active && (flow.WorldRuns() || AnalysisActive()) && !consumed);
+    const bool combatInputActive = canReceiveInput && !consumed && (flow.WorldRuns() || AnalysisActive());
+    combatScene->SampleInput(window, combatInputActive, fireClicked);
 }
 
 void GameScene::ApplyAction(UiAction action)

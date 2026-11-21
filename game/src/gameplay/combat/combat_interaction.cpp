@@ -10,13 +10,16 @@ bool CombatScene::Fire(const glm::vec3& direction)
     {
         return false;
     }
-    const bool fired = ActiveEncounter()->Fire(PlayerEye(), direction);
-    if (fired)
+    const glm::vec3 startPosition = PlayerEye();
+    auto* currentBattle = ActiveEncounter();
+    if (!currentBattle->Fire(startPosition, direction))
     {
-        time.RequestShot();
-        weapon.OnShot();
+        return false;
     }
-    return fired;
+
+    time.RequestShot();
+    weapon.OnShot();
+    return true;
 }
 
 const combat::WeaponInventory& CombatScene::Inventory() const
