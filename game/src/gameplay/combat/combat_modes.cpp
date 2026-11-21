@@ -35,9 +35,9 @@ void CombatScene::SetCorridorMode(bool enabled)
     coreMode = false;
     bossMode = false;
     combatMapMode = false;
-    maintenanceMode = false;
+    maintenanceMode = approachMode = false;
     encounter.SetDroneScale(1);
-    encounter.SetSupportTurret(false);
+    encounter.SetTurrets(combat::TurretType::SingleC, {});
     encounter.SetDroneSpawn({-0.65f, 1.8f, -10}, 0, -10.f);
     encounter.SetSupply(combat::WeaponInventory::SupplyPosition());
     corridorMode = enabled;
@@ -62,7 +62,7 @@ void CombatScene::SetCombatMapMode(bool enabled)
         return;
     }
     coreMode = false;
-    maintenanceMode = false;
+    maintenanceMode = approachMode = false;
     encounter.SetDroneScale(1);
     combatMapMode = true;
     corridorMode = true;
@@ -77,16 +77,20 @@ void CombatScene::SetCombatMapMode(bool enabled)
     encounter.SetDroneSpawn(droneStart, glm::radians(combat_map_asset::droneYawDegrees), -14.40f);
     encounter.SetSupply(combat_map_asset::supply);
     encounter.SetDroneMode(true);
-    encounter.SetSupportTurret(true);
+    encounter.SetTurrets(combat::TurretType::SingleC, {{-1.55f, 0, -15.9f}});
     Reset();
 }
 
-// 친구가 배치한 두 번째 드론으로 정비 복도 전투를 구성한다.
-void CombatScene::SetMaintenanceMode()
+// 정비 구간에는 드론과 단포신 두 대, 다음 복도에는 쌍포신 한 대를 배치한다.
+void CombatScene::SetMaintenanceMode(bool coreApproach)
 {
     SetCombatMapMode(true);
     maintenanceMode = true;
-    encounter.SetSupportTurret(false);
+    approachMode = coreApproach;
+    if (approachMode)
+        encounter.SetTurrets(combat::TurretType::Twin, {{8.6f, 0, -45.7f}}, false);
+    else
+        encounter.SetTurrets(combat::TurretType::SingleC, {{3.85f, 0, -36.8f}, {3.75f, 0, -40.8f}});
 
     std::vector<combat::Collider> walls(combat_map_asset::maintenanceWalls.begin(),
                                         combat_map_asset::maintenanceWalls.end());
@@ -113,14 +117,14 @@ void CombatScene::SetBossMode(bool enabled)
     if (enabled)
     {
         combatMapMode = false;
-        maintenanceMode = false;
+        maintenanceMode = approachMode = false;
     }
     Reset();
 }
 
 void CombatScene::SetCoreMode()
 {
-    bossMode = maintenanceMode = false;
+    bossMode = maintenanceMode = approachMode = false;
     coreMode = combatMapMode = corridorMode = true;
     core.SetEnvironment(combat_map_asset::playerWalls, combat_map_asset::playerWalls);
     Reset();
@@ -137,6 +141,7 @@ glm::vec3 CombatScene::CameraRoot() const
         }
         return combat::BossEncounter::FiringRoot();
     }
+    if (approachMode) return {7.8f, 0, -40.6f};
     if (maintenanceMode)
     {
         return combat_map_asset::maintenanceStart;
@@ -207,9 +212,10 @@ std::vector<combat::Collider> CombatScene::PlayerObstacles() const
         std::vector<combat::Collider> walls(combat_map_asset::playerWalls.begin(),
                                             combat_map_asset::playerWalls.end());
         walls.push_back(TerminalCollider());
-        if (encounter.HasSupportTurret() && encounter.SupportTurret().Alive())
+        for (const auto& turret : encounter.Turrets())
         {
-            auto body = encounter.SupportTurret().Body();
+            if (!turret.Alive()) continue;
+            auto body = turret.Body();
             body.kind = combat::HitKind::Armor;
             walls.push_back(body);
         }

@@ -9,7 +9,7 @@ class WorldSigns
 public:
     bool Init();
     void Draw(const glm::mat4& viewProjection, const glm::vec3& supply, const glm::vec3& terminal, bool safe,
-              bool maintenance = false) const;
+              bool maintenance, bool coreApproach) const;
     void Clear();
 
 private:

@@ -71,6 +71,10 @@ void GameScene::LoadStage()
     {
         combatScene->SetMaintenanceMode();
     }
+    if (flow.Stage() == CampaignStage::CoreApproach)
+    {
+        combatScene->SetMaintenanceMode(true);
+    }
     if (flow.Stage() == CampaignStage::Boss)
     {
         combatScene->SetCoreMode();
@@ -88,7 +92,8 @@ bool GameScene::ReadyToAdvance() const
     {
         return true;
     }
-    if (flow.Stage() != CampaignStage::Corridor && flow.Stage() != CampaignStage::Maintenance)
+    if (flow.Stage() != CampaignStage::Corridor && flow.Stage() != CampaignStage::Maintenance &&
+        flow.Stage() != CampaignStage::CoreApproach)
     {
         return false;
     }

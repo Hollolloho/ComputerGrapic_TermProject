@@ -31,28 +31,6 @@ void TurretView::Box(const glm::mat4& viewProjection, const glm::mat4& parent, c
     glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
-void TurretView::Draw(const glm::mat4& viewProjection, const combat::FixedTurret& turret) const
-{
-    if (!Ready() || !turret.Alive())
-    {
-        return;
-    }
-    Begin();
-    const auto parent = glm::translate(glm::mat4(1), turret.Position());
-    Box(viewProjection, parent, {-.5f, 0, -.5f}, {.5f, 2.2f, .5f}, {.35f, .4f, .46f});
-    Box(viewProjection, parent, {-.5f, 0, -.5f}, {.5f, .2f, .5f}, {.06f, .09f, .12f});
-    const auto barrel = turret.BarrelTransform();
-    if (turret.Armed())
-    {
-        Box(viewProjection, barrel, {-.14f, -.14f, -.1f}, {.14f, .14f, .8f}, {.85f, .65f, .15f});
-    }
-    const auto sensor = turret.Phase() == combat::TurretPhase::Warning ? glm::vec3(1, .03f, .02f)
-                        : turret.Armed()                               ? glm::vec3(.05f, .6f, 1)
-                                                                       : glm::vec3(.08f);
-    Box(viewProjection, barrel, {-.2f, .28f, .48f}, {.2f, .4f, .52f}, sensor);
-    End();
-}
-
 void TurretView::DrawDebris(const glm::mat4& viewProjection, const glm::mat4& world, float age) const
 {
     if (!Ready())

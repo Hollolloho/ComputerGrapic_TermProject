@@ -6,12 +6,12 @@
 
 namespace aegis
 {
-class SingleTurretView
+class Turret
 {
 public:
-    bool Init(const std::filesystem::path& root);
+    bool Init(const std::filesystem::path& root, combat::TurretType type);
     void Draw(const glm::mat4& viewProjection, const glm::vec3& eye,
-              const combat::FixedTurret& turret, float spawnYawDegrees) const;
+              const combat::FixedTurret& turret) const;
     void Clear();
 
 private:
@@ -24,6 +24,6 @@ private:
     std::vector<TurretMesh> meshes;
     std::array<GLuint, 4> textures{};
     GLuint program{};
-    GLint transformLocation{-1}, modelLocation{-1}, eyeLocation{-1}, warningLocation{-1};
+    GLint transformLocation{-1}, modelLocation{-1}, eyeLocation{-1}, warningLocation{-1}, colorLocation{-1};
 };
 } // namespace aegis

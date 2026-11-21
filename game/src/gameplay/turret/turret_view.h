@@ -1,6 +1,7 @@
 #pragma once
-#include "fixed_turret.h"
 #include "gameplay/rendering/primitive_view.h"
+#include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
 
 namespace aegis
 {
@@ -8,7 +9,6 @@ class TurretView : private PrimitiveView
 {
 public:
     bool Init(const std::filesystem::path& root);
-    void Draw(const glm::mat4& viewProjection, const combat::FixedTurret& turret) const;
     void DrawDebris(const glm::mat4& viewProjection, const glm::mat4& world, float age) const;
     using PrimitiveView::Clear;
 

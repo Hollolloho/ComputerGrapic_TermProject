@@ -3,6 +3,7 @@
 #include "gameplay/combat/combat_encounter.h"
 #include "drone/drone_behavior.h"
 #include "fixed_turret.h"
+#include <initializer_list>
 
 namespace aegis::combat
 {
@@ -29,22 +30,10 @@ public:
     bool SetDroneSpawn(const glm::vec3& point, float yawRadians, float endZ);
     bool SetSupply(const glm::vec3& point);
     void SetExitDoors(ObjectId left, ObjectId right, float distance);
-    void SetSupportTurret(bool enabled);
-
-    bool HasSupportTurret() const
-    {
-        return supportEnabled;
-    }
-
-    const FixedTurret& SupportTurret() const
-    {
-        return support;
-    }
-
-    int RemainingEnemies() const
-    {
-        return (EnemyAlive() ? 1 : 0) + (supportEnabled && support.Alive() ? 1 : 0);
-    }
+    void SetTurrets(TurretType type, std::initializer_list<glm::vec3> positions, bool primary = true);
+    const std::vector<FixedTurret>& Turrets() const { return turrets; }
+    int RemainingEnemies() const;
+    int EnemyCount() const { return static_cast<int>(turrets.size()) + (primaryEnabled ? 1 : 0); }
 
     bool CanAnalyze() const
     {
@@ -104,7 +93,7 @@ private:
     std::span<const Collider> InteractionColliders(std::vector<Collider>& storage) const override;
     // 한 프레임의 전투를 아래 함수들로 나누어 처리한다.
     bool UpdateDrone(float gameDeltaTime, const glm::vec3& eye);
-    bool UpdateSupportTurret(float gameDeltaTime, const glm::vec3& eye);
+    void SyncTurret(std::size_t index);
     void UpdatePlayerBullets(float gameDeltaTime);
     void UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& eye, const glm::vec3& forward);
     void UpdatePrimaryTurret(float gameDeltaTime, const glm::vec3& eye);
@@ -120,16 +109,15 @@ private:
         TestFloorIndex,
         TestBackWallIndex,
         PrimaryWeaponIndex,
-        SupportBodyIndex,
-        SupportWeaponIndex
+        FirstTurretIndex
     };
 
     ObjectId leftDoor{}, rightDoor{};
     float doorDistance{};
     float doorProgress{};
     glm::vec3 supplyPosition = WeaponInventory::SupplyPosition();
-    FixedTurret support;
-    bool supportEnabled{};
+    std::vector<FixedTurret> turrets;
+    bool primaryEnabled{true};
     DroneBehavior drone;
     bool droneMode{};
     std::vector<Collider> colliders;

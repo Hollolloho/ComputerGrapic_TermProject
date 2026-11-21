@@ -49,9 +49,8 @@ void CoreEncounter::Reset()
         drones[i].SetSpawn(placement.position, glm::radians(placement.yawDegrees), patrolEndZ[i]);
         drones[i].SetScale(placement.scale);
     }
-    turrets[0].SetPosition({3.95f, 0, -61.5f});
-    turrets[1].SetPosition({11.6f, 0, -61.2f});
-    for (auto& turret : turrets) turret.SetModelSize(0.81f, 2.18f, 1.62f, 1.115f);
+    turrets[0].Configure(TurretType::Twin, {4.4f, 0, -60.9f}, 0, 3.28f);
+    turrets[1].Configure(TurretType::Twin, {11.6f, 0, -61.2f}, 1, -3.81f);
     phase = MagneticPhase::Dormant;
     phaseTime = 0;
     pulseHit = false;
@@ -78,6 +77,7 @@ std::vector<Collider> CoreEncounter::Targets() const
     {
         targets.push_back(GuardCollider(turrets[i].Body(), BodyId(i + 2)));
         targets.push_back(GuardCollider(turrets[i].Weapon(), WeaponId(i + 2)));
+        targets.push_back(GuardCollider(turrets[i].Weapon(1), WeaponId(i + 2)));
     }
     return targets;
 }

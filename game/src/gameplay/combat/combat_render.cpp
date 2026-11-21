@@ -25,11 +25,8 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
             world = glm::scale(world, glm::vec3(state.Scale()));
             drone.Draw(viewProjection, world, state.Phase() == combat::DronePhase::Warning, state.Armed());
         }
-        const float yaw[] = {3.28f, -3.81f};
-        for (std::size_t i = 0; i < core.Turrets().size(); ++i)
-        {
-            singleTurretView.Draw(viewProjection, PlayerEye(), core.Turrets()[i], yaw[i]);
-        }
+        for (const auto& turret : core.Turrets())
+            twinModel.Draw(viewProjection, PlayerEye(), turret);
         const int magneticStage = core.Phase() == combat::MagneticPhase::Warning ? 1
                                   : core.Phase() == combat::MagneticPhase::Pulse ? 2 : 0;
         coreView.Draw(viewProjection, PlayerEye(), core.CoreAlive(), magneticStage,
@@ -45,19 +42,24 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
         world = glm::scale(world, glm::vec3(state.Scale()));
         drone.Draw(viewProjection, world, state.Phase() == combat::DronePhase::Warning, state.Armed());
     }
-    if (!bossMode && encounter.HasSupportTurret())
+    if (!bossMode)
     {
-        turretView.Draw(viewProjection, encounter.SupportTurret());
+        for (const auto& turret : encounter.Turrets())
+        {
+            const auto& model = turret.Type() == combat::TurretType::Twin ? twinModel : singleModel;
+            model.Draw(viewProjection, PlayerEye(), turret);
+        }
     }
     const auto& droneDebris = destruction.Debris(0);
     if (droneDebris.active)
     {
         drone.Draw(viewProjection, droneDebris.world, false, false, false, droneDebris.age);
     }
-    const auto& turretDebris = destruction.Debris(1);
-    if (turretDebris.active)
+    for (std::size_t i = 0; i < encounter.Turrets().size(); ++i)
     {
-        turretView.DrawDebris(viewProjection, turretDebris.world, turretDebris.age);
+        const auto& debris = destruction.Debris(static_cast<int>(i + 1));
+        if (debris.active)
+            turretView.DrawDebris(viewProjection, debris.world, debris.age);
     }
 }
 
@@ -69,8 +71,8 @@ void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
                  : std::span<const combat::Collider>(encounter.Colliders());
     for (const auto& box : boxes)
     {
-        if ((encounter.HasSupportTurret() &&
-             (box.id == combat::FixedTurret::BodyId || box.id == combat::FixedTurret::WeaponId)) ||
+        if ((box.id >= combat::FixedTurret::BodyId &&
+             box.id < combat::FixedTurret::BodyId + 2 * encounter.Turrets().size()) ||
             (corridorMode && box.id == 12000) || (IsDroneMode() && (box.id == 500 || box.id == 501)) ||
             !box.enabled || (corridorMode && box.kind == combat::HitKind::Wall))
         {
@@ -195,7 +197,7 @@ void CombatScene::Draw(int width, int height,
     }
     if (combatMapMode && !coreMode)
     {
-        signs.Draw(scene, SupplyPosition(), TerminalPosition(), CanAnalyze(), maintenanceMode);
+        signs.Draw(scene, SupplyPosition(), TerminalPosition(), CanAnalyze(), maintenanceMode, approachMode);
     }
     DrawEnemies(scene);
     glUseProgram(program);

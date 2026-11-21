@@ -13,6 +13,9 @@ bool Finite(const glm::vec3& v)
 {
     return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
 }
+const float pivotHeight = 1.62f;
+const float barrelReach = 1.115f;
+const float twinBarrelOffset = 0.57f;
 } // namespace
 
 bool FixedTurret::SetPosition(const glm::vec3& point)
@@ -26,26 +29,21 @@ bool FixedTurret::SetPosition(const glm::vec3& point)
     return true;
 }
 
-void FixedTurret::SetModelSize(float modelHalfWidth, float modelHeight, float modelPivotHeight,
-                              float modelBarrelReach)
+void FixedTurret::Configure(TurretType model, const glm::vec3& point, ObjectId index, float yawDegrees)
 {
-    if (std::isfinite(modelHalfWidth) && std::isfinite(modelHeight) && std::isfinite(modelPivotHeight) &&
-        std::isfinite(modelBarrelReach) && modelHalfWidth > 0 && modelHeight > 0 &&
-        modelPivotHeight > 0 && modelBarrelReach > 0)
-    {
-        halfWidth = modelHalfWidth;
-        height = modelHeight;
-        pivotHeight = modelPivotHeight;
-        barrelReach = modelBarrelReach;
-    }
+    type = model;
+    number = index;
+    spawnYaw = glm::radians(yawDegrees);
+    SetPosition(point);
 }
 
 void FixedTurret::Reset()
 {
     phase = TurretPhase::Idle;
     timer = 0;
-    direction = {0, 0, 1};
-    aimPoint = position + glm::vec3(0, pivotHeight, 5);
+    direction = {std::sin(spawnYaw), 0, std::cos(spawnYaw)};
+    firingBarrel = 0;
+    aimPoint = position + glm::vec3(0, pivotHeight, 0) + direction * 5.0f;
 }
 
 void FixedTurret::Disarm()
@@ -63,9 +61,15 @@ void FixedTurret::Destroy()
     timer = 0;
 }
 
+float FixedTurret::BarrelOffset(int barrel) const
+{
+    if (type == TurretType::SingleC) return 0;
+    return barrel == 0 ? -twinBarrelOffset : twinBarrelOffset;
+}
+
 glm::vec3 FixedTurret::Muzzle() const
 {
-    return position + glm::vec3(0, pivotHeight, 0) + direction * barrelReach;
+    return glm::vec3(BarrelTransform() * glm::vec4(BarrelOffset(firingBarrel), 0, barrelReach, 1));
 }
 
 glm::mat4 FixedTurret::BarrelTransform() const
@@ -80,11 +84,13 @@ glm::mat4 FixedTurret::BarrelTransform() const
 
 Collider FixedTurret::Body() const
 {
-    return {BodyId, HitKind::Body, position + glm::vec3(-halfWidth, 0, -halfWidth),
+    const float halfWidth = type == TurretType::Twin ? 0.925f : 0.81f;
+    const float height = type == TurretType::Twin ? 2.118f : 2.18f;
+    return {BodyTarget(), HitKind::Body, position + glm::vec3(-halfWidth, 0, -halfWidth),
             position + glm::vec3(halfWidth, height, halfWidth), Alive()};
 }
 
-Collider FixedTurret::Weapon() const
+Collider FixedTurret::Weapon(int barrel) const
 {
     // 총신의 여덟 꼭짓점을 변환하고, 월드 좌표의 충돌 상자를 구한다.
     const float front = barrelReach - 0.05f;
@@ -94,14 +100,14 @@ Collider FixedTurret::Weapon() const
                                   {-0.14f, 0.14f, front, 1},   {0.14f, 0.14f, front, 1}};
     glm::vec3 low(std::numeric_limits<float>::max());
     glm::vec3 high(std::numeric_limits<float>::lowest());
-    const glm::mat4 transform = BarrelTransform();
+    const glm::mat4 transform = glm::translate(BarrelTransform(), glm::vec3(BarrelOffset(barrel), 0, 0));
     for (const glm::vec4& corner : corners)
     {
         glm::vec3 worldCorner = glm::vec3(transform * corner);
         low = glm::min(low, worldCorner);
         high = glm::max(high, worldCorner);
     }
-    return {WeaponId, HitKind::Weapon, low, high, Armed()};
+    return {WeaponTarget(), HitKind::Weapon, low, high, Armed() && (barrel == 0 || type == TurretType::Twin)};
 }
 
 bool FixedTurret::Update(float gameDeltaTime, const glm::vec3& eye, std::span<const Collider> walls)
@@ -116,6 +122,7 @@ bool FixedTurret::Update(float gameDeltaTime, const glm::vec3& eye, std::span<co
         if (timer <= 0)
         {
             phase = TurretPhase::Idle;
+            firingBarrel = 1 - firingBarrel;
         }
         return false;
     }

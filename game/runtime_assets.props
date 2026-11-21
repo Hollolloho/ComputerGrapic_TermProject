@@ -78,8 +78,8 @@
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\AEGIS_Turrets\Single_C\Normal.png" TargetPath="asset\AEGIS_Turrets\Single_C\Normal.png" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\core.vert" TargetPath="shaders\core.vert" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\core.frag" TargetPath="shaders\core.frag" />
-    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\single_turret.vert" TargetPath="shaders\single_turret.vert" />
-    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\single_turret.frag" TargetPath="shaders\single_turret.frag" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\turret_model.vert" TargetPath="shaders\turret_model.vert" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\turret_model.frag" TargetPath="shaders\turret_model.frag" />
   </ItemGroup>
   <Target Name="CopyRuntimeAssets" AfterTargets="Build">
     <Copy SourceFiles="@(RuntimeAsset)" DestinationFiles="@(RuntimeAsset->'$(OutDir)%(TargetPath)')" SkipUnchangedFiles="true" />

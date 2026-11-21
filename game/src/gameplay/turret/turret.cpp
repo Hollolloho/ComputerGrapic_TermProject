@@ -4,7 +4,7 @@
 #include <wincodec.h>
 #include <wrl/client.h>
 
-#include "single_turret_view.h"
+#include "turret.h"
 #include "loader/Shader.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -90,10 +90,10 @@ GLuint LoadPng(IWICImagingFactory* factory, const std::filesystem::path& path, b
 }
 } // namespace
 
-bool SingleTurretView::Init(const std::filesystem::path& root)
+bool Turret::Init(const std::filesystem::path& root, combat::TurretType type)
 {
     Clear();
-    program = LoadShaderProgram(root / "shaders/single_turret.vert", root / "shaders/single_turret.frag");
+    program = LoadShaderProgram(root / "shaders/turret_model.vert", root / "shaders/turret_model.frag");
     if (!program)
     {
         return false;
@@ -102,16 +102,18 @@ bool SingleTurretView::Init(const std::filesystem::path& root)
     modelLocation = glGetUniformLocation(program, "uModel");
     eyeLocation = glGetUniformLocation(program, "uEye");
     warningLocation = glGetUniformLocation(program, "uWarning");
-    if (transformLocation < 0 || modelLocation < 0 || eyeLocation < 0 || warningLocation < 0)
+    colorLocation = glGetUniformLocation(program, "uMaterialColor");
+    if (colorLocation < 0 || transformLocation < 0 || modelLocation < 0 || eyeLocation < 0 || warningLocation < 0)
     {
-        std::cerr << "Single_C shader uniforms are missing\n";
+        std::cerr << "Turret shader uniforms are missing\n";
         Clear();
         return false;
     }
-    const auto directory = root / "asset/AEGIS_Turrets/Single_C";
+    const std::string modelName = type == combat::TurretType::Twin ? "Twin" : "Single_C";
+    const auto directory = root / "asset/AEGIS_Turrets" / modelName;
     ModelData data;
     std::string error;
-    if (!LoadModel(directory / "Single_C.obj", data, error))
+    if (!LoadModel(directory / (modelName + ".obj"), data, error))
     {
         std::cerr << error << '\n';
         Clear();
@@ -119,7 +121,7 @@ bool SingleTurretView::Init(const std::filesystem::path& root)
     }
     for (const auto& source : data.meshes)
     {
-        if (!source.hasUvs)
+        if (type == combat::TurretType::SingleC && !source.hasUvs)
         {
             std::cerr << "Single_C mesh has no UV coordinates: " << source.name << '\n';
             Clear();
@@ -145,6 +147,13 @@ bool SingleTurretView::Init(const std::filesystem::path& root)
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+    glUseProgram(program);
+    glUniform1i(glGetUniformLocation(program, "uTextured"), type == combat::TurretType::SingleC);
+    glUseProgram(0);
+    if (type == combat::TurretType::Twin)
+    {
+        return !meshes.empty();
+    }
     ComContext com;
     ComPtr<IWICImagingFactory> factory;
     if ((FAILED(com.status) && com.status != RPC_E_CHANGED_MODE) ||
@@ -176,8 +185,8 @@ bool SingleTurretView::Init(const std::filesystem::path& root)
     return !meshes.empty();
 }
 
-void SingleTurretView::Draw(const glm::mat4& viewProjection, const glm::vec3& eye,
-                            const combat::FixedTurret& turret, float spawnYawDegrees) const
+void Turret::Draw(const glm::mat4& viewProjection, const glm::vec3& eye,
+                  const combat::FixedTurret& turret) const
 {
     if (!program || !turret.Alive())
     {
@@ -187,12 +196,8 @@ void SingleTurretView::Draw(const glm::mat4& viewProjection, const glm::vec3& ey
     const auto turn = glm::rotate(glm::mat4(1), glm::radians(180.0f), glm::vec3(0, 1, 0));
     const auto axes = glm::rotate(turn, glm::radians(-90.0f), glm::vec3(1, 0, 0));
     const auto position = glm::translate(glm::mat4(1), turret.Position());
-    const auto base = glm::rotate(position, glm::radians(spawnYawDegrees), glm::vec3(0, 1, 0));
-    auto barrel = turret.BarrelTransform();
-    if (turret.Phase() == combat::TurretPhase::Idle)
-    {
-        barrel = glm::translate(base, glm::vec3(0, 1.62f, 0));
-    }
+    const auto base = position;
+    const auto barrel = turret.BarrelTransform();
     const auto forward = glm::vec3(barrel[2]);
     const float yaw = std::atan2(forward.x, forward.z);
     const auto head = glm::rotate(position, yaw, glm::vec3(0, 1, 0));
@@ -216,6 +221,7 @@ void SingleTurretView::Draw(const glm::mat4& viewProjection, const glm::vec3& ey
         {
             continue;
         }
+        glUniform3fv(colorLocation, 1, glm::value_ptr(draw.mesh.baseColor));
         const auto& model = transforms[draw.group];
         const auto transform = viewProjection * model;
         glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
@@ -233,7 +239,7 @@ void SingleTurretView::Draw(const glm::mat4& viewProjection, const glm::vec3& ey
     glActiveTexture(GL_TEXTURE0);
 }
 
-void SingleTurretView::Clear()
+void Turret::Clear()
 {
     for (auto& draw : meshes)
     {

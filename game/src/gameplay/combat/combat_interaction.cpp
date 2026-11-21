@@ -38,6 +38,7 @@ bool CombatScene::Interact(const glm::vec3& direction)
 
 glm::vec3 CombatScene::TerminalPosition() const
 {
+    if (approachMode) return CameraRoot() + glm::vec3(1.1f, 0, -1.3f);
     if (maintenanceMode)
     {
         return combat_map_asset::maintenanceTerminal;
@@ -57,6 +58,7 @@ combat::Collider CombatScene::TerminalCollider() const
 glm::vec3 CombatScene::SupplyPosition() const
 {
     if (coreMode) return combat::CoreEncounter::SupplyPosition();
+    if (approachMode) return CameraRoot() + glm::vec3(-0.8f, 1.15f, -1.4f);
     if (maintenanceMode)
     {
         return combat_map_asset::maintenanceSupply;

@@ -97,7 +97,8 @@ void main() {
     if (!signs.Init() || !deathView.Init(projectDirectory) || !turretView.Init(projectDirectory) ||
         !weapon.Init(projectDirectory) || !terminalRenderer.Init(projectDirectory / "shaders") ||
         !drone.Init(projectDirectory) || !InitTerminal(projectDirectory) || !bossView.Init(projectDirectory) ||
-        !coreView.Init(projectDirectory) || !singleTurretView.Init(projectDirectory))
+        !coreView.Init(projectDirectory) || !singleModel.Init(projectDirectory, combat::TurretType::SingleC) ||
+        !twinModel.Init(projectDirectory, combat::TurretType::Twin))
     {
         Clear();
         return false;
@@ -215,9 +216,12 @@ void CombatScene::ObserveDestruction()
     droneWorld = glm::rotate(droneWorld, state.Yaw(), glm::vec3(0, 1, 0));
     droneWorld = glm::scale(droneWorld, glm::vec3(state.Scale()));
     destruction.ObserveEnemy(0, IsDroneMode() && encounter.EnemyAlive(), droneWorld);
-    destruction.ObserveEnemy(1,
-                             !bossMode && encounter.HasSupportTurret() && encounter.SupportTurret().Alive(),
-                             glm::translate(glm::mat4(1), encounter.SupportTurret().Position()));
+    for (std::size_t i = 0; !bossMode && i < encounter.Turrets().size(); ++i)
+    {
+        const auto& turret = encounter.Turrets()[i];
+        destruction.ObserveEnemy(static_cast<int>(i + 1), turret.Alive(),
+                                 glm::translate(glm::mat4(1), turret.Position()));
+    }
 }
 
 void CombatScene::Clear()
@@ -227,7 +231,8 @@ void CombatScene::Clear()
     feedback.Reset();
     bossView.Clear();
     coreView.Clear();
-    singleTurretView.Clear();
+    singleModel.Clear();
+    twinModel.Clear();
     for (auto& mesh : terminalMeshes)
     {
         mesh.Clear();

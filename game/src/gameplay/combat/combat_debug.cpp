@@ -45,6 +45,15 @@ std::string CombatScene::StatusTitle(bool paused) const
                                      " | Supplies: " + std::to_string(Inventory().Supplies()) +
                                      " | Pickups: " + std::to_string(Inventory().Pickups()) +
                                      " | Drops: " + std::to_string(Inventory().Drops().size());
+    std::string turretStatus;
+    for (const auto& turret : encounter.Turrets())
+    {
+        turretStatus += " | Turret: ";
+        if (!turret.Alive()) turretStatus += "DESTROYED";
+        else if (!turret.Armed()) turretStatus += "DISARMED";
+        else if (turret.Phase() == combat::TurretPhase::Warning) turretStatus += "WARNING";
+        else turretStatus += "ACTIVE";
+    }
     const char* state = encounter.Result() == combat::EncounterResult::Failed     ? "FAILED"
                         : encounter.Result() == combat::EncounterResult::Cleared  ? "CLEARED"
                         : encounter.Result() == combat::EncounterResult::Securing ? "SECURING"
@@ -60,13 +69,7 @@ std::string CombatScene::StatusTitle(bool paused) const
            " | Hits: " + std::to_string(encounter.HitsTaken()) +
            " | EnemyShots: " + std::to_string(encounter.EnemyShots()) +
            " | PlayerShots: " + std::to_string(encounter.PlayerShots()) +
-           " | Enemies: " + std::to_string(encounter.RemainingEnemies()) + " | Turret: " +
-           (encounter.HasSupportTurret() ? !encounter.SupportTurret().Alive() ? "DESTROYED"
-                                           : encounter.SupportTurret().Phase() == combat::TurretPhase::Warning
-                                               ? "WARNING"
-                                           : !encounter.SupportTurret().Armed() ? "DISARMED"
-                                                                                : "ACTIVE"
-                                         : "OFF") +
+           " | Enemies: " + std::to_string(encounter.RemainingEnemies()) + turretStatus +
            " | Hostiles: " + std::to_string(encounter.EnemyFlights().size()) +
            " | Cover: " + (encounter.CoverEnabled() ? "ON" : "OFF") +
            " | Analysis: " + (CanAnalyze() ? "READY" : "LOCKED") +

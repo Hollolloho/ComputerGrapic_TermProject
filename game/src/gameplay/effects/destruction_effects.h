@@ -56,8 +56,8 @@ public:
     static glm::mat4 PieceTransform(const glm::mat4& world, int piece, float age);
 
 private:
-    std::array<EnemyDebris, 2> debris{};
-    std::array<bool, 2> known{}, wasAlive{};
+    std::array<EnemyDebris, 3> debris{};
+    std::array<bool, 3> known{}, wasAlive{};
     int bursts{};
     int deaths{};
     float deathAge{};

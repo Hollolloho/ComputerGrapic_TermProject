@@ -11,7 +11,7 @@
 #include "gameplay/boss/boss_view.h"
 #include "gameplay/core/core_encounter.h"
 #include "gameplay/core/core_view.h"
-#include "gameplay/turret/single_turret_view.h"
+#include "gameplay/turret/turret.h"
 #include "gameplay/ui/korean_ui.h"
 #include "gameplay/ui/world_signs.h"
 #include "combat_feedback.h"
@@ -64,7 +64,7 @@ public:
     void SetDroneMode(bool enabled);
     void SetCombatMapMode(bool enabled);
 
-    void SetMaintenanceMode();
+    void SetMaintenanceMode(bool coreApproach = false);
 
     bool IsCombatMapMode() const
     {
@@ -230,9 +230,10 @@ private:
     BossView bossView;
     combat::CoreEncounter core;
     CoreView coreView;
-    SingleTurretView singleTurretView;
+    Turret singleModel, twinModel;
     bool coreMode{};
     bool maintenanceMode{};
+    bool approachMode{};
     bool combatMapMode{};
     bool bossMode{};
     bool bossCovered{};

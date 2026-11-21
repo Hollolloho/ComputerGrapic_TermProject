@@ -6,6 +6,8 @@ in vec2 uv;
 out vec4 aFrag;
 uniform vec3 uEye;
 uniform float uWarning;
+uniform bool uTextured;
+uniform vec3 uMaterialColor;
 uniform sampler2D uBaseColorMap;
 uniform sampler2D uNormalMap;
 uniform sampler2D uMetallicMap;
@@ -39,13 +41,13 @@ float LinearToSrgb(float value)
 
 void main()
 {
-    vec3 N = SurfaceNormal();
+    vec3 N = uTextured ? SurfaceNormal() : normalize(worldNormal);
     if (!gl_FrontFacing) N = -N;
     vec3 V = normalize(uEye - worldPosition);
     vec3 L = normalize(vec3(.45, .9, .7));
-    vec3 baseColor = texture(uBaseColorMap, uv).rgb;
-    float metallic = clamp(texture(uMetallicMap, uv).r, 0, 1);
-    float roughness = clamp(texture(uRoughnessMap, uv).r, .04, 1);
+    vec3 baseColor = uTextured ? texture(uBaseColorMap, uv).rgb : uMaterialColor;
+    float metallic = uTextured ? clamp(texture(uMetallicMap, uv).r, 0, 1) : 0.45;
+    float roughness = uTextured ? clamp(texture(uRoughnessMap, uv).r, .04, 1) : 0.55;
     float nl = max(dot(N, L), 0);
     float nv = max(dot(N, V), .001);
     vec3 f0 = mix(vec3(.04), baseColor, metallic);

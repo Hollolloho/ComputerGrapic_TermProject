@@ -316,9 +316,10 @@ void CombatScene::PopulateHud(UiPage& page) const
                        L" / 100  |  호위 " +
                        std::to_wstring(core.RemainingEnemies() - (core.CoreAlive() ? 1 : 0)) + L" / 4";
     }
-    if (!coreMode && !bossMode && encounter.HasSupportTurret())
+    if (!coreMode && !bossMode && !encounter.Turrets().empty())
     {
-        page.status += L"  |  남은 적 " + std::to_wstring(encounter.RemainingEnemies()) + L" / 2";
+        page.status += L"  |  남은 적 " + std::to_wstring(encounter.RemainingEnemies()) + L" / " +
+                       std::to_wstring(encounter.EnemyCount());
     }
     if (bossMode)
     {
@@ -340,7 +341,8 @@ void CombatScene::PopulateHud(UiPage& page) const
         page.warning = L"구역 안전 확보 완료";
         page.body = coreMode ? L"중앙 AI 코어를 파괴했습니다. 임무를 완료했습니다."
                     : (combatMapMode || DoorProgress() >= 1)
-                        ? (maintenanceMode ? L"Enter: 코어실로 진행  /  가까운 단말 조준 + E: 분석"
+                        ? (approachMode ? L"Enter: 코어실로 진행  /  가까운 단말 조준 + E: 분석"
+                           : maintenanceMode ? L"Enter: 코어실 앞 복도로 진행  /  가까운 단말 조준 + E: 분석"
                                            : L"Enter: 정비 복도로 진행  /  가까운 단말 조준 + E: 분석")
                         : L"출구 문이 열리고 있습니다. 잠시 기다리세요.";
     }
@@ -405,22 +407,18 @@ void CombatScene::PopulateHud(UiPage& page) const
         }
         page.body = L"왼쪽 클릭: 사격  /  오른쪽 드래그: 조준  /  G: 무기 내려놓기  /  Esc: 메뉴";
     }
-    if (!coreMode && !bossMode && encounter.HasSupportTurret() && result == combat::EncounterResult::Running)
+    if (!coreMode && !bossMode && !encounter.Turrets().empty() && result == combat::EncounterResult::Running)
     {
-        const auto& turret = encounter.SupportTurret();
-        if (turret.Phase() == combat::TurretPhase::Warning)
+        page.warning = encounter.EnemyAlive() ? L"드론과 포탑을 제거하세요."
+                                              : L"남은 포탑의 본체를 조준하세요.";
+        for (const auto& turret : encounter.Turrets())
         {
-            page.warning = L"고정 포탑이 조준 중! 엄폐하거나 사선을 벗어나세요.";
-            page.danger = true;
-        }
-        else if (!encounter.EnemyAlive())
-        {
-            page.warning = turret.Armed() ? L"드론 파괴 · 남은 포탑의 본체를 조준하세요."
-                                          : L"포탑 무기 파괴 · 본체를 맞혀 마무리하세요.";
-        }
-        else
-        {
-            page.warning = L"드론과 고정 포탑을 모두 파괴하세요. 엄폐물을 활용하세요.";
+            if (turret.Phase() == combat::TurretPhase::Warning)
+            {
+                page.warning = L"고정 포탑이 조준 중! 엄폐하거나 사선을 벗어나세요.";
+                page.danger = true;
+                break;
+            }
         }
     }
     if (!coreMode && !bossMode && HasExternalPlayerView() && result == combat::EncounterResult::Running)
@@ -458,7 +456,8 @@ void CombatScene::PopulateHud(UiPage& page) const
     }
     else if (result == combat::EncounterResult::Cleared && TerminalTarget())
     {
-        page.body = maintenanceMode ? L"E: 드론 분석 열기  /  Enter: 코어실로 진행"
+        page.body = approachMode ? L"E: 분석  /  Enter: 코어실로 진행"
+                     : maintenanceMode ? L"E: 드론 분석 열기  /  Enter: 코어실 앞 복도로 진행"
                                     : L"E: 드론 분석 열기  /  Enter: 정비 복도로 진행";
     }
 }
