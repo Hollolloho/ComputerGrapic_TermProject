@@ -37,6 +37,7 @@ private:
 
 	void MovePlayer(const glm::vec3& direction, float step);
 	void SyncPlayerCamera(bool inputActive);
+	void SendPlayerView();
 	void SetCursorCapture(bool captured);
 	void UpdateWindowTitle();
 	glm::vec3 ReadMovementDirection() const;

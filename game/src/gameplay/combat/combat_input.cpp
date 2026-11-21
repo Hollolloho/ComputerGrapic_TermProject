@@ -56,8 +56,7 @@ void CombatScene::SampleInput(GLFWwindow* window, bool canReceiveInput, bool fir
     // 분석 화면은 위에서 입력 처리를 끝낸다. 여기부터는 일반 전투 입력이다.
     if (canReceiveInput)
     {
-        auto* battle = ActiveEncounter();
-        const auto result = battle->Result();
+        const auto result = BattleResult();
         const bool playing = result == combat::EncounterResult::Running ||
                              result == combat::EncounterResult::Securing;
         const bool canEquip = result != combat::EncounterResult::Failed;
@@ -69,9 +68,9 @@ void CombatScene::SampleInput(GLFWwindow* window, bool canReceiveInput, bool fir
             camera.SetPose(CameraRoot(), rotY, rotX);
         }
 
-        if (!coreMode && !HasExternalPlayerView() && playing && cover && !coverHeld)
+        if (!IsCoreMode() && !HasExternalPlayerView() && playing && cover && !coverHeld)
         {
-            if (bossMode)
+            if (IsBossMode())
             {
                 ToggleBossCover();
             }
@@ -83,7 +82,7 @@ void CombatScene::SampleInput(GLFWwindow* window, bool canReceiveInput, bool fir
 
         if (canEquip && drop && !dropHeld)
         {
-            battle->DropWeapon(PlayerEye(), PlayerForward());
+            activeBattle->DropWeapon(PlayerEye(), PlayerForward());
         }
 
         if (canEquip && interact && !interactHeld)

@@ -1,26 +1,13 @@
 // 캠페인 진행 상태와 게임 장면의 생명주기를 연결한다.
 #include "game_scene.h"
-#include "campaign_environment.h"
-#include "campaign_menu.h"
-#include "gameplay/combat/combat_scene.h"
 
 namespace aegis
 {
-GameScene::GameScene()
-    : environment(std::make_unique<CampaignEnvironment>()),
-      menu(std::make_unique<CampaignMenu>()),
-      combatScene(std::make_unique<CombatScene>())
-{
-}
-
-// GL 자원은 프레임워크가 컨텍스트를 닫기 전에 Clear에서 해제한다.
-GameScene::~GameScene() = default;
-
 bool GameScene::Init(const std::filesystem::path& projectDirectory)
 {
     Clear();
-    if (!environment->Init(projectDirectory) || !combatScene->Init(projectDirectory) ||
-        !menu->Init())
+    if (!environment.Init(projectDirectory) || !combatScene.Init(projectDirectory) ||
+        !menu.Init(projectDirectory / "shaders"))
     {
         return false;
     }
@@ -35,10 +22,10 @@ void GameScene::Update(double realDeltaTime, double baseGameDeltaTime)
     {
         return;
     }
-    combatScene->Update(realDeltaTime, baseGameDeltaTime);
-    flow.ObserveBattle(combatScene->BattleResult() == combat::EncounterResult::Failed &&
-                               !combatScene->DeathPlaying(),
-                           combatScene->BattleResult() == combat::EncounterResult::Cleared);
+    combatScene.Update(realDeltaTime, baseGameDeltaTime);
+    const combat::EncounterResult result = combatScene.BattleResult();
+    flow.ObserveBattle(result == combat::EncounterResult::Failed && !combatScene.DeathPlaying(),
+                       result == combat::EncounterResult::Cleared);
 }
 
 void GameScene::Reset()
@@ -52,34 +39,33 @@ void GameScene::Reset()
 
 void GameScene::Clear()
 {
-    combatScene->Clear();
-    environment->Clear();
-    menu->Clear();
+    combatScene.Clear();
+    environment.Clear();
+    menu.Clear();
 }
 
 void GameScene::LoadStage()
 {
     ++playerSpawnRevision;
-    combatScene->CloseAnalysis();
-    combatScene->SetCorridorMode(true);
-    combatScene->SetDroneMode(true);
-    if (flow.Stage() == CampaignStage::Corridor)
+    switch (flow.Stage())
     {
-        combatScene->SetCombatMapMode(true);
+    case CampaignStage::Entry:
+        combatScene.SetCorridorMode(true);
+        break;
+    case CampaignStage::Corridor:
+        combatScene.SetCombatMapMode(true);
+        break;
+    case CampaignStage::Maintenance:
+        combatScene.SetMaintenanceMode();
+        break;
+    case CampaignStage::CoreApproach:
+        combatScene.SetMaintenanceMode(true);
+        break;
+    case CampaignStage::Boss:
+        combatScene.SetCoreMode();
+        break;
     }
-    if (flow.Stage() == CampaignStage::Maintenance)
-    {
-        combatScene->SetMaintenanceMode();
-    }
-    if (flow.Stage() == CampaignStage::CoreApproach)
-    {
-        combatScene->SetMaintenanceMode(true);
-    }
-    if (flow.Stage() == CampaignStage::Boss)
-    {
-        combatScene->SetCoreMode();
-    }
-    environment->SetEntryCamera();
+    environment.SetEntryCamera();
 }
 
 bool GameScene::ReadyToAdvance() const
@@ -97,15 +83,15 @@ bool GameScene::ReadyToAdvance() const
     {
         return false;
     }
-    if (!combatScene->CanAnalyze())
+    if (!combatScene.CanAnalyze())
     {
         return false;
     }
-    if (combatScene->IsCombatMapMode())
+    if (combatScene.IsCombatMapMode())
     {
         return true;
     }
-    return combatScene->DoorProgress() >= 1;
+    return combatScene.DoorProgress() >= 1;
 }
 
 } // namespace aegis

@@ -166,6 +166,10 @@
     <ClInclude Include="src\gameplay\weapons\weapon_view.h" />
     <ClInclude Include="src\gameplay\ui\world_signs.h" />
     <None Include="src\gameplay\boss\boss_triangles.generated.inc" />
+    <None Include="shaders\ui.vert" />
+    <None Include="shaders\ui.frag" />
+    <None Include="shaders\combat_box.vert" />
+    <None Include="shaders\combat_box.frag" />
     <None Include="shaders\death_effect.vert" />
     <None Include="shaders\death_effect.frag" />
     <None Include="shaders\mesh.vert" />

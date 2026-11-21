@@ -1,9 +1,10 @@
 #pragma once
 
-#include "campaign_flow.h"
+#include "campaign_environment.h"
+#include "campaign_menu.h"
+#include "gameplay/combat/combat_scene.h"
 #include <cstdint>
 #include <filesystem>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -12,24 +13,11 @@ struct GLFWwindow;
 
 namespace aegis
 {
-class CampaignEnvironment;
-class CampaignMenu;
-class CombatScene;
-struct PlayerView;
-struct UiPage;
-enum class UiAction;
-namespace combat
-{
-class AnalysisSession;
-struct Collider;
-}
-
 // 캠페인 진행과 환경, 메뉴, 전투 장면을 연결한다.
 class GameScene
 {
 public:
-    GameScene();
-    ~GameScene();
+    GameScene() = default;
     GameScene(const GameScene&) = delete;
     GameScene& operator=(const GameScene&) = delete;
 
@@ -64,12 +52,11 @@ private:
     bool ReadyToAdvance() const;
     void ApplyAction(UiAction action);
     UiPage Page() const;
-    void DrawBattle(int width, int height, const Camera* playerCamera) const;
 
     CampaignFlow flow;
-    std::unique_ptr<CampaignEnvironment> environment;
-    std::unique_ptr<CampaignMenu> menu;
-    std::unique_ptr<CombatScene> combatScene;
+    CampaignEnvironment environment;
+    CampaignMenu menu;
+    CombatScene combatScene;
     std::uint64_t playerSpawnRevision{};
 
     bool quitRequested{};

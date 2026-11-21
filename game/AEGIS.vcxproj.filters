@@ -193,6 +193,10 @@
     <ClInclude Include="src\gameplay\weapons\weapon_view.h"><Filter>Gameplay\Weapons</Filter></ClInclude>
     <ClInclude Include="src\gameplay\ui\world_signs.h"><Filter>Gameplay\UI</Filter></ClInclude>
     <None Include="src\gameplay\boss\boss_triangles.generated.inc"><Filter>Gameplay\Boss</Filter></None>
+    <None Include="shaders\ui.vert"><Filter>Shaders</Filter></None>
+    <None Include="shaders\ui.frag"><Filter>Shaders</Filter></None>
+    <None Include="shaders\combat_box.vert"><Filter>Shaders</Filter></None>
+    <None Include="shaders\combat_box.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\death_effect.vert"><Filter>Shaders</Filter></None>
     <None Include="shaders\death_effect.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\core.vert"><Filter>Shaders</Filter></None>

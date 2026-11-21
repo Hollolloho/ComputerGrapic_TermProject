@@ -109,7 +109,7 @@ void GameFrameWork::Update(double deltaTime)
 		camera.Rotate(-static_cast<float>(mouseDeltaY) * MouseSensitivity,
 			-static_cast<float>(mouseDeltaX) * MouseSensitivity);
 		camera.UpdateView();
-		scene.SetPlayerView({ camera.camPos, camera.camTarget - camera.camPos, camera.camUp, camera.fovy });
+		SendPlayerView();
 		direction = ReadMovementDirection();
 	}
 	mouseDeltaX = mouseDeltaY = 0.0;
@@ -149,7 +149,7 @@ void GameFrameWork::MovePlayer(const glm::vec3& direction, float step)
 	actualTravel += glm::length(glm::vec2(movement.displacement.x, movement.displacement.z));
 	movementTimeScale = aegis::combat::MovementTimeScale(movement.displacement, step, PlayerMoveSpeed);
 	scene.SetMovementTimeScale(movementTimeScale);
-	scene.SetPlayerView({ camera.camPos, camera.camTarget - camera.camPos, camera.camUp, camera.fovy });
+	SendPlayerView();
 }
 
 glm::vec3 GameFrameWork::ReadMovementDirection() const
@@ -162,6 +162,11 @@ glm::vec3 GameFrameWork::ReadMovementDirection() const
 	if (moveRight) rightInput += 1.f;
 	return aegis::combat::RequestedPlayerMovement(camera.camTarget - camera.camPos,
 		forwardInput, rightInput, 1.f);
+}
+
+void GameFrameWork::SendPlayerView()
+{
+	scene.SetPlayerView({ camera.camPos, camera.camTarget - camera.camPos, camera.camUp, camera.fovy });
 }
 
 void GameFrameWork::SyncPlayerCamera(bool inputActive)
@@ -187,7 +192,7 @@ void GameFrameWork::SyncPlayerCamera(bool inputActive)
 	SetCursorCapture(playing && inputActive);
 	if (playing && inputActive)
 	{
-		scene.SetPlayerView({ camera.camPos, camera.camTarget - camera.camPos, camera.camUp, camera.fovy });
+		SendPlayerView();
 		scene.SetMovementTimeScale(movementTimeScale);
 	}
 }

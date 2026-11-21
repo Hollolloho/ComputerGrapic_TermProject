@@ -6,7 +6,7 @@ namespace aegis
 {
 std::string CombatScene::StatusTitle(bool paused) const
 {
-    if (coreMode)
+    if (IsCoreMode())
     {
         const char* phase = core.Phase() == combat::MagneticPhase::Warning ? "MAGNETIC WARNING"
                             : core.Phase() == combat::MagneticPhase::Pulse ? "MAGNETIC PULSE"
@@ -18,7 +18,7 @@ std::string CombatScene::StatusTitle(bool paused) const
                " | Shots: " + std::to_string(core.PlayerShots()) +
                " | Supplies: " + std::to_string(Inventory().Supplies());
     }
-    if (bossMode)
+    if (IsBossMode())
     {
         return std::string("AEGIS BOSS | ") + (paused ? "PAUSED | " : "") +
                (boss.Result() == combat::EncounterResult::Failed     ? "FAILED"

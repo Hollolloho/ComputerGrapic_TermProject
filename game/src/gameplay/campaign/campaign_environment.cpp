@@ -1,7 +1,6 @@
 // 캠페인의 입구와 전투 환경을 불러오고 그린다.
 #include "campaign_environment.h"
 #include "campaign_layout.generated.h"
-#include "combat_map/corridor_layout.generated.h"
 #include "combat_map/terminal_layout.generated.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
@@ -46,7 +45,6 @@ bool CampaignEnvironment::InitCorridor(const std::filesystem::path& projectDirec
     }
     const ObjModelCache cache(projectDirectory / "build" / "cache" / "models", materialPath);
 
-    static_assert(std::size(placements) == std::tuple_size_v<decltype(corridor)>);
     for (std::size_t i = 0; i < corridor.size(); ++i)
     {
         auto& object = corridor[i];
@@ -69,7 +67,8 @@ bool CampaignEnvironment::InitCorridor(const std::filesystem::path& projectDirec
         {
             const auto& material = model.materials[mesh.materialIndex];
             auto& drawMesh = object.meshes.emplace_back();
-            drawMesh.Upload(mesh, material);
+            if (!drawMesh.Upload(mesh, material))
+                return false;
             // MTL의 반사색과 Phong 지수로 비금속 GGX 재질을 근사한다.
             drawMesh.dielectricF0 = glm::clamp(material.specular, 0.0f, 1.0f);
             drawMesh.roughness = std::sqrt(2.0f / (glm::max(material.shininess, 0.0f) + 2.0f));
@@ -80,24 +79,8 @@ bool CampaignEnvironment::InitCorridor(const std::filesystem::path& projectDirec
 
 bool CampaignEnvironment::InitEntry(const std::filesystem::path& root)
 {
-    const auto load = [&](const std::filesystem::path& path, std::vector<DrawMesh>& meshes)
-    {
-        ModelData model;
-        std::string error;
-        if (!LoadModel(path, model, error))
-        {
-            std::cerr << error << '\n';
-            return false;
-        }
-        for (const auto& mesh : model.meshes)
-        {
-            auto& draw = meshes.emplace_back();
-            draw.Upload(mesh, model.materials.at(mesh.materialIndex));
-        }
-        return true;
-    };
-    return load(root / campaign_asset::entryMesh, entryRoom) &&
-           load(root / terminal_asset::mesh, entryTerminal);
+    return LoadDrawMeshes(root / campaign_asset::entryMesh, entryRoom) &&
+           LoadDrawMeshes(root / terminal_asset::mesh, entryTerminal);
 }
 
 void CampaignEnvironment::DrawEntry(int width, int height) const
@@ -150,21 +133,11 @@ void CampaignEnvironment::Clear()
 {
     for (auto& object : corridor)
     {
-        for (auto& mesh : object.meshes)
-        {
-            mesh.Clear();
-        }
-        object.meshes.clear();
+        ClearDrawMeshes(object.meshes);
     }
     combatMap.Clear();
-    for (auto* meshes : {&entryRoom, &entryTerminal})
-    {
-        for (auto& mesh : *meshes)
-        {
-            mesh.Clear();
-        }
-        meshes->clear();
-    }
+    ClearDrawMeshes(entryRoom);
+    ClearDrawMeshes(entryTerminal);
     renderer.Clear();
 }
 

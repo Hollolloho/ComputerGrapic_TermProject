@@ -1,5 +1,6 @@
 // 적·탄환·무기·파편을 그린다. 충돌과 피해 판정은 여기서 처리하지 않는다.
 #include "combat_scene.h"
+#include "gameplay/campaign/campaign_environment.h"
 #include "camera/Camera.h"
 #include "combat_map/corridor_layout.generated.h"
 #include "combat_map/terminal_layout.generated.h"
@@ -15,7 +16,7 @@ namespace aegis
 // 전투 화면과 분석 화면을 그린다. 피해 판정은 이 파일에서 변경하지 않는다.
 void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
 {
-    if (coreMode)
+    if (IsCoreMode())
     {
         for (const auto& state : core.Drones())
         {
@@ -35,7 +36,7 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
         const auto& state = encounter.DroneState();
         drone.Draw(viewProjection, state.WorldTransform(), state.Phase() == combat::DronePhase::Warning, state.Armed());
     }
-    if (!bossMode)
+    if (!IsBossMode())
     {
         for (const auto& turret : encounter.Turrets())
         {
@@ -58,7 +59,7 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
 
 void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
 {
-    if (coreMode || bossMode) return;
+    if (IsCoreMode() || IsBossMode()) return;
     for (const auto& box : encounter.Colliders())
     {
         if ((box.id >= combat::FixedTurret::BodyId &&
@@ -96,14 +97,13 @@ void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
 
 void CombatScene::DrawBullets(const glm::mat4& viewProjection) const
 {
-    const auto* battle = ActiveEncounter();
-    const auto& shots = battle->PlayerFlights();
+    const auto& shots = activeBattle->PlayerFlights();
     for (const auto& flight : shots)
     {
         const auto p = flight.bullet.position;
         DrawBox(viewProjection, p - glm::vec3(0.055f), p + glm::vec3(0.055f), {1, 0.85f, 0.15f});
     }
-    for (const auto& flight : battle->EnemyFlights())
+    for (const auto& flight : activeBattle->EnemyFlights())
     {
         const auto p = flight.bullet.position;
         DrawBox(viewProjection, p - glm::vec3(0.08f), p + glm::vec3(0.08f), {1, 0.15f, 0.08f});
@@ -141,7 +141,7 @@ void CombatScene::DrawBox(const glm::mat4& viewProjection, const glm::vec3& mini
 }
 
 void CombatScene::Draw(int width, int height,
-                       const std::function<void(const glm::mat4&, const glm::vec3&)>& drawEnvironment,
+                       const CampaignEnvironment* environment,
                        bool showHud, const Camera* playerCamera) const
 {
     if (width <= 0 || height <= 0)
@@ -172,20 +172,20 @@ void CombatScene::Draw(int width, int height,
                            static_cast<float>(width) / height, 0.05f, 80.0f);
     const glm::mat4 view = playerCamera ? playerCamera->view : PlayerViewMatrix();
     const glm::mat4 scene = projection * view;
-    if (bossMode)
+    if (IsBossMode())
     {
         bossView.Draw(projection, view, PlayerEye(), boss);
     }
-    else if (drawEnvironment)
+    else if (environment)
     {
-        drawEnvironment(scene, PlayerEye());
+        environment->DrawBattle(scene, PlayerEye(), IsCombatMapMode(), DoorProgress());
     }
-    if (corridorMode && !bossMode && !coreMode)
+    if (corridorMode && activeBattle == &encounter)
     {
         terminalRenderer.Begin(PlayerEye(), {0.45f, 0.9f, 0.7f}, {1, 1, 1}, 3, 0.3f);
         terminalRenderer.Draw(terminalMeshes, scene, glm::translate(glm::mat4(1), TerminalPosition()));
     }
-    if (combatMapMode && !coreMode)
+    if (combatMapMode && !IsCoreMode())
     {
         signs.Draw(scene, SupplyPosition(), TerminalPosition(), CanAnalyze(), maintenanceMode, approachMode);
     }
@@ -196,15 +196,15 @@ void CombatScene::Draw(int width, int height,
     DrawCollisionBoxes(scene);
     DrawBullets(scene);
     DrawWeaponFragments(scene);
-    const auto supply = bossMode ? boss_asset::supplyWeapon : SupplyPosition();
-    if (!bossMode)
+    const auto supply = IsBossMode() ? boss_asset::supplyWeapon : SupplyPosition();
+    if (!IsBossMode())
     {
         DrawBox(scene, supply + glm::vec3(-0.32f, -0.5f, -0.27f),
                 supply + glm::vec3(0.32f, -0.15f, 0.27f), {0.1f, 0.55f, 0.38f});
     }
     glBindVertexArray(0);
     glUseProgram(0);
-    weapon.DrawWorld(projection, view, supply, bossMode ? 0.0f : 90.0f);
+    weapon.DrawWorld(projection, view, supply, IsBossMode() ? 0.0f : 90.0f);
     for (const auto& drop : Inventory().Drops())
     {
         weapon.DrawWorld(projection, view, drop.position);

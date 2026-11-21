@@ -3,37 +3,17 @@
 #include "combat_map/corridor_layout.generated.h"
 #include "combat_map/terminal_layout.generated.h"
 #include <limits>
-#include <utility>
 
 namespace aegis
 {
-const combat::CombatEncounter* CombatScene::ActiveEncounter() const
-{
-    if (coreMode)
-    {
-        return &core;
-    }
-    if (bossMode)
-    {
-        return &boss;
-    }
-    return &encounter;
-}
-
-combat::CombatEncounter* CombatScene::ActiveEncounter()
-{
-    return const_cast<combat::CombatEncounter*>(std::as_const(*this).ActiveEncounter());
-}
-
 combat::EncounterResult CombatScene::BattleResult() const
 {
-    return ActiveEncounter()->Result();
+    return activeBattle->Result();
 }
 
 void CombatScene::SetCorridorMode(bool enabled)
 {
-    coreMode = false;
-    bossMode = false;
+    activeBattle = &encounter;
     combatMapMode = false;
     maintenanceMode = approachMode = false;
     encounter.SetDroneScale(1);
@@ -54,6 +34,15 @@ void CombatScene::SetCorridorMode(bool enabled)
     Reset();
 }
 
+void CombatScene::BeginCombatMap()
+{
+    activeBattle = &encounter;
+    combatMapMode = true;
+    corridorMode = true;
+    encounter.SetExitDoors(0, 0, 0);
+    encounter.SetDroneMode(true);
+}
+
 void CombatScene::SetCombatMapMode(bool enabled)
 {
     if (!enabled)
@@ -61,22 +50,17 @@ void CombatScene::SetCombatMapMode(bool enabled)
         SetCorridorMode(true);
         return;
     }
-    coreMode = false;
+    BeginCombatMap();
     maintenanceMode = approachMode = false;
     encounter.SetDroneScale(1);
-    combatMapMode = true;
-    corridorMode = true;
-    bossMode = false;
     std::vector<combat::Collider> walls(combat_map_asset::walls.begin(), combat_map_asset::walls.end());
     walls.push_back(TerminalCollider());
     encounter.SetEnvironment(walls);
-    encounter.SetExitDoors(0, 0, 0);
     // 순찰 끝의 엄폐물(Cover_A02) 위로 무기까지 통과할 높이를 확보한다.
     glm::vec3 droneStart = combat_map_asset::droneSpawn;
     droneStart.y += 0.4f;
     encounter.SetDroneSpawn(droneStart, glm::radians(combat_map_asset::droneRotYDegrees), -14.40f);
     encounter.SetSupply(combat_map_asset::supply);
-    encounter.SetDroneMode(true);
     encounter.SetTurrets(combat::TurretType::SingleC, {{-1.55f, 0, -15.9f}});
     Reset();
 }
@@ -84,7 +68,7 @@ void CombatScene::SetCombatMapMode(bool enabled)
 // 정비 구간에는 드론과 단포신 두 대, 다음 복도에는 쌍포신 한 대를 배치한다.
 void CombatScene::SetMaintenanceMode(bool coreApproach)
 {
-    SetCombatMapMode(true);
+    BeginCombatMap();
     maintenanceMode = true;
     approachMode = coreApproach;
     if (approachMode)
@@ -112,10 +96,10 @@ void CombatScene::SetDroneMode(bool enabled)
 
 void CombatScene::SetBossMode(bool enabled)
 {
-    coreMode = false;
-    bossMode = enabled;
+    activeBattle = &encounter;
     if (enabled)
     {
+        activeBattle = &boss;
         combatMapMode = false;
         maintenanceMode = approachMode = false;
     }
@@ -124,15 +108,16 @@ void CombatScene::SetBossMode(bool enabled)
 
 void CombatScene::SetCoreMode()
 {
-    bossMode = maintenanceMode = approachMode = false;
-    coreMode = combatMapMode = corridorMode = true;
+    activeBattle = &core;
+    maintenanceMode = approachMode = false;
+    combatMapMode = corridorMode = true;
     Reset();
 }
 
 glm::vec3 CombatScene::CameraRoot() const
 {
-    if (coreMode) return combat::CoreEncounter::PlayerRoot();
-    if (bossMode)
+    if (IsCoreMode()) return combat::CoreEncounter::PlayerRoot();
+    if (IsBossMode())
     {
         if (bossCovered)
         {
@@ -185,8 +170,8 @@ void CombatScene::ToggleBossCover()
 
 std::vector<combat::Collider> CombatScene::PlayerObstacles() const
 {
-    if (coreMode) return core.PlayerObstacles();
-    if (bossMode)
+    if (IsCoreMode()) return core.PlayerObstacles();
+    if (IsBossMode())
     {
         std::vector<combat::Collider> walls(boss_asset::walls.begin(), boss_asset::walls.end());
         glm::vec3 low(std::numeric_limits<float>::max()), high(std::numeric_limits<float>::lowest());

@@ -1,5 +1,6 @@
 #pragma once
 #include <GL/glew.h>
+#include <filesystem>
 #include <string>
 #include <glm/glm.hpp>
 #include <vector>
@@ -51,7 +52,7 @@ struct UiPage
 class KoreanUi
 {
 public:
-    bool Init();
+    bool Init(const std::filesystem::path& shaderDirectory = "shaders");
     void Draw(const UiPage& page, int width, int height, float mouseX, float mouseY);
     void DrawWorld(const std::wstring& title, const std::wstring& body, const glm::mat4& viewProjection,
                    const glm::vec3& position, const glm::vec2& size);
@@ -59,6 +60,7 @@ public:
     static UiAction Hit(const UiPage& page, float x, float y, bool& consumed);
 
 private:
+    void DrawTexture(const glm::mat4& transform) const;
     bool Rasterize(const UiPage& page, int width, int height, int hover);
     GLuint program{};
     GLuint texture{};

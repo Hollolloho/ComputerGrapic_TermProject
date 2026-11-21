@@ -118,7 +118,7 @@ void Label(const std::string& text, int x, int y, int scale, const glm::vec3& co
 void CombatScene::DrawHud(int width, int height) const
 {
     const int scale = width < 900 ? 2 : 3;
-    if (coreMode)
+    if (IsCoreMode())
     {
         Label("CORE " + std::to_string(core.CoreHealth()) + "/100", 24, height - 40, scale, {0.2f, 1, 0.8f});
         Label("HP " + std::to_string(core.Health()) + "/100", 24, height - 75, scale, {1, 0.8f, 0.3f});
@@ -129,7 +129,7 @@ void CombatScene::DrawHud(int width, int height) const
         Label("LMB FIRE  E SUPPLY  G DROP  R RETRY  ESC MENU", 24, 24, 2, {0.8f, 0.9f, 1});
         return;
     }
-    if (bossMode)
+    if (IsBossMode())
     {
         DrawBossHud(width, height);
         return;
@@ -310,18 +310,18 @@ void CombatScene::PopulateHud(UiPage& page) const
     page.status = L"체력 " + std::to_wstring(page.health) + L" / 100  |  ";
     page.status += inventory.Armed() ? L"무기: 장착 중" : L"무기: 빈손";
     page.status += L"  |  누적 파손 " + std::to_wstring(inventory.Breaks());
-    if (coreMode)
+    if (IsCoreMode())
     {
         page.status += L"  |  코어 " + std::to_wstring(core.CoreHealth()) +
                        L" / 100  |  호위 " +
                        std::to_wstring(core.RemainingEnemies() - (core.CoreAlive() ? 1 : 0)) + L" / 4";
     }
-    if (!coreMode && !bossMode && !encounter.Turrets().empty())
+    if (activeBattle == &encounter && !encounter.Turrets().empty())
     {
         page.status += L"  |  남은 적 " + std::to_wstring(encounter.RemainingEnemies()) + L" / " +
                        std::to_wstring(encounter.EnemyCount());
     }
-    if (bossMode)
+    if (IsBossMode())
     {
         page.status += L"  |  코어 명중 " + std::to_wstring(boss.CoreHits()) + L" / 3";
     }
@@ -331,22 +331,25 @@ void CombatScene::PopulateHud(UiPage& page) const
     {
         page.warning = L"적은 쓰러졌지만 날아오는 적탄이 남아 있습니다!";
         page.body = L"남은 적탄 " +
-                    std::to_wstring(coreMode ? core.EnemyFlights().size()
-                                    : bossMode ? boss.EnemyFlights().size() : encounter.EnemyFlights().size()) +
+                    std::to_wstring(activeBattle->EnemyFlights().size()) +
                     L"발 · 탄환이 사라지기 전에는 분석과 구역 이동이 잠깁니다.";
         page.danger = true;
     }
     else if (result == combat::EncounterResult::Cleared)
     {
         page.warning = L"구역 안전 확보 완료";
-        page.body = coreMode ? L"중앙 AI 코어를 파괴했습니다. 임무를 완료했습니다."
-                    : (combatMapMode || DoorProgress() >= 1)
-                        ? (approachMode ? L"Enter: 코어실로 진행  /  가까운 단말 조준 + E: 분석"
-                           : maintenanceMode ? L"Enter: 코어실 앞 복도로 진행  /  가까운 단말 조준 + E: 분석"
-                                           : L"Enter: 정비 복도로 진행  /  가까운 단말 조준 + E: 분석")
-                        : L"출구 문이 열리고 있습니다. 잠시 기다리세요.";
+        if (IsCoreMode())
+            page.body = L"중앙 AI 코어를 파괴했습니다. 임무를 완료했습니다.";
+        else if (!combatMapMode && DoorProgress() < 1)
+            page.body = L"출구 문이 열리고 있습니다. 잠시 기다리세요.";
+        else if (approachMode)
+            page.body = L"Enter: 코어실로 진행  /  가까운 단말 조준 + E: 분석";
+        else if (maintenanceMode)
+            page.body = L"Enter: 코어실 앞 복도로 진행  /  가까운 단말 조준 + E: 분석";
+        else
+            page.body = L"Enter: 정비 복도로 진행  /  가까운 단말 조준 + E: 분석";
     }
-    else if (coreMode)
+    else if (IsCoreMode())
     {
         const auto phase = core.Phase();
         page.warning = phase == combat::MagneticPhase::Warning
@@ -357,7 +360,7 @@ void CombatScene::PopulateHud(UiPage& page) const
         page.danger = phase == combat::MagneticPhase::Warning || phase == combat::MagneticPhase::Pulse;
         page.body = L"WASD 이동 · 마우스 조준 · 왼쪽 클릭 사격 · 빈손으로 입구 보급대 조준 + E";
     }
-    else if (bossMode)
+    else if (IsBossMode())
     {
         switch (boss.Phase())
         {
@@ -407,7 +410,7 @@ void CombatScene::PopulateHud(UiPage& page) const
         }
         page.body = L"왼쪽 클릭: 사격  /  오른쪽 드래그: 조준  /  G: 무기 내려놓기  /  Esc: 메뉴";
     }
-    if (!coreMode && !bossMode && !encounter.Turrets().empty() && result == combat::EncounterResult::Running)
+    if (activeBattle == &encounter && !encounter.Turrets().empty() && result == combat::EncounterResult::Running)
     {
         page.warning = encounter.EnemyAlive() ? L"드론과 포탑을 제거하세요."
                                               : L"남은 포탑의 본체를 조준하세요.";
@@ -421,11 +424,11 @@ void CombatScene::PopulateHud(UiPage& page) const
             }
         }
     }
-    if (!coreMode && !bossMode && HasExternalPlayerView() && result == combat::EncounterResult::Running)
+    if (activeBattle == &encounter && HasExternalPlayerView() && result == combat::EncounterResult::Running)
     {
         page.body = L"WASD: 이동  /  마우스: 조준  /  왼쪽 클릭: 사격  /  G: 내려놓기  /  Esc: 메뉴";
     }
-    if (bossMode && HasExternalPlayerView() && result == combat::EncounterResult::Running)
+    if (IsBossMode() && HasExternalPlayerView() && result == combat::EncounterResult::Running)
     {
         page.warning =
             boss.Phase() == combat::BossPhase::Exposed ? L"약점 노출! 열린 코어를 조준해 사격하세요."
@@ -443,16 +446,18 @@ void CombatScene::PopulateHud(UiPage& page) const
     if (result == combat::EncounterResult::Running && !inventory.Armed())
     {
         const auto hint = InteractionHint();
-        page.body = hint == combat::WeaponInteraction::Supply   ? L"E: 보급대에서 무기 획득"
-                    : hint == combat::WeaponInteraction::Pickup ? L"E: 떨어진 무기 회수"
-                    : bossMode
-                        ? (bossCovered ? L"보급대의 무기를 조준하고 E를 눌러 재무장하세요."
-                                       : L"빈손입니다. B로 엄폐한 뒤 보급대의 무기를 조준하고 E를 누르세요.")
-                        : L"명중하면 내 총이 부서집니다. 보급대·떨어진 총에 접근해 조준 + E로 재무장하세요.";
-        if (bossMode && HasExternalPlayerView() && hint == combat::WeaponInteraction::None)
-        {
+        if (hint == combat::WeaponInteraction::Supply)
+            page.body = L"E: 보급대에서 무기 획득";
+        else if (hint == combat::WeaponInteraction::Pickup)
+            page.body = L"E: 떨어진 무기 회수";
+        else if (!IsBossMode())
+            page.body = L"명중하면 내 총이 부서집니다. 보급대·떨어진 총에 접근해 조준 + E로 재무장하세요.";
+        else if (HasExternalPlayerView())
             page.body = L"빈손입니다. 보급대에 접근해 무기를 조준하고 E를 누르세요.";
-        }
+        else if (bossCovered)
+            page.body = L"보급대의 무기를 조준하고 E를 눌러 재무장하세요.";
+        else
+            page.body = L"빈손입니다. B로 엄폐한 뒤 보급대의 무기를 조준하고 E를 누르세요.";
     }
     else if (result == combat::EncounterResult::Cleared && TerminalTarget())
     {

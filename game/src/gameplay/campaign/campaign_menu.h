@@ -11,7 +11,7 @@ namespace aegis
 class CampaignMenu
 {
 public:
-    bool Init();
+    bool Init(const std::filesystem::path& shaderDirectory = "shaders");
     UiPage Page(const CampaignFlow& flow, bool readyToAdvance) const;
     UiAction SampleInput(GLFWwindow* window, bool active, const UiPage& page, bool& consumed);
     void Draw(const UiPage& page, int width, int height) const;
