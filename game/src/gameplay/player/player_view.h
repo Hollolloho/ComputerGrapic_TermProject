@@ -3,7 +3,6 @@
 #include "main/GameMath.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
-#include <optional>
 
 namespace aegis
 {
@@ -44,26 +43,28 @@ public:
             return false;
         }
         candidate.up = glm::normalize(glm::cross(right / length, candidate.forward));
-        value = candidate;
+        view = candidate;
+        active = true;
         return true;
     }
 
     void Clear()
     {
-        value.reset();
+        active = false;
     }
 
     bool Active() const
     {
-        return value.has_value();
+        return active;
     }
 
     PlayerView Selected(const PlayerView& fallback) const
     {
-        return value.value_or(fallback);
+        return active ? view : fallback;
     }
 
 private:
-    std::optional<PlayerView> value;
+    PlayerView view;
+    bool active = false;
 };
 } // namespace aegis

@@ -126,7 +126,6 @@ void CombatScene::SetCoreMode()
 {
     bossMode = maintenanceMode = approachMode = false;
     coreMode = combatMapMode = corridorMode = true;
-    core.SetEnvironment(combat_map_asset::playerWalls, combat_map_asset::playerWalls);
     Reset();
 }
 

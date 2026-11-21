@@ -7,7 +7,7 @@
 
 namespace aegis::combat
 {
-BossEncounter::BossEncounter()
+BossEncounter::BossEncounter() : walls(boss_asset::walls.begin(), boss_asset::walls.end())
 {
     Reset();
 }
@@ -23,9 +23,9 @@ void BossEncounter::Reset()
     pose = MakeBossPose(0, aimPoint);
 }
 
-std::span<const Collider> BossEncounter::InteractionColliders(std::vector<Collider>&) const
+const std::vector<Collider>& BossEncounter::InteractionColliders(std::vector<Collider>&) const
 {
-    return boss_asset::walls;
+    return walls;
 }
 
 void BossEncounter::Shoot(const glm::vec3& eye)
@@ -34,14 +34,15 @@ void BossEncounter::Shoot(const glm::vec3& eye)
     {
         const auto muzzle = BossMuzzle(pose, side);
         // The physical cabinets/room block firing toward a covered player.
-        if (FindFirstHit(muzzle, eye - glm::vec3(0, 0.6f, 0), boss_asset::walls))
+        if (IsBlocked(muzzle, eye - glm::vec3(0, 0.6f, 0), walls))
         {
             continue;
         }
         const auto node = side ? boss_asset::muzzle_R : boss_asset::muzzle_L;
-        if (auto shot = MakeBullet(muzzle, glm::vec3(pose.nodes[node][2]), 7, 23000 + side))
+        Bullet shot;
+        if (MakeBullet(muzzle, glm::vec3(pose.nodes[node][2]), 7, 23000 + side, shot))
         {
-            enemyFlights.push_back({*shot, 0});
+            enemyFlights.push_back({shot, 0});
             ++enemyShots;
         }
     }
@@ -146,17 +147,19 @@ void BossEncounter::UpdatePlayerBullets(float gameDeltaTime)
     {
         auto& bullet = flight.bullet;
         const auto end = bullet.position + bullet.velocity * gameDeltaTime;
-        auto hit = FindFirstHit(bullet.position, end, boss_asset::walls);
-        const auto bossHit = FindBossHit(bullet.position, end, pose, phase == BossPhase::Exposed);
-        if (bossHit && (!hit || bossHit->fraction < hit->fraction))
+        Hit hit, bossHit;
+        bool found = FindFirstHit(bullet.position, end, walls, hit);
+        if (FindBossHit(bullet.position, end, pose, phase == BossPhase::Exposed, bossHit) &&
+            (!found || bossHit.fraction < hit.fraction))
         {
             hit = bossHit;
+            found = true;
         }
-        if (bullet.active && hit)
+        if (bullet.active && found)
         {
-            bullet.position = hit->position;
+            bullet.position = hit.position;
             bullet.active = false;
-            if (hit->kind == HitKind::Body && phase == BossPhase::Exposed)
+            if (hit.kind == HitKind::Body && phase == BossPhase::Exposed)
             {
                 ++coreHits;
                 inventory.Break(bullet.sourceWeaponId);
@@ -185,20 +188,21 @@ void BossEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& eye
 {
     for (auto& flight : enemyFlights)
     {
-        std::vector<Collider> boxes(boss_asset::walls.begin(), boss_asset::walls.end());
+        auto boxes = walls;
         boxes.push_back({24000, HitKind::Body, eye + glm::vec3(-0.3f, -1.65f, -0.3f),
                          eye + glm::vec3(0.3f, 0.15f, 0.3f)});
         boxes.push_back(inventory.HeldCollider(eye, forward));
-        if (auto hit = AdvanceBullet(flight.bullet, gameDeltaTime, boxes))
+        Hit hit;
+        if (AdvanceBullet(flight.bullet, gameDeltaTime, boxes, hit))
         {
-            if (hit->kind == HitKind::Body && hit->objectId == 24000)
+            if (hit.kind == HitKind::Body && hit.objectId == 24000)
             {
                 health = std::max(0, health - 25);
                 damageFlash = 0.3f;
             }
-            else if (hit->kind == HitKind::Weapon)
+            else if (hit.kind == HitKind::Weapon)
             {
-                inventory.Break(hit->objectId);
+                inventory.Break(hit.objectId);
             }
         }
         flight.age += gameDeltaTime;

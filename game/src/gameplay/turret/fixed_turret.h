@@ -26,7 +26,7 @@ public:
     ObjectId WeaponTarget() const { return WeaponId + 2 * number; }
     ObjectId ShotSource() const { return ShotId + number; }
     void Reset();
-    bool Update(float gameDeltaTime, const glm::vec3& eye, std::span<const Collider> walls);
+    bool Update(float gameDeltaTime, const glm::vec3& eye, const std::vector<Collider>& walls);
     void Disarm();
     void Destroy();
 

@@ -24,7 +24,7 @@ public:
     static constexpr ObjectId CoreId = 61000, PlayerId = 61900;
     CoreEncounter();
     void Reset();
-    void SetEnvironment(std::span<const Collider> walls, std::span<const Collider> playerWalls);
+    void SetEnvironment(const std::vector<Collider>& walls, const std::vector<Collider>& playerWalls);
     void Update(float realDeltaTime, float gameDeltaTime, const glm::vec3& eye,
                 const glm::vec3& forward = {0, 0, -1}) override;
     bool DamageCore(int damage);
@@ -46,7 +46,7 @@ public:
     static Collider CoreTarget();
 
 private:
-    std::span<const Collider> InteractionColliders(std::vector<Collider>& storage) const override;
+    const std::vector<Collider>& InteractionColliders(std::vector<Collider>& storage) const override;
     std::vector<Collider> Targets() const;
     void UpdatePlayerBullets(float dt);
     void UpdateEnemyBullets(float dt, const glm::vec3& eye, const glm::vec3& forward);

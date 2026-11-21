@@ -14,6 +14,6 @@ glm::vec3 RequestedPlayerMovement(const glm::vec3& viewDirection, float forwardI
                                  float distance);
 
 // Grounded 0.6m-wide, 1.8m-high player; small floor trim is not a wall.
-PlayerMove MovePlayer(const glm::vec3& eye, const glm::vec3& desired, std::span<const Collider> walls);
+PlayerMove MovePlayer(const glm::vec3& eye, const glm::vec3& desired, const std::vector<Collider>& walls);
 double MovementTimeScale(const glm::vec3& actualDisplacement, double realDeltaTime, double normalSpeed);
 } // namespace aegis::combat

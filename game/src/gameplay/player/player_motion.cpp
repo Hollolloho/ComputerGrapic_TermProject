@@ -3,7 +3,6 @@
 #include "main/GameMath.h"
 #include <glm/glm.hpp>
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <limits>
 
@@ -11,7 +10,7 @@ namespace aegis::combat
 {
 namespace
 {
-constexpr float Radius = 0.3f, Skin = 0.001f;
+const float Radius = 0.3f, Skin = 0.001f;
 
 bool Blocks(const Collider& wall, float eyeY)
 {
@@ -92,7 +91,7 @@ glm::vec3 RequestedPlayerMovement(const glm::vec3& viewDirection, float forwardI
     return glm::normalize(direction) * distance;
 }
 
-PlayerMove MovePlayer(const glm::vec3& eye, const glm::vec3& desired, std::span<const Collider> walls)
+PlayerMove MovePlayer(const glm::vec3& eye, const glm::vec3& desired, const std::vector<Collider>& walls)
 {
     PlayerMove result{eye, glm::vec3(0), false};
     if (!IsFinite(eye) || !IsFinite(desired))
@@ -117,9 +116,12 @@ PlayerMove MovePlayer(const glm::vec3& eye, const glm::vec3& desired, std::span<
             {
                 continue;
             }
-            const std::array<float, 4> distance{p.x - low.x, high.x - p.x, p.y - low.y, high.y - p.y};
-            const auto side =
-                static_cast<int>(std::min_element(distance.begin(), distance.end()) - distance.begin());
+            const float distance[4]{p.x - low.x, high.x - p.x, p.y - low.y, high.y - p.y};
+            int side = 0;
+            for (int i = 1; i < 4; ++i)
+            {
+                if (distance[i] < distance[side]) side = i;
+            }
             if (side == 0)
             {
                 p.x = low.x - Skin;

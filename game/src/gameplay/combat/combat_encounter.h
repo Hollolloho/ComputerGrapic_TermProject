@@ -48,7 +48,7 @@ protected:
 
 private:
     // 매 프레임 충돌체를 만드는 전투에서만 storage를 채운다.
-    virtual std::span<const Collider> InteractionColliders(std::vector<Collider>& storage) const = 0;
+    virtual const std::vector<Collider>& InteractionColliders(std::vector<Collider>& storage) const = 0;
 
     float playerCooldown{};
     int playerShots{};

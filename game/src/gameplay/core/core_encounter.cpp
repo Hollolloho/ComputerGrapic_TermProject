@@ -10,9 +10,9 @@ namespace aegis::combat
 {
 namespace
 {
-constexpr ObjectId GuardBodyBase = 62000, GuardShotBase = 62500;
-constexpr float EnemyShotSpeed = 7;
-constexpr int CoreHitDamage = 10, BulletDamage = 25;
+const ObjectId GuardBodyBase = 62000, GuardShotBase = 62500;
+const float EnemyShotSpeed = 7;
+const int CoreHitDamage = 10, BulletDamage = 25;
 
 ObjectId BodyId(std::size_t guard) { return GuardBodyBase + static_cast<ObjectId>(guard) * 2; }
 ObjectId WeaponId(std::size_t guard) { return BodyId(guard) + 1; }
@@ -32,11 +32,11 @@ CoreEncounter::CoreEncounter()
     Reset();
 }
 
-void CoreEncounter::SetEnvironment(std::span<const Collider> shotWalls,
-                                   std::span<const Collider> playerWalls)
+void CoreEncounter::SetEnvironment(const std::vector<Collider>& shotWalls,
+                                   const std::vector<Collider>& playerWalls)
 {
-    walls.assign(shotWalls.begin(), shotWalls.end());
-    movementWalls.assign(playerWalls.begin(), playerWalls.end());
+    walls = shotWalls;
+    movementWalls = playerWalls;
     Reset();
 }
 
@@ -114,7 +114,7 @@ int CoreEncounter::RemainingEnemies() const
     return count;
 }
 
-std::span<const Collider> CoreEncounter::InteractionColliders(std::vector<Collider>& storage) const
+const std::vector<Collider>& CoreEncounter::InteractionColliders(std::vector<Collider>& storage) const
 {
     storage = Targets();
     return storage;
@@ -147,17 +147,18 @@ void CoreEncounter::UpdatePlayerBullets(float dt)
 {
     for (auto& flight : playerFlights)
     {
-        if (const auto hit = AdvanceBullet(flight.bullet, dt, Targets()))
+        Hit hit;
+        if (AdvanceBullet(flight.bullet, dt, Targets(), hit))
         {
-            if (hit->objectId == CoreId && CoreAlive())
+            if (hit.objectId == CoreId && CoreAlive())
             {
                 DamageCore(CoreHitDamage);
                 inventory.Break(flight.bullet.sourceWeaponId);
             }
             for (std::size_t i = 0; i < drones.size(); ++i)
             {
-                if (hit->objectId == WeaponId(i)) drones[i].Disarm();
-                if (hit->objectId == BodyId(i))
+                if (hit.objectId == WeaponId(i)) drones[i].Disarm();
+                if (hit.objectId == BodyId(i))
                 {
                     inventory.Break(flight.bullet.sourceWeaponId);
                     if (drones[i].Armed())
@@ -167,8 +168,8 @@ void CoreEncounter::UpdatePlayerBullets(float dt)
             }
             for (std::size_t i = 0; i < turrets.size(); ++i)
             {
-                if (hit->objectId == WeaponId(i + 2)) turrets[i].Disarm();
-                if (hit->objectId == BodyId(i + 2))
+                if (hit.objectId == WeaponId(i + 2)) turrets[i].Disarm();
+                if (hit.objectId == BodyId(i + 2))
                 {
                     inventory.Break(flight.bullet.sourceWeaponId);
                     if (turrets[i].Armed())
@@ -194,15 +195,16 @@ void CoreEncounter::UpdateEnemyBullets(float dt, const glm::vec3& eye, const glm
         targets.push_back({PlayerId, HitKind::Body, eye + glm::vec3(-0.3f, -1.65f, -0.3f),
                             eye + glm::vec3(0.3f, 0.15f, 0.3f)});
         targets.push_back(inventory.HeldCollider(eye, forward));
-        if (const auto hit = AdvanceBullet(flight.bullet, dt, targets))
+        Hit hit;
+        if (AdvanceBullet(flight.bullet, dt, targets, hit))
         {
-            if (hit->objectId == PlayerId && hit->kind == HitKind::Body)
+            if (hit.objectId == PlayerId && hit.kind == HitKind::Body)
             {
                 health = std::max(0, health - BulletDamage);
                 damageFlash = 0.3f;
             }
-            else if (hit->kind == HitKind::Weapon)
-                inventory.Break(hit->objectId);
+            else if (hit.kind == HitKind::Weapon)
+                inventory.Break(hit.objectId);
         }
         flight.age += dt;
         if (health == 0) break;
@@ -213,9 +215,10 @@ void CoreEncounter::UpdateEnemyBullets(float dt, const glm::vec3& eye, const glm
 void CoreEncounter::SpawnEnemyBullet(const glm::vec3& muzzle, const glm::vec3& target, ObjectId source)
 {
     if (enemyFlights.size() >= 128) return;
-    if (const auto shot = MakeBullet(muzzle, target - muzzle, EnemyShotSpeed, source))
+    Bullet shot;
+    if (MakeBullet(muzzle, target - muzzle, EnemyShotSpeed, source, shot))
     {
-        enemyFlights.push_back({*shot, 0});
+        enemyFlights.push_back({shot, 0});
         ++enemyShots;
     }
 }
@@ -242,7 +245,7 @@ void CoreEncounter::ApplyPulse(const glm::vec3& eye)
     const auto delta = eye - CoreCenter();
     const float horizontalDistanceSquared = delta.x * delta.x + delta.z * delta.z;
     if (pulseHit || horizontalDistanceSquared > magnetic.radius * magnetic.radius ||
-        FindFirstHit(CoreCenter(), eye - glm::vec3(0, 0.6f, 0), walls)) return;
+        IsBlocked(CoreCenter(), eye - glm::vec3(0, 0.6f, 0), walls)) return;
     health = std::max(0, health - magnetic.damage);
     damageFlash = 0.3f;
     pulseHit = true;

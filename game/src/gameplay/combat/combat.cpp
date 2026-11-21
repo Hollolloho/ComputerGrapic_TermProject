@@ -11,8 +11,27 @@ namespace aegis::combat
 
 void RemoveExpiredFlights(std::vector<Flight>& flights)
 {
-    std::erase_if(flights, [](const Flight& flight)
-                  { return !flight.bullet.active || flight.age >= 4.0f; });
+    // 살아 있는 탄환을 원래 순서대로 앞쪽에 모은다.
+    std::size_t kept = 0;
+    for (const Flight& flight : flights)
+    {
+        if (!flight.bullet.active || flight.age >= 4.0f)
+            continue;
+        flights[kept] = flight;
+        ++kept;
+    }
+    flights.resize(kept);
+}
+
+glm::vec3 PointOnSegment(const glm::vec3& start, const glm::vec3& end, float fraction)
+{
+    glm::vec3 point;
+    for (int axis = 0; axis < 3; ++axis)
+    {
+        const double movement = static_cast<double>(end[axis]) - start[axis];
+        point[axis] = static_cast<float>(start[axis] + movement * fraction);
+    }
+    return point;
 }
 
 // 선분에서 0은 출발점, 1은 도착점이다. 세 축에서 상자 안에 있는 구간을 겹쳐 본다.
@@ -58,31 +77,31 @@ bool SegmentHitsBox(const glm::vec3& start, const glm::vec3& end, const Collider
     return true;
 }
 
-std::optional<Bullet> MakeBullet(const glm::vec3& origin, const glm::vec3& direction, float speed,
-                                         ObjectId sourceWeaponId)
+bool MakeBullet(const glm::vec3& origin, const glm::vec3& direction, float speed,
+                ObjectId sourceWeaponId, Bullet& bullet)
 {
     if (!IsFinite(origin) || !IsFinite(direction) || !std::isfinite(speed) || speed <= 0)
     {
-        return std::nullopt;
+        return false;
     }
     const double length = std::sqrt(static_cast<double>(direction.x) * direction.x +
                                     static_cast<double>(direction.y) * direction.y +
                                     static_cast<double>(direction.z) * direction.z);
     if (length == 0.0)
     {
-        return std::nullopt;
+        return false;
     }
     const glm::vec3 velocity{static_cast<float>(direction.x / length * speed),
                              static_cast<float>(direction.y / length * speed),
                              static_cast<float>(direction.z / length * speed)};
-    return Bullet{origin, velocity, sourceWeaponId, true};
+    bullet = {origin, velocity, sourceWeaponId, true};
+    return true;
 }
 
-std::optional<Hit> FindFirstHit(const glm::vec3& start, const glm::vec3& end,
-                                std::span<const Collider> colliders)
+bool FindFirstHit(const glm::vec3& start, const glm::vec3& end,
+                  const std::vector<Collider>& colliders, Hit& nearestHit)
 {
     bool found = false;
-    Hit nearestHit;
     for (const Collider& box : colliders)
     {
         float hitFraction = 0;
@@ -92,69 +111,62 @@ std::optional<Hit> FindFirstHit(const glm::vec3& start, const glm::vec3& end,
         }
 
         // 같은 거리라면 벽 → 장갑 → 무기 → 본체 순서로 우선한다.
-        bool useThisHit = !found;
-        if (found && hitFraction < nearestHit.fraction)
-        {
-            useThisHit = true;
-        }
+        if (found && hitFraction > nearestHit.fraction)
+            continue;
         if (found && hitFraction == nearestHit.fraction)
         {
-            if (box.kind < nearestHit.kind)
-            {
-                useThisHit = true;
-            }
-            else if (box.kind == nearestHit.kind && box.id < nearestHit.objectId)
-            {
-                useThisHit = true;
-            }
+            if (box.kind > nearestHit.kind)
+                continue;
+            if (box.kind == nearestHit.kind && box.id >= nearestHit.objectId)
+                continue;
         }
-        if (useThisHit)
-        {
-            found = true;
-            nearestHit.objectId = box.id;
-            nearestHit.kind = box.kind;
-            nearestHit.fraction = hitFraction;
-        }
+        found = true;
+        nearestHit.objectId = box.id;
+        nearestHit.kind = box.kind;
+        nearestHit.fraction = hitFraction;
     }
     if (!found)
     {
-        return std::nullopt;
+        return false;
     }
 
-    // 출발점에서 가장 가까운 충돌 위치를 구한다. 중간 계산은 double로 한다.
-    for (int axis = 0; axis < 3; ++axis)
-    {
-        double movement = static_cast<double>(end[axis]) - start[axis];
-        nearestHit.position[axis] = static_cast<float>(start[axis] + movement * nearestHit.fraction);
-    }
-    return nearestHit;
+    nearestHit.position = PointOnSegment(start, end, nearestHit.fraction);
+    return true;
 }
 
-std::optional<Hit> AdvanceBullet(Bullet& bullet, float gameDeltaTime,
-                                     std::span<const Collider> colliders)
+bool IsBlocked(const glm::vec3& start, const glm::vec3& end, const std::vector<Collider>& colliders)
+{
+    for (const Collider& box : colliders)
+    {
+        float fraction;
+        if (SegmentHitsBox(start, end, box, fraction))
+            return true;
+    }
+    return false;
+}
+
+bool AdvanceBullet(Bullet& bullet, float gameDeltaTime,
+                   const std::vector<Collider>& colliders, Hit& hit)
 {
     if (!bullet.active || !std::isfinite(gameDeltaTime) || gameDeltaTime <= 0 ||
         !IsFinite(bullet.position) || !IsFinite(bullet.velocity))
     {
-        return std::nullopt;
+        return false;
     }
     // 위치 = 이전 위치 + 속도 × 경과시간. 두 위치 사이도 검사해 얇은 벽을 건너뛰지 않는다.
     const glm::vec3 next = bullet.position + bullet.velocity * gameDeltaTime;
     if (!IsFinite(next))
     {
-        return std::nullopt;
+        return false;
     }
-    const auto hit = FindFirstHit(bullet.position, next, colliders);
-    if (hit)
+    if (FindFirstHit(bullet.position, next, colliders, hit))
     {
-        bullet.position = hit->position;
+        bullet.position = hit.position;
         bullet.active = false;
+        return true;
     }
-    else
-    {
-        bullet.position = next;
-    }
-    return hit;
+    bullet.position = next;
+    return false;
 }
 
 } // namespace aegis::combat

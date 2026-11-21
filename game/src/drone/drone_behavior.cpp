@@ -10,7 +10,6 @@
 
 namespace aegis::combat
 {
-
 bool DroneBehavior::SetSpawn(const glm::vec3& point, float rotYRadians, float endZ)
 {
     if (!IsFinite(point) || !std::isfinite(rotYRadians) || !std::isfinite(endZ))
@@ -93,15 +92,14 @@ glm::vec3 DroneBehavior::Muzzle() const
     return position + RotateY(glm::vec3(0, -0.35f, 0.68f) * scale, rotY);
 }
 
-bool DroneBehavior::Visible(const glm::vec3& eye, std::span<const Collider> walls) const
+bool DroneBehavior::Visible(const glm::vec3& eye, const std::vector<Collider>& walls) const
 {
-    return glm::length(eye - position) < 18 && !FindFirstHit(Muzzle(), eye, walls);
+    return glm::length(eye - position) < 18 && !IsBlocked(Muzzle(), eye, walls);
 }
 
-void DroneBehavior::MovingDrone(float gameDeltaTime, std::span<const Collider> walls)
+void DroneBehavior::MovingDrone(float gameDeltaTime, const std::vector<Collider>& walls)
 {
     // 조준이 끝나면 멈췄던 순찰 방향과 회전 각도에서 이어간다.
-
     rotY = patrolRotY;
     if (patrolEndZ == spawn.z)
         return;
@@ -151,30 +149,30 @@ void DroneBehavior::MovingDrone(float gameDeltaTime, std::span<const Collider> w
     isTurning = position.z == targetZ;
 }
 
-bool DroneBehavior::DetectPlayer(const glm::vec3& eye, std::span<const Collider> walls) const
+bool DroneBehavior::DetectPlayer(const glm::vec3& eye, const std::vector<Collider>& walls) const
 {
-    glm::vec3 sensor_offset(0.f, -0.015f, 0.49f);
-    glm::vec3 sensor_pos = position + RotateY(sensor_offset * scale, rotY);
-    glm::vec3 to_player = eye - sensor_pos;
+    const glm::vec3 sensor_offset(0.f, -0.015f, 0.49f);
+    const glm::vec3 sensor_pos = position + RotateY(sensor_offset * scale, rotY);
+    const glm::vec3 to_player = eye - sensor_pos;
 
     const float distance = glm::length(to_player);
 
     if (distance < 0.0001f || distance >= 18.f)
         return false;
-    // 0,0,1은 모델의 정면, rotY만큼 돌리면 현재 드론이 보는 방향이 됨
-    glm::vec3 forward = RotateY(glm::vec3(0.f, 0.f, 1.f), rotY);
-    glm::vec3 player_dir = to_player / distance;
+    // 모델의 정면(+Z)을 현재 회전각만큼 돌려 렌즈가 보는 방향을 구한다.
+    const glm::vec3 forward = RotateY(glm::vec3(0.f, 0.f, 1.f), rotY);
+    const glm::vec3 player_dir = to_player / distance;
 
-    float facing = glm::dot(forward, player_dir);
+    const float facing = glm::dot(forward, player_dir);
 
     // 드론 정면에서 45도보다 벗어나 있으면 제외
     if (facing < std::cos(glm::radians(45.f)))
         return false;
 
-    return !FindFirstHit(sensor_pos, eye, walls);
+    return !IsBlocked(sensor_pos, eye, walls);
 }
 
-bool DroneBehavior::Update(float gameDeltaTime, const glm::vec3& eye, std::span<const Collider> walls)
+bool DroneBehavior::Update(float gameDeltaTime, const glm::vec3& eye, const std::vector<Collider>& walls)
 {
     if (!std::isfinite(gameDeltaTime) || gameDeltaTime <= 0 || !IsFinite(eye))
     {

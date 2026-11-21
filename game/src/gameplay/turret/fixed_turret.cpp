@@ -107,7 +107,7 @@ Collider FixedTurret::Weapon(int barrel) const
     return {WeaponTarget(), HitKind::Weapon, low, high, Armed() && (barrel == 0 || type == TurretType::Twin)};
 }
 
-bool FixedTurret::Update(float gameDeltaTime, const glm::vec3& eye, std::span<const Collider> walls)
+bool FixedTurret::Update(float gameDeltaTime, const glm::vec3& eye, const std::vector<Collider>& walls)
 {
     if (!Armed() || !std::isfinite(gameDeltaTime) || gameDeltaTime <= 0 || !IsFinite(eye))
     {
@@ -123,7 +123,7 @@ bool FixedTurret::Update(float gameDeltaTime, const glm::vec3& eye, std::span<co
         }
         return false;
     }
-    const bool visible = glm::length(eye - position) < 18 && !FindFirstHit(Muzzle(), eye, walls);
+    const bool visible = glm::length(eye - position) < 18 && !IsBlocked(Muzzle(), eye, walls);
     if (!visible)
     {
         phase = TurretPhase::Idle;

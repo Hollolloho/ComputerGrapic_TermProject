@@ -28,12 +28,12 @@ bool CombatEncounter::Fire(const glm::vec3& eye, const glm::vec3& direction)
     {
         return false;
     }
-    const auto shot = MakeBullet(eye, direction, 12.0f, inventory.EquippedId());
-    if (!shot)
+    Bullet shot;
+    if (!MakeBullet(eye, direction, 12.0f, inventory.EquippedId(), shot))
     {
         return false;
     }
-    playerFlights.push_back({*shot, 0});
+    playerFlights.push_back({shot, 0});
     playerCooldown = 0.25f;
     ++playerShots;
     return true;

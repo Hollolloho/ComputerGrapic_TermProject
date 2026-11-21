@@ -58,11 +58,8 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
 
 void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
 {
-    if (coreMode) return;
-    const std::span<const combat::Collider> boxes =
-        bossMode ? std::span<const combat::Collider>()
-                 : std::span<const combat::Collider>(encounter.Colliders());
-    for (const auto& box : boxes)
+    if (coreMode || bossMode) return;
+    for (const auto& box : encounter.Colliders())
     {
         if ((box.id >= combat::FixedTurret::BodyId &&
              box.id < combat::FixedTurret::BodyId + 2 * encounter.Turrets().size()) ||
@@ -78,7 +75,7 @@ void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
                                                                       : glm::vec3(0.15f, 0.22f, 0.31f);
         DrawBox(viewProjection, box.minimum, box.maximum, color);
     }
-    if (!bossMode && !IsDroneMode() && encounter.EnemyAlive())
+    if (!IsDroneMode() && encounter.EnemyAlive())
     {
         DrawBox(viewProjection, {-0.9f, 0, -10.6f}, {0.9f, 0.35f, -9.3f}, {0.25f, 0.3f, 0.4f});
 
@@ -87,7 +84,7 @@ void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
         DrawBox(viewProjection, {-0.28f, 1.94f, -9.52f}, {0.28f, 2.12f, -9.46f}, sensor);
     }
     // Floor strips make depth and aiming changes visible without extra assets.
-    if (!bossMode && !corridorMode)
+    if (!corridorMode)
     {
         for (int z = 0; z >= -12; --z)
         {

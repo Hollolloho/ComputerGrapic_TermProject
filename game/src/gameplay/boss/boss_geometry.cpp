@@ -17,29 +17,29 @@ const Triangle triangles[] = {
 #include "boss_triangles.generated.inc"
 };
 
-std::optional<float> Intersect(const glm::vec3& from, const glm::vec3& to, const Triangle& t)
+bool SegmentHitsTriangle(const glm::vec3& from, const glm::vec3& to, const Triangle& t, float& fraction)
 {
     const auto d = to - from, e1 = t.b - t.a, e2 = t.c - t.a;
     const auto p = glm::cross(d, e2);
     const float det = glm::dot(e1, p);
     if (std::abs(det) < 1e-8f)
     {
-        return {};
+        return false;
     }
     const auto s = from - t.a;
     const float u = glm::dot(s, p) / det;
     if (u < 0 || u > 1)
     {
-        return {};
+        return false;
     }
     const auto q = glm::cross(s, e1);
     const float v = glm::dot(d, q) / det;
     if (v < 0 || u + v > 1)
     {
-        return {};
+        return false;
     }
-    const float f = glm::dot(e2, q) / det;
-    return f >= 0 && f <= 1 ? std::optional<float>(f) : std::nullopt;
+    fraction = glm::dot(e2, q) / det;
+    return fraction >= 0 && fraction <= 1;
 }
 } // namespace
 
@@ -96,13 +96,18 @@ glm::vec3 BossMuzzle(const BossPose& pose, int side)
     return glm::vec3(pose.nodes[side ? boss_asset::muzzle_R : boss_asset::muzzle_L][3]);
 }
 
-std::optional<Hit> FindBossHit(const glm::vec3& start, const glm::vec3& end, const BossPose& pose,
-                               bool exposed)
+bool FindBossHit(const glm::vec3& start, const glm::vec3& end, const BossPose& pose,
+                 bool exposed, Hit& hit)
 {
     const auto centre = BossCoreCenter(pose);
     const Collider weak{21000, exposed ? HitKind::Body : HitKind::Armor, centre - boss_asset::weakHalf,
                         centre + boss_asset::weakHalf};
-    auto best = FindFirstHit(start, end, std::span<const Collider>(&weak, 1));
+    float fraction;
+    bool found = SegmentHitsBox(start, end, weak, fraction);
+    if (found)
+    {
+        hit = {weak.id, weak.kind, fraction, PointOnSegment(start, end, fraction)};
+    }
     for (std::size_t i = 0; i < pose.parts.size(); ++i)
     {
         if (i == boss_asset::part_core_crystal)
@@ -113,18 +118,19 @@ std::optional<Hit> FindBossHit(const glm::vec3& start, const glm::vec3& end, con
         const auto inverse = glm::inverse(pose.parts[i]);
         const auto a = glm::vec3(inverse * glm::vec4(start, 1)), b = glm::vec3(inverse * glm::vec4(end, 1));
         const Collider broad{static_cast<ObjectId>(20000 + i), HitKind::Armor, part.low, part.high};
-        if (!FindFirstHit(a, b, std::span<const Collider>(&broad, 1)))
+        if (!SegmentHitsBox(a, b, broad, fraction))
         {
             continue;
         }
         for (int index = part.start; index < part.start + part.triangles; ++index)
         {
-            if (const auto f = Intersect(a, b, triangles[index]); f && (!best || *f <= best->fraction))
+            if (SegmentHitsTriangle(a, b, triangles[index], fraction) && (!found || fraction <= hit.fraction))
             {
-                best = Hit{broad.id, HitKind::Armor, *f, start + (end - start) * (*f)};
+                hit = {broad.id, HitKind::Armor, fraction, start + (end - start) * fraction};
+                found = true;
             }
         }
     }
-    return best;
+    return found;
 }
 } // namespace aegis::combat

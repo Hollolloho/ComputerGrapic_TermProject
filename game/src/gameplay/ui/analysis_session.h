@@ -7,13 +7,14 @@ namespace aegis::combat
 class AnalysisSession
 {
 public:
-    std::optional<float> TargetDistance(const Collider& terminal, const glm::vec3& eye,
-                                        const glm::vec3& direction,
-                                        std::span<const Collider> obstacles) const;
+    // 조준선에서 단말을 찾지 못하면 -1을 돌려준다.
+    float TargetDistance(const Collider& terminal, const glm::vec3& eye,
+                         const glm::vec3& direction,
+                         const std::vector<Collider>& obstacles) const;
     bool IsFirstTarget(const Collider& terminal, const glm::vec3& eye, const glm::vec3& direction,
-                       std::span<const Collider> obstacles, std::optional<float> weaponDistance) const;
+                       const std::vector<Collider>& obstacles, float weaponDistance) const;
     bool Open(bool safe, const Collider& terminal, const glm::vec3& eye, const glm::vec3& direction,
-              std::span<const Collider> obstacles, std::optional<float> weaponDistance = {});
+              const std::vector<Collider>& obstacles, float weaponDistance = -1.0f);
     bool Open();
     bool Close();
     void Orbit(float mouseX, float mouseY);

@@ -7,40 +7,41 @@
 
 namespace aegis::combat
 {
-std::optional<float> AnalysisSession::TargetDistance(const Collider& terminal, const glm::vec3& eye,
-                                                     const glm::vec3& direction,
-                                                     std::span<const Collider> obstacles) const
+float AnalysisSession::TargetDistance(const Collider& terminal, const glm::vec3& eye,
+                                      const glm::vec3& direction,
+                                      const std::vector<Collider>& obstacles) const
 {
     const float length2 = glm::dot(direction, direction);
     if (!std::isfinite(length2) || length2 <= 1e-8f)
     {
-        return {};
+        return -1.0f;
     }
     const auto end = eye + glm::normalize(direction) * 2.5f;
-    const auto target = FindFirstHit(eye, end, std::span<const Collider>(&terminal, 1));
-    if (!target)
+    float targetFraction;
+    if (!SegmentHitsBox(eye, end, terminal, targetFraction))
     {
-        return {};
+        return -1.0f;
     }
-    const auto blocked = FindFirstHit(eye, end, obstacles);
-    if (blocked && blocked->objectId != terminal.id && blocked->fraction <= target->fraction)
+    Hit obstruction;
+    if (FindFirstHit(eye, end, obstacles, obstruction) && obstruction.objectId != terminal.id &&
+        obstruction.fraction <= targetFraction)
     {
-        return {};
+        return -1.0f;
     }
-    return target->fraction * 2.5f;
+    return targetFraction * 2.5f;
 }
 
 bool AnalysisSession::IsFirstTarget(const Collider& terminal, const glm::vec3& eye,
-                                    const glm::vec3& direction, std::span<const Collider> obstacles,
-                                    std::optional<float> weaponDistance) const
+                                    const glm::vec3& direction, const std::vector<Collider>& obstacles,
+                                    float weaponDistance) const
 {
-    const auto target = TargetDistance(terminal, eye, direction, obstacles);
-    return target && (!weaponDistance || *target <= *weaponDistance);
+    const float targetDistance = TargetDistance(terminal, eye, direction, obstacles);
+    return targetDistance >= 0 && (weaponDistance < 0 || targetDistance <= weaponDistance);
 }
 
 bool AnalysisSession::Open(bool safe, const Collider& terminal, const glm::vec3& eye,
-                           const glm::vec3& direction, std::span<const Collider> obstacles,
-                           std::optional<float> weaponDistance)
+                           const glm::vec3& direction, const std::vector<Collider>& obstacles,
+                           float weaponDistance)
 {
     return safe && IsFirstTarget(terminal, eye, direction, obstacles, weaponDistance) && Open();
 }

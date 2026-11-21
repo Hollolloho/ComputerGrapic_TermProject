@@ -13,6 +13,6 @@ struct BossPose
 BossPose MakeBossPose(float armorOpen, const glm::vec3& aim);
 glm::vec3 BossCoreCenter(const BossPose& pose);
 glm::vec3 BossMuzzle(const BossPose& pose, int side);
-std::optional<Hit> FindBossHit(const glm::vec3& start, const glm::vec3& end, const BossPose& pose,
-                               bool exposed);
+bool FindBossHit(const glm::vec3& start, const glm::vec3& end, const BossPose& pose,
+                 bool exposed, Hit& hit);
 } // namespace aegis::combat

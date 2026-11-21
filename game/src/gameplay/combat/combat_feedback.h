@@ -1,9 +1,8 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <algorithm>
-#include <array>
 #include <cmath>
-#include <span>
+#include <vector>
 
 namespace aegis::combat
 {
@@ -24,7 +23,7 @@ public:
     {
         lastHealth = health;
         lastBreaks = breaks;
-        count = 0;
+        shards.clear();
         damage = 0;
         bursts = hits = 0;
     }
@@ -41,8 +40,8 @@ public:
         {
             // Only the newly committed break creates a burst; polling cannot duplicate it.
             ++bursts;
-            count = shards.size();
-            for (std::size_t i = 0; i < count; ++i)
+            shards.resize(18);
+            for (std::size_t i = 0; i < shards.size(); ++i)
             {
                 const float angle = static_cast<float>(i) * 2.39996323f;
                 const float radius = 0.025f + static_cast<float>(i) * 0.007f;
@@ -66,12 +65,13 @@ public:
         }
         damage = std::max(0.0f, damage - gameDeltaTime);
         const glm::vec3 gravity(0, -3.2f, 0);
-        for (std::size_t i = 0; i < count;)
+        for (std::size_t i = 0; i < shards.size();)
         {
             auto& shard = shards[i];
             if (shard.age + gameDeltaTime >= shard.lifetime)
             {
-                shard = shards[--count];
+                shard = shards.back();
+                shards.pop_back();
                 continue;
             }
             shard.position +=
@@ -87,9 +87,9 @@ public:
         return damage / 0.28f;
     }
 
-    std::span<const WeaponShard> Shards() const
+    const std::vector<WeaponShard>& Shards() const
     {
-        return {shards.data(), count};
+        return shards;
     }
 
     int BreakBursts() const
@@ -103,8 +103,7 @@ public:
     }
 
 private:
-    std::array<WeaponShard, 18> shards{};
-    std::size_t count{};
+    std::vector<WeaponShard> shards;
     int lastHealth{100};
     int lastBreaks{};
     int bursts{};
