@@ -9,7 +9,7 @@ namespace aegis
 {
 bool WeaponView::Init(const std::filesystem::path& root)
 {
-    std::array<AtlasPart, weapon_asset::parts.size()> parts;
+    std::vector<AtlasPart> parts(weapon_asset::parts.size());
     std::array<AtlasTexture, 5> textures;
     for (std::size_t i = 0; i < parts.size(); ++i)
     {

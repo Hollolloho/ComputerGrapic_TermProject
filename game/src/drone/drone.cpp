@@ -112,8 +112,7 @@ void Drone::Draw(const glm::mat4& scene, const glm::mat4& model, bool warning,
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(partModel));
 		glUniform3fv(colorLocation, 1, glm::value_ptr(color));
 		glUniform3fv(emissionLocation, 1, glm::value_ptr(emission));
-		glBindVertexArray(mesh.vao);
-		glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, nullptr);
+		mesh.Draw();
 	}
 
 	glBindVertexArray(0);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "loader/model_loader.h"
+#include "loader/RenderMesh.h"
 
 #include <GL/glew.h>
 #include <glm/mat4x4.hpp>
@@ -8,20 +8,18 @@
 namespace aegis
 {
 
-struct DrawMesh
+struct DrawMesh : MeshBuffer
 {
-    GLuint vao{};
-    GLuint vbo{};
-    GLuint ebo{};
-    GLsizei indexCount{};
     glm::vec3 baseColor{1.0f};
     glm::vec3 dielectricF0{0.04f};
     float metallic{};
     float roughness{0.5f};
 
-    void Upload(const ModelMesh& mesh, const ModelMaterial& material);
-    void Clear();
+    bool Upload(const ModelMesh& mesh, const ModelMaterial& material);
 };
+
+bool LoadDrawMeshes(const std::filesystem::path& file, std::vector<DrawMesh>& meshes);
+void ClearDrawMeshes(std::vector<DrawMesh>& meshes);
 
 class MeshRenderer
 {

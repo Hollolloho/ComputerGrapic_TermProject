@@ -22,6 +22,9 @@
     <ClCompile Include="src\loader\Shader.cpp">
       <Filter>Loader</Filter>
     </ClCompile>
+    <ClCompile Include="src\loader\Texture.cpp">
+      <Filter>Loader</Filter>
+    </ClCompile>
     <ClCompile Include="src\loader\RenderMesh.cpp">
       <Filter>Loader</Filter>
     </ClCompile>
@@ -66,6 +69,9 @@
       <Filter>Drone</Filter>
     </ClInclude>
     <ClInclude Include="src\loader\Shader.h">
+      <Filter>Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="src\loader\Texture.h">
       <Filter>Loader</Filter>
     </ClInclude>
     <ClInclude Include="src\loader\RenderMesh.h">

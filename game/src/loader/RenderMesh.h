@@ -5,13 +5,20 @@
 #include <GL/glew.h>
 #include <vector>
 
-struct RenderMesh
+struct MeshBuffer
 {
 	GLuint vao = 0;
 	GLuint vbo = 0;
 	GLuint ebo = 0;
 
 	GLsizei indexCount = 0;
+	bool Upload(const aegis::ModelMesh& source);
+	void Draw() const;
+	void Clear();
+};
+
+struct RenderMesh : MeshBuffer
+{
 	glm::vec3 color{1.f};
 	glm::vec3 emission{0.f};
 };

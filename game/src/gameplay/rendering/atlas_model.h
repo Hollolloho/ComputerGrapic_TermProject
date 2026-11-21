@@ -1,5 +1,5 @@
 #pragma once
-#include <GL/glew.h>
+#include "loader/RenderMesh.h"
 #include <glm/mat4x4.hpp>
 #include <array>
 #include <filesystem>
@@ -29,16 +29,16 @@ public:
     AtlasModel(const AtlasModel&) = delete;
     AtlasModel& operator=(const AtlasModel&) = delete;
     bool Init(const std::filesystem::path& root, const std::filesystem::path& runtime,
-              std::span<const AtlasPart> parts, std::span<const AtlasTexture> textureSpecs, float emission);
+              const std::vector<AtlasPart>& parts, const std::array<AtlasTexture, 5>& textureSpecs,
+              float emission);
+    // span은 보스의 14부품과 무기의 8부품 배열을 복사 없이 읽는다. 배열의 길이도 함께 전달된다.
     void Draw(const glm::mat4& projection, const glm::mat4& view, std::span<const glm::mat4> partMatrices,
               float glow = 0, std::span<const float> emissionScales = {}) const;
     void Clear();
 
 private:
-    struct Mesh
+    struct Mesh : MeshBuffer
     {
-        GLuint vao{}, vbo{}, ebo{};
-        GLsizei indices{};
         std::size_t partIndex{};
     };
 

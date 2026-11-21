@@ -68,6 +68,7 @@
     <ClCompile Include="src\loader\model_loader.cpp" />
     <ClCompile Include="src\loader\RenderMesh.cpp" />
     <ClCompile Include="src\loader\Shader.cpp" />
+    <ClCompile Include="src\loader\Texture.cpp" />
     <ClInclude Include="src\camera\Camera.h" />
     <ClInclude Include="src\combat_map\CombatMap.h" />
     <ClInclude Include="src\main\Common.h" />
@@ -76,6 +77,7 @@
     <ClInclude Include="src\loader\model_loader.h" />
     <ClInclude Include="src\loader\RenderMesh.h" />
     <ClInclude Include="src\loader\Shader.h" />
+    <ClInclude Include="src\loader\Texture.h" />
     <None Include="shaders\combat_map.vert" />
     <None Include="shaders\combat_map.frag" />
     <None Include="shaders\drone.frag" />

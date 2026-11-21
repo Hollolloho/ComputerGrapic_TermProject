@@ -48,8 +48,7 @@ void CombatMap::Draw(const glm::mat4& scene) const
 	{
 		glUniform3fv(colorLocation, 1, glm::value_ptr(mesh.color));
 		glUniform3fv(emissionLocation, 1, glm::value_ptr(mesh.emission));
-		glBindVertexArray(mesh.vao);
-		glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, nullptr);
+		mesh.Draw();
 	}
 	glBindVertexArray(0);
 }

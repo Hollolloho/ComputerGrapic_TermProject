@@ -4,27 +4,10 @@
 
 namespace aegis
 {
-bool BossView::Load(const std::filesystem::path& file, std::vector<DrawMesh>& meshes)
-{
-    ModelData data;
-    std::string error;
-    if (!LoadModel(file, data, error))
-    {
-        std::cerr << error << '\n';
-        return false;
-    }
-    for (const auto& mesh : data.meshes)
-    {
-        auto& draw = meshes.emplace_back();
-        draw.Upload(mesh, data.materials.at(mesh.materialIndex));
-    }
-    return true;
-}
-
 bool BossView::Init(const std::filesystem::path& root)
 {
     Clear();
-    std::array<AtlasPart, boss_asset::partCount> parts;
+    std::vector<AtlasPart> parts(boss_asset::partCount);
     std::array<AtlasTexture, 5> textures;
     for (std::size_t i = 0; i < parts.size(); ++i)
     {
@@ -37,9 +20,9 @@ bool BossView::Init(const std::filesystem::path& root)
     }
     return model.Init(root, root / "asset/boss_e/runtime", parts, textures, boss_asset::emission) &&
            renderer.Init(root / "shaders") &&
-           Load(root / "asset/core_room/runtime/obj/core_room.obj", room) &&
-           Load(root / "asset/corridor/test_scene/cover_cabinet.obj", cover) &&
-           Load(root / "asset/props/runtime/obj/cw01c_supply_station.obj", supply);
+           LoadDrawMeshes(root / "asset/core_room/runtime/obj/core_room.obj", room) &&
+           LoadDrawMeshes(root / "asset/corridor/test_scene/cover_cabinet.obj", cover) &&
+           LoadDrawMeshes(root / "asset/props/runtime/obj/cw01c_supply_station.obj", supply);
 }
 
 void BossView::Draw(const glm::mat4& projection, const glm::mat4& view, const glm::vec3& eye,
@@ -75,13 +58,8 @@ void BossView::Clear()
 {
     model.Clear();
     renderer.Clear();
-    for (auto* meshes : {&room, &cover, &supply})
-    {
-        for (auto& mesh : *meshes)
-        {
-            mesh.Clear();
-        }
-        meshes->clear();
-    }
+    ClearDrawMeshes(room);
+    ClearDrawMeshes(cover);
+    ClearDrawMeshes(supply);
 }
 } // namespace aegis
