@@ -166,15 +166,23 @@ bool DroneBehavior::Update(float gameDeltaTime, const glm::vec3& eye, std::span<
         timer = std::max(0.0f, timer - gameDeltaTime);
         if (timer <= 0 && Visible(eye, walls))
         {
-            // 발견 순간의 위치를 기억한다. 경고 중에 계속 플레이어를 따라 조준하지 않는다.
-            aimPoint = eye;
-            glm::vec3 direction = eye - position;
-            yaw = std::atan2(direction.x, direction.z);
-            phase = DronePhase::Warning;
-            timer = 1.0f;
+            phase = DronePhase::Tracking;
         }
         break;
 
+    case DronePhase::Tracking:
+    {
+        const glm::vec3 direction = eye - position;
+        if (direction.x * direction.x + direction.z * direction.z < 0.000001f)
+            break;
+
+        const float targetYaw = std::atan2(direction.x, direction.z);
+        // +179도에서 -179도를 볼 때도 짧은 방향으로 회전한다.
+        const float angleDiff = std::remainder(targetYaw - yaw, glm::radians(360.0f));
+        const float maxStep = glm::radians(90.0f) * gameDeltaTime;
+        yaw += std::clamp(angleDiff, -maxStep, maxStep);
+        break;
+    }
     case DronePhase::Warning:
         if (!Visible(eye, walls))
         {

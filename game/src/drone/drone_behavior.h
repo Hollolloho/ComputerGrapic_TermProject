@@ -7,6 +7,7 @@ namespace aegis::combat
 enum class DronePhase
 {
     Patrol,
+    Tracking,
     Warning,
     Waiting,
     Disarmed,
