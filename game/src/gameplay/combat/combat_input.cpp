@@ -19,14 +19,16 @@ void CombatScene::SampleInput(GLFWwindow* window, bool canReceiveInput, bool fir
         canReceiveInput = false;
     }
     forceNormal = canReceiveInput && !analysis.Active() &&
-                  (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
-                   glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS);
+                  (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS);
+
     const bool right = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
     const bool cover = glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS;
     const bool drop = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
     const bool interact = glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS;
+
     double x{}, y{};
     glfwGetCursorPos(window, &x, &y);
+
     if (analysis.Active())
     {
         const bool leftMouseDown = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
@@ -38,6 +40,7 @@ void CombatScene::SampleInput(GLFWwindow* window, bool canReceiveInput, bool fir
         {
             analysis.Close();
         }
+
         analysisDragHeld = analysis.Active() && canReceiveInput && leftMouseDown;
         coverHeld = cover;
         lookHeld = false;
@@ -47,7 +50,9 @@ void CombatScene::SampleInput(GLFWwindow* window, bool canReceiveInput, bool fir
         lastY = y;
         return;
     }
+
     analysisDragHeld = false;
+
     // 분석 화면은 위에서 입력 처리를 끝낸다. 여기부터는 일반 전투 입력이다.
     if (canReceiveInput)
     {
@@ -56,12 +61,14 @@ void CombatScene::SampleInput(GLFWwindow* window, bool canReceiveInput, bool fir
         const bool playing = result == combat::EncounterResult::Running ||
                              result == combat::EncounterResult::Securing;
         const bool canEquip = result != combat::EncounterResult::Failed;
+
         if (!HasExternalPlayerView() && canEquip && right && lookHeld)
         {
             yaw -= static_cast<float>(x - lastX) * 0.14f;
             pitch = std::clamp(pitch - static_cast<float>(y - lastY) * 0.14f, -65.0f, 65.0f);
             camera.SetPose(CameraRoot(), yaw, pitch);
         }
+
         if (!coreMode && !HasExternalPlayerView() && playing && cover && !coverHeld)
         {
             if (bossMode)
@@ -73,18 +80,22 @@ void CombatScene::SampleInput(GLFWwindow* window, bool canReceiveInput, bool fir
                 encounter.ToggleCover();
             }
         }
+
         if (canEquip && drop && !dropHeld)
         {
             battle->DropWeapon(PlayerEye(), PlayerForward());
         }
+
         if (canEquip && interact && !interactHeld)
         {
             Interact(PlayerForward());
         }
+
         if (fireClicked && !analysis.Active())
         {
             Fire(PlayerForward());
         }
+
     }
     coverHeld = cover;
     lookHeld = canReceiveInput && right;

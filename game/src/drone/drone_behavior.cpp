@@ -6,10 +6,11 @@
 #include <glm/geometric.hpp>
 #include <glm/trigonometric.hpp>
 
-namespace aegis::combat
-{
+namespace aegis::combat{
+
 namespace
 {
+
 bool Finite(const glm::vec3& v)
 {
     return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
@@ -20,6 +21,7 @@ glm::vec3 Rotate(const glm::vec3& v, float yaw)
     const auto c = std::cos(yaw), s = std::sin(yaw);
     return {c * v.x + s * v.z, v.y, -s * v.x + c * v.z};
 }
+
 } // namespace
 
 bool DroneBehavior::SetSpawn(const glm::vec3& point, float yawRadians, float endZ)
@@ -67,8 +69,10 @@ Collider DroneBehavior::Bounds(ObjectId id, HitKind kind, const glm::vec3& low, 
     glm::vec3 corners[8] = {{low.x, low.y, low.z},   {high.x, low.y, low.z},  {low.x, high.y, low.z},
                             {high.x, high.y, low.z}, {low.x, low.y, high.z},  {high.x, low.y, high.z},
                             {low.x, high.y, high.z}, {high.x, high.y, high.z}};
+
     glm::vec3 minimum(std::numeric_limits<float>::max());
     glm::vec3 maximum(std::numeric_limits<float>::lowest());
+
     for (const glm::vec3& corner : corners)
     {
         glm::vec3 worldCorner = position + Rotate(corner * scale, yaw);
@@ -103,6 +107,7 @@ bool DroneBehavior::Visible(const glm::vec3& eye, std::span<const Collider> wall
 void DroneBehavior::MovingDrone(float gameDeltaTime, std::span<const Collider> walls)
 {
     // 조준이 끝나면 멈췄던 순찰 방향과 회전 각도에서 이어간다.
+
     yaw = patrolYaw;
     if (patrolEndZ == spawn.z)
         return;
@@ -124,6 +129,7 @@ void DroneBehavior::MovingDrone(float gameDeltaTime, std::span<const Collider> w
     const float targetZ = movingToEnd ? patrolEndZ : spawn.z;
     const float remaining = targetZ - position.z;
     const float distance = 1.2f * gameDeltaTime;
+
     glm::vec3 next = position;
     if (std::abs(remaining) <= distance)
         next.z = targetZ;
@@ -153,7 +159,25 @@ void DroneBehavior::MovingDrone(float gameDeltaTime, std::span<const Collider> w
 
 bool DroneBehavior::DetectPlayer(const glm::vec3& eye, std::span<const Collider> walls) const
 {
-    return false; // 정면 시야 판정을 작성하기 전의 임시 반환값
+    glm::vec3 sensor_offset(0.f, -0.015f, 0.49f);
+    glm::vec3 sensor_pos = position + Rotate(sensor_offset * scale, yaw);
+    glm::vec3 to_player = eye - sensor_pos;
+
+    const float distance = glm::length(to_player);
+
+    if (distance < 0.0001f || distance >= 18.f)
+        return false;
+    // 0,0,1은 모델의 정면, yaw만큼 돌리면 현재 드론이 보는 방향이 됨
+    glm::vec3 forward = Rotate(glm::vec3(0.f, 0.f, 1.f), yaw);
+    glm::vec3 player_dir = to_player / distance;
+
+    float facing = glm::dot(forward, player_dir);
+
+    // 드론 정면에서 45도보다 벗어나 있으면 제외
+    if (facing < std::cos(glm::radians(45.f)))
+        return false;
+
+    return !FindFirstHit(sensor_pos, eye, walls);
 }
 
 bool DroneBehavior::Update(float gameDeltaTime, const glm::vec3& eye, std::span<const Collider> walls)
@@ -169,7 +193,7 @@ bool DroneBehavior::Update(float gameDeltaTime, const glm::vec3& eye, std::span<
     case DronePhase::Patrol:
         MovingDrone(gameDeltaTime, walls);
         timer = std::max(0.0f, timer - gameDeltaTime);
-        if (timer <= 0 && Visible(eye, walls))
+        if (timer <= 0 && DetectPlayer(eye, walls))
         {
             phase = DronePhase::Tracking;
         }
@@ -186,6 +210,12 @@ bool DroneBehavior::Update(float gameDeltaTime, const glm::vec3& eye, std::span<
         const float angleDiff = std::remainder(targetYaw - yaw, glm::radians(360.0f));
         const float maxStep = glm::radians(90.0f) * gameDeltaTime;
         yaw += std::clamp(angleDiff, -maxStep, maxStep);
+
+        if (Visible(eye, walls))
+        {
+            phase = DronePhase::Warning;
+            timer = 0;
+        }
         break;
     }
     case DronePhase::Warning:
@@ -195,7 +225,9 @@ bool DroneBehavior::Update(float gameDeltaTime, const glm::vec3& eye, std::span<
             timer = 0;
             break;
         }
+
         timer -= gameDeltaTime;
+
         if (timer <= 0)
         {
             phase = DronePhase::Waiting;

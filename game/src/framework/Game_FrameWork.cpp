@@ -81,6 +81,7 @@ bool GameFrameWork::Init()
 	glfwSetWindowFocusCallback(window, WindowFocusCallback);
 	glfwSetWindowIconifyCallback(window, WindowFocusCallback);
 	WindowFocusCallback(window, glfwGetWindowAttrib(window, GLFW_FOCUSED));
+
 	std::cout << "WASD: move | mouse: aim | LMB: fire | E: use | G: drop | Shift: normal time\n"
 		"Enter: next area | R: checkpoint | Esc/Space: pause | Q: quit\n";
 	return true;
@@ -115,6 +116,7 @@ void GameFrameWork::Update(double deltaTime)
 	scene.SampleInput(window, inputActive, fireClicked);
 	fireClicked = false;
 	SyncPlayerCamera(inputActive);
+
 	if (scene.QuitRequested())
 	{
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -130,6 +132,7 @@ void GameFrameWork::Update(double deltaTime)
 		scene.Update(step, step * scene.PreviewTimeScale());
 		remaining -= step;
 	}
+
 	SyncPlayerCamera(inputActive);
 	wasActive = active;
 	restartFrameTime = false;
