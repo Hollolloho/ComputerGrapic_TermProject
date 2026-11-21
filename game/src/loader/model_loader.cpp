@@ -210,9 +210,55 @@ std::string_view Trim(std::string_view text)
                                            : text.substr(first, text.find_last_not_of(" \t") - first + 1);
 }
 
-template <class CheckDirective>
-bool CheckSourceDirectives(const std::filesystem::path& path, CheckDirective check)
+bool CheckMaterialField(std::string_view field, std::string_view value, std::vector<std::string>& materials)
 {
+    if (value.empty())
+        return false;
+    if (field == "newmtl")
+    {
+        materials.emplace_back(value);
+        return true;
+    }
+    if (materials.empty() || value.starts_with("spectral"))
+        return false;
+    const std::string_view allowed[]{"Ka", "Kd", "Ks", "Ke", "Tf", "Ns", "Ni", "d",
+                                     "Tr", "illum", "Pm", "Pr", "Ps", "Pc", "Pcr"};
+    for (auto name : allowed)
+        if (name == field)
+            return true;
+    return false;
+}
+
+bool CheckObjectField(std::string_view field, std::string_view value, const std::string& mtlName,
+                      const std::vector<std::string>& materials, bool& foundMtl)
+{
+    if (field == "mtllib")
+    {
+        if (foundMtl || value != mtlName)
+            return false;
+        foundMtl = true;
+        return true;
+    }
+    if (field == "usemtl")
+    {
+        if (!foundMtl)
+            return false;
+        for (const auto& name : materials)
+            if (name == value)
+                return true;
+        return false;
+    }
+    const std::string_view allowed[]{"v", "vt", "vn", "f", "l", "p", "o", "g", "s"};
+    for (auto name : allowed)
+        if (name == field)
+            return true;
+    return false;
+}
+
+bool CheckSourceDirectives(const std::filesystem::path& path, bool readingMaterials,
+                           const std::string& mtlName, std::vector<std::string>& materials)
+{
+    bool foundMtl = false;
     std::ifstream file(path, std::ios::binary);
     std::string line;
     bool firstLine = true;
@@ -239,61 +285,27 @@ bool CheckSourceDirectives(const std::filesystem::path& path, CheckDirective che
             continue;
         }
         const auto field = text.substr(0, text.find_first_of(" \t"));
-        if (!check(field, Trim(text.substr(field.size()))))
+        const auto value = Trim(text.substr(field.size()));
+        if (readingMaterials)
         {
-            return false;
+            if (!CheckMaterialField(field, value, materials))
+                return false;
         }
+        else if (!CheckObjectField(field, value, mtlName, materials, foundMtl))
+            return false;
     }
-    return file.eof() && !file.bad();
+    if (!file.eof() || file.bad())
+        return false;
+    return readingMaterials ? !materials.empty() : foundMtl;
 }
 
 bool HasOnlyExpectedDependencies(const std::filesystem::path& objPath, const std::filesystem::path& mtlPath)
 {
     // 이 캐시는 단일 MTL과 외부 텍스처가 없는 OBJ만 지원한다.
-    constexpr std::string_view mtlFields[]{"Ka", "Kd",    "Ks", "Ke", "Tf", "Ns", "Ni", "d",
-                                           "Tr", "illum", "Pm", "Pr", "Ps", "Pc", "Pcr"};
-    std::vector<std::string> materialNames;
-    const bool supportedMtl =
-        CheckSourceDirectives(mtlPath,
-                              [&](auto field, auto argument)
-                              {
-                                  if (field == "newmtl" && !argument.empty())
-                                  {
-                                      materialNames.emplace_back(argument);
-                                      return true;
-                                  }
-                                  return !materialNames.empty() && !argument.empty() &&
-                                         !argument.starts_with("spectral") &&
-                                         std::ranges::find(mtlFields, field) != std::end(mtlFields);
-                              });
-    if (!supportedMtl || materialNames.empty())
-    {
-        return false;
-    }
-
-    constexpr std::string_view objFields[]{"v", "vt", "vn", "f", "l", "p", "o", "g", "s"};
     const auto mtlName = Utf8Path(mtlPath.filename());
-    bool foundMtl = false;
-    const bool supportedObj = CheckSourceDirectives(
-        objPath,
-        [&](auto field, auto argument)
-        {
-            if (field == "mtllib")
-            {
-                if (foundMtl || argument != mtlName)
-                {
-                    return false;
-                }
-                foundMtl = true;
-                return true;
-            }
-            if (field == "usemtl")
-            {
-                return foundMtl && std::ranges::find(materialNames, argument) != materialNames.end();
-            }
-            return std::ranges::find(objFields, field) != std::end(objFields);
-        });
-    return supportedObj && foundMtl;
+    std::vector<std::string> materials;
+    return CheckSourceDirectives(mtlPath, true, mtlName, materials) &&
+           CheckSourceDirectives(objPath, false, mtlName, materials);
 }
 
 } // namespace
@@ -301,6 +313,7 @@ bool HasOnlyExpectedDependencies(const std::filesystem::path& objPath, const std
 bool LoadModel(const std::filesystem::path& path, ModelData& model, std::string& error)
 {
     const std::string fileName = Utf8Path(path);
+    // Assimp가 할당한 장면은 함수가 끝날 때 aiReleaseImport로 반환한다.
     const std::unique_ptr<const aiScene, decltype(&aiReleaseImport)> scene(
         aiImportFile(fileName.c_str(), ImportFlags), aiReleaseImport);
 
@@ -384,23 +397,22 @@ bool ObjModelCache::Load(const std::filesystem::path& path, ModelData& model, st
                          bool& cacheHit) const
 {
     cacheHit = false;
-    const auto import = [&] { return LoadModel(path, model, error); };
     if (cacheDirectory.empty() || !IsObj(path))
     {
-        return import();
+        return LoadModel(path, model, error);
     }
 
     std::error_code status;
     const auto objPath = std::filesystem::canonical(path, status);
     if (status || !std::filesystem::is_regular_file(objPath, status))
     {
-        return import();
+        return LoadModel(path, model, error);
     }
     const auto mtlPath = std::filesystem::canonical(materialPath, status);
     if (status || !std::filesystem::is_regular_file(mtlPath, status) ||
         mtlPath != objPath.parent_path() / materialPath.filename())
     {
-        return import();
+        return LoadModel(path, model, error);
     }
 
     // 원본 호출 경로의 형상 이름과 상대 MTL 해석이 같은 경우에만 캐시를 공유한다.
@@ -408,21 +420,21 @@ bool ObjModelCache::Load(const std::filesystem::path& path, ModelData& model, st
         path.has_parent_path() ? path.parent_path() : std::filesystem::path(L"."), status);
     if (status || originalDirectory != objPath.parent_path() || path.filename() != objPath.filename())
     {
-        return import();
+        return LoadModel(path, model, error);
     }
 
     const auto objFile = OpenSourceFile(objPath);
     const auto mtlFile = OpenSourceFile(mtlPath);
     if (!objFile || !mtlFile)
     {
-        return import();
+        return LoadModel(path, model, error);
     }
 
     Sha256 identityHash;
     ModelFingerprint identity{};
     if (!identityHash.AddPath(objPath) || !identityHash.AddPath(mtlPath) || !identityHash.Finish(identity))
     {
-        return import();
+        return LoadModel(path, model, error);
     }
 
     // 파싱 규칙 또는 색 변환이 바뀌면 이 버전을 올린다.
@@ -436,7 +448,7 @@ bool ObjModelCache::Load(const std::filesystem::path& path, ModelData& model, st
         !sourceHash.Add(importer, sizeof(importer)) || !sourceHash.AddFile(objFile.get()) ||
         !sourceHash.AddFile(mtlFile.get()) || !sourceHash.Finish(fingerprint))
     {
-        return import();
+        return LoadModel(path, model, error);
     }
 
     const auto cachePath = cacheDirectory / (Hex(identity) + ".bin");
@@ -448,7 +460,7 @@ bool ObjModelCache::Load(const std::filesystem::path& path, ModelData& model, st
     }
     if (!HasOnlyExpectedDependencies(objPath, mtlPath))
     {
-        return import();
+        return LoadModel(path, model, error);
     }
     if (!LoadModel(objPath, model, error))
     {
