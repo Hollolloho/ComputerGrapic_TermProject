@@ -9,6 +9,7 @@
 namespace
 {
 	const float PlayerMoveSpeed = 5.f;
+	const double MaxSimulationStep = 0.05;
 	const float MouseSensitivity = 0.167f;
 	bool moveForward = false;
 	bool moveBackward = false;
@@ -38,7 +39,7 @@ int GameFrameWork::Run()
 			break;
 
 		double currentTime = glfwGetTime();
-		float deltaTime = static_cast<float>(std::clamp(currentTime - previousTime, 0.0, 0.05));
+		double deltaTime = currentTime - previousTime;
 		previousTime = currentTime;
 		Update(deltaTime);
 		if (glfwWindowShouldClose(window))
@@ -85,7 +86,7 @@ bool GameFrameWork::Init()
 	return true;
 }
 
-void GameFrameWork::Update(float deltaTime)
+void GameFrameWork::Update(double deltaTime)
 {
 	glfwGetFramebufferSize(window, &width, &height);
 	drawable = width > 0 && height > 0 && !glfwGetWindowAttrib(window, GLFW_ICONIFIED);
@@ -97,7 +98,20 @@ void GameFrameWork::Update(float deltaTime)
 	}
 
 	const bool inputActive = active && wasActive && !restartFrameTime;
-	UpdatePlayerCamera(deltaTime, inputActive);
+	actualTravel = 0.f;
+	movementTimeScale = 0.05;
+	SyncPlayerCamera(inputActive);
+	glm::vec3 direction(0.f);
+	if (cursorCaptured)
+	{
+		// 마우스와 WASD는 렌더 프레임마다 한 번만 읽는다.
+		camera.Rotate(-static_cast<float>(mouseDeltaY) * MouseSensitivity,
+			-static_cast<float>(mouseDeltaX) * MouseSensitivity);
+		camera.UpdateView();
+		scene.SetPlayerView({ camera.camPos, camera.camTarget - camera.camPos, camera.camUp, camera.fovy });
+		direction = ReadMovementDirection();
+	}
+	mouseDeltaX = mouseDeltaY = 0.0;
 	scene.SampleInput(window, inputActive, fireClicked);
 	fireClicked = false;
 	SyncPlayerCamera(inputActive);
@@ -106,45 +120,36 @@ void GameFrameWork::Update(float deltaTime)
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
 		return;
 	}
-	if (inputActive)
+	// 긴 프레임도 남은 시간까지 처리한다. 각 구간의 실제 이동량으로 전투 배속을 정한다.
+	double remaining = deltaTime;
+	while (inputActive && remaining > 0.0)
 	{
-		scene.Update(deltaTime, deltaTime * scene.PreviewTimeScale());
+		const double step = std::min(remaining, MaxSimulationStep);
+		if (scene.PlayerControlsActive())
+			MovePlayer(direction, static_cast<float>(step));
+		scene.Update(step, step * scene.PreviewTimeScale());
+		remaining -= step;
 	}
 	SyncPlayerCamera(inputActive);
 	wasActive = active;
 	restartFrameTime = false;
 }
 
-void GameFrameWork::UpdatePlayerCamera(float deltaTime, bool inputActive)
+void GameFrameWork::MovePlayer(const glm::vec3& direction, float step)
 {
-	actualTravel = 0.f;
-	movementTimeScale = 0.05;
-	SyncPlayerCamera(inputActive);
-	if (!cursorCaptured)
-	{
-		firstMouse = true;
-		mouseDeltaX = mouseDeltaY = 0.0;
-		return;
-	}
-
-	// 마우스는 누적 이동량이므로 deltaTime을 다시 곱하지 않는다.
-	camera.Rotate(-static_cast<float>(mouseDeltaY) * MouseSensitivity,
-		-static_cast<float>(mouseDeltaX) * MouseSensitivity);
-	mouseDeltaX = mouseDeltaY = 0.0;
-	const glm::vec3 desired = CalculateCameraMovement(deltaTime);
+	const glm::vec3 desired = direction * (PlayerMoveSpeed * step);
 	const auto walls = scene.PlayerObstacles();
 	const auto movement = aegis::combat::MovePlayer(camera.camPos, desired, walls);
 	camera.camPos = movement.eye;
 	camera.camTarget += movement.displacement;
 	camera.UpdateView();
-	camera.UpdateProjection(width, height);
-	actualTravel = glm::length(glm::vec2(movement.displacement.x, movement.displacement.z));
-	movementTimeScale = aegis::combat::MovementTimeScale(movement.displacement, deltaTime, PlayerMoveSpeed);
+	actualTravel += glm::length(glm::vec2(movement.displacement.x, movement.displacement.z));
+	movementTimeScale = aegis::combat::MovementTimeScale(movement.displacement, step, PlayerMoveSpeed);
 	scene.SetMovementTimeScale(movementTimeScale);
 	scene.SetPlayerView({ camera.camPos, camera.camTarget - camera.camPos, camera.camUp, camera.fovy });
 }
 
-glm::vec3 GameFrameWork::CalculateCameraMovement(float deltaTime) const
+glm::vec3 GameFrameWork::ReadMovementDirection() const
 {
 	float forwardInput = 0.f;
 	float rightInput = 0.f;
@@ -153,7 +158,7 @@ glm::vec3 GameFrameWork::CalculateCameraMovement(float deltaTime) const
 	if (moveLeft) rightInput -= 1.f;
 	if (moveRight) rightInput += 1.f;
 	return aegis::combat::RequestedPlayerMovement(camera.camTarget - camera.camPos,
-		forwardInput, rightInput, PlayerMoveSpeed * deltaTime);
+		forwardInput, rightInput, 1.f);
 }
 
 void GameFrameWork::SyncPlayerCamera(bool inputActive)

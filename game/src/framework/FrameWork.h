@@ -31,15 +31,15 @@ private:
 	int height = 1080;
 	
 	bool Init();
-	void Update(float deltaTime);
+	void Update(double deltaTime);
 	void Draw();
 	void Clear();
 
-	void UpdatePlayerCamera(float deltaTime, bool inputActive);
+	void MovePlayer(const glm::vec3& direction, float step);
 	void SyncPlayerCamera(bool inputActive);
 	void SetCursorCapture(bool captured);
 	void UpdateWindowTitle();
-	glm::vec3 CalculateCameraMovement(float deltaTime) const;
+	glm::vec3 ReadMovementDirection() const;
 	static void CursorPosCallback(GLFWwindow* window, double x, double y);
 	static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 	static void ScrollCallback(GLFWwindow* window, double xOffset, double yOffset);
