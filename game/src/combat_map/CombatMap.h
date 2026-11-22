@@ -19,7 +19,6 @@ private:
 	GLint emissionLocation = -1;
 	GLint eyeLocation = -1;
 	GLint doorLightPosLocation = -1;
-	GLint emergencyLightPosLocation = -1;
 	GLint specularLocation = -1;
 	GLint shininessLocation = -1;
 };
