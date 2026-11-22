@@ -22,7 +22,7 @@ public:
     GameScene& operator=(const GameScene&) = delete;
 
     bool Init(const std::filesystem::path& projectDirectory);
-    void Update(double realDeltaTime, double baseGameDeltaTime);
+    void Update(double realDeltaTime, double baseGameDeltaTime, float strafeAmount = 0.f);
     void Draw(int width, int height, const Camera* playerCamera = nullptr) const;
 
     void SampleInput(GLFWwindow* window, bool canReceiveInput, bool fireClicked);

@@ -60,7 +60,7 @@ public:
 
     PlayerView CurrentPlayerView() const;
     void SampleInput(GLFWwindow* window, bool canReceiveInput, bool fireClicked);
-    void Update(double realDeltaTime, double gameDeltaTime);
+    void Update(double realDeltaTime, double gameDeltaTime, float strafeAmount = 0.f);
     void Draw(int width, int height,
               const CampaignEnvironment* environment = nullptr,
               bool showHud = true, const Camera* playerCamera = nullptr) const;
@@ -183,7 +183,7 @@ private:
     void BeginCombatMap();
     int PlayerHealth() const;
     void UpdateBattle(double realDeltaTime, double gameDeltaTime);
-    void UpdateVisualEffects(double realDeltaTime, double gameDeltaTime);
+    void UpdateVisualEffects(double realDeltaTime, double gameDeltaTime, float strafeAmount);
     bool Fire(const glm::vec3& direction);
     glm::vec3 CameraRoot() const;
 

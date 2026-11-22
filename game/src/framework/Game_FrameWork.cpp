@@ -103,6 +103,7 @@ void GameFrameWork::Update(double deltaTime)
 	movementTimeScale = 0.05;
 	SyncPlayerCamera(inputActive);
 	glm::vec3 direction(0.f);
+	const bool strafing = moveLeft != moveRight;
 	if (cursorCaptured)
 	{
 		// 마우스와 WASD는 렌더 프레임마다 한 번만 읽는다.
@@ -127,9 +128,10 @@ void GameFrameWork::Update(double deltaTime)
 	while (inputActive && remaining > 0.0)
 	{
 		const double step = std::min(remaining, MaxSimulationStep);
+		float strafeAmount = 0.f;
 		if (scene.PlayerControlsActive())
-			MovePlayer(direction, static_cast<float>(step));
-		scene.Update(step, step * scene.PreviewTimeScale());
+			strafeAmount = MovePlayer(direction, static_cast<float>(step));
+		scene.Update(step, step * scene.PreviewTimeScale(), strafing ? strafeAmount : 0.f);
 		remaining -= step;
 	}
 
@@ -138,7 +140,7 @@ void GameFrameWork::Update(double deltaTime)
 	restartFrameTime = false;
 }
 
-void GameFrameWork::MovePlayer(const glm::vec3& direction, float step)
+float GameFrameWork::MovePlayer(const glm::vec3& direction, float step)
 {
 	const glm::vec3 desired = direction * (PlayerMoveSpeed * step);
 	const auto walls = scene.PlayerObstacles();
@@ -150,6 +152,10 @@ void GameFrameWork::MovePlayer(const glm::vec3& direction, float step)
 	movementTimeScale = aegis::combat::MovementTimeScale(movement.displacement, step, PlayerMoveSpeed);
 	scene.SetMovementTimeScale(movementTimeScale);
 	SendPlayerView();
+
+	// 충돌 후 실제 이동량을 카메라 좌표로 바꾸면 X가 좌우 이동 거리다.
+	const glm::vec4 cameraMovement = camera.view * glm::vec4(movement.displacement, 0.f);
+	return std::clamp(cameraMovement.x / (PlayerMoveSpeed * step), -1.f, 1.f);
 }
 
 glm::vec3 GameFrameWork::ReadMovementDirection() const

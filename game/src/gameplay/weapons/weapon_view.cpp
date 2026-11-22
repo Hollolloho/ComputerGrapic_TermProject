@@ -27,6 +27,7 @@ bool WeaponView::Init(const std::filesystem::path& root)
 void WeaponView::Reset()
 {
     recoil = 0;
+    tiltZ = 0.f;
     shotCount = 0;
 }
 
@@ -36,11 +37,14 @@ void WeaponView::OnShot()
     ++shotCount;
 }
 
-void WeaponView::Update(double realDeltaTime)
+void WeaponView::Update(double realDeltaTime, float strafeAmount)
 {
     if (std::isfinite(realDeltaTime) && realDeltaTime >= 0)
     {
         recoil *= std::exp(-14.0f * static_cast<float>(realDeltaTime));
+        const float targetTiltZ = strafeAmount * 4.f;
+        const float follow = 1.f - std::exp(-12.f * static_cast<float>(realDeltaTime));
+        tiltZ += (targetTiltZ - tiltZ) * follow;
     }
 }
 
@@ -53,6 +57,7 @@ void WeaponView::Draw(float aspect) const
     const glm::mat4 projection = glm::perspective(glm::radians(60.0f), aspect, 0.02f, 3.0f);
     glm::mat4 mount = glm::translate(glm::mat4(1), glm::vec3(0.16f, -0.16f, -0.50f) +
                                                        glm::vec3(0, -0.008f * recoil, 0.035f * recoil));
+    mount = glm::rotate(mount, glm::radians(tiltZ), glm::vec3(0, 0, 1));
     mount = glm::rotate(mount, glm::pi<float>() + 0.25f, glm::vec3(0, 1, 0));
     mount = glm::rotate(mount, glm::radians(-4.0f + recoil * 5.0f), glm::vec3(1, 0, 0));
     // Viewmodel has its own depth pass; it must not inherit distant scene depth.

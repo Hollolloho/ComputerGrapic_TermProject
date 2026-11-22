@@ -99,7 +99,7 @@ void CombatScene::Reset()
     lookHeld = false;
 }
 
-void CombatScene::Update(double realDeltaTime, double gameDeltaTime)
+void CombatScene::Update(double realDeltaTime, double gameDeltaTime, float strafeAmount)
 {
     if (analysis.Active())
     {
@@ -120,7 +120,7 @@ void CombatScene::Update(double realDeltaTime, double gameDeltaTime)
     }
     // 충돌·피해를 먼저 처리하고, 확정된 결과로 애니메이션과 파편을 갱신한다.
     UpdateBattle(realDeltaTime, gameDeltaTime);
-    UpdateVisualEffects(realDeltaTime, gameDeltaTime);
+    UpdateVisualEffects(realDeltaTime, gameDeltaTime, strafeAmount);
 }
 
 int CombatScene::PlayerHealth() const
@@ -135,7 +135,7 @@ void CombatScene::UpdateBattle(double realDeltaTime, double gameDeltaTime)
     activeBattle->Update(realTime, gameTime, PlayerEye(), PlayerForward());
 }
 
-void CombatScene::UpdateVisualEffects(double realDeltaTime, double gameDeltaTime)
+void CombatScene::UpdateVisualEffects(double realDeltaTime, double gameDeltaTime, float strafeAmount)
 {
     destruction.UpdateWorld(static_cast<float>(gameDeltaTime));
     ObserveDestruction();
@@ -145,7 +145,7 @@ void CombatScene::UpdateVisualEffects(double realDeltaTime, double gameDeltaTime
     {
         drone.UpdateRotor(gameDeltaTime);
     }
-    weapon.Update(realDeltaTime);
+    weapon.Update(realDeltaTime, strafeAmount);
     feedback.Update(static_cast<float>(gameDeltaTime));
     const auto forward = PlayerForward();
     const auto right = glm::normalize(glm::cross(forward, CurrentPlayerView().up));

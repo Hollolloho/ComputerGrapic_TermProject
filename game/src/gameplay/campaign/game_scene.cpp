@@ -16,13 +16,13 @@ bool GameScene::Init(const std::filesystem::path& projectDirectory)
     return true;
 }
 
-void GameScene::Update(double realDeltaTime, double baseGameDeltaTime)
+void GameScene::Update(double realDeltaTime, double baseGameDeltaTime, float strafeAmount)
 {
     if (!flow.WorldRuns())
     {
         return;
     }
-    combatScene.Update(realDeltaTime, baseGameDeltaTime);
+    combatScene.Update(realDeltaTime, baseGameDeltaTime, strafeAmount);
     const combat::EncounterResult result = combatScene.BattleResult();
     flow.ObserveBattle(result == combat::EncounterResult::Failed && !combatScene.DeathPlaying(),
                        result == combat::EncounterResult::Cleared);
