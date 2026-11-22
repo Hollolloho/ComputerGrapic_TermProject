@@ -89,6 +89,8 @@ bool UploadMeshes(const aegis::ModelData& model, std::vector<RenderMesh>& meshes
 		const auto& material = model.materials[source.materialIndex];
 		mesh.color = material.diffuse;
 		mesh.emission = material.emissive;
+		mesh.specular = material.specular;
+		mesh.shininess = material.shininess;
 	}
 	return !meshes.empty();
 }

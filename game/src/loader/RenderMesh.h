@@ -21,6 +21,8 @@ struct RenderMesh : MeshBuffer
 {
 	glm::vec3 color{1.f};
 	glm::vec3 emission{0.f};
+	glm::vec3 specular{0.f};
+	float shininess = 0.f;
 };
 
 bool UploadMeshes(const aegis::ModelData& model, std::vector<RenderMesh>& meshes);

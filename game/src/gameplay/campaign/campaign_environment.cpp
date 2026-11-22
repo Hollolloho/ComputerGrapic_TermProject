@@ -115,7 +115,7 @@ void CampaignEnvironment::DrawBattle(const glm::mat4& viewProjection, const glm:
     renderer.Begin(eye, {0.45f, 0.9f, 0.7f}, {1, 1, 1}, 2.5f, 0.45f);
     if (useCombatMap)
     {
-        combatMap.Draw(viewProjection);
+        combatMap.Draw(viewProjection, eye);
         return;
     }
     for (std::size_t i = 0; i < corridor.size(); ++i)
