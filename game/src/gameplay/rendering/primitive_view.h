@@ -19,9 +19,9 @@ protected:
 
     GLint transformLocation{-1};
     GLint colorLocation{-1};
+    GLuint program{};
 
 private:
-    GLuint program{};
     GLuint vao{};
     GLuint vbo{};
 };

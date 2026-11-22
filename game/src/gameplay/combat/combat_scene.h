@@ -205,7 +205,7 @@ private:
     void ToggleBossCover();
     void DrawEnemies(const glm::mat4& viewProjection) const;
     void DrawCollisionBoxes(const glm::mat4& viewProjection) const;
-    void DrawBullets(const glm::mat4& viewProjection) const;
+    void DrawBullets(const glm::mat4& projection, const glm::mat4& view) const;
     void DrawWeaponFragments(const glm::mat4& viewProjection) const;
     void DrawBossHud(int width, int height) const;
     void DrawDamageFeedback(int width, int height) const;

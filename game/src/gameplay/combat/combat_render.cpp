@@ -95,17 +95,17 @@ void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
     }
 }
 
-void CombatScene::DrawBullets(const glm::mat4& viewProjection) const
+void CombatScene::DrawBullets(const glm::mat4& projection, const glm::mat4& view) const
 {
     const glm::vec3 playerColor(0.48f, 0.90f, 1.0f);
     const glm::vec3 enemyColor(1.0f, 0.15f, 0.08f);
     for (const auto& flight : activeBattle->PlayerFlights())
     {
-        bulletView.Draw(viewProjection, flight.bullet, playerColor, 0.055f);
+        bulletView.Draw(projection, view, flight.bullet, playerColor, 0.055f);
     }
     for (const auto& flight : activeBattle->EnemyFlights())
     {
-        bulletView.Draw(viewProjection, flight.bullet, enemyColor, 0.08f);
+        bulletView.Draw(projection, view, flight.bullet, enemyColor, 0.08f);
     }
 }
 
@@ -189,7 +189,7 @@ void CombatScene::Draw(int width, int height,
         signs.Draw(scene, SupplyPosition(), TerminalPosition(), CanAnalyze(), maintenanceMode, approachMode);
     }
     DrawEnemies(scene);
-    DrawBullets(scene);
+    DrawBullets(projection, view);
     glUseProgram(program);
     glUniform1f(opacityLocation, 1);
     glBindVertexArray(vao);
