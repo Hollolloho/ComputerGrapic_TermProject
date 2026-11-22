@@ -30,7 +30,8 @@ bool CombatMap::Init(const std::filesystem::path& runtimeRoot)
 	colorLocation = glGetUniformLocation(shaderProgram, "baseColor");
 	emissionLocation = glGetUniformLocation(shaderProgram, "emissionColor");
 	eyeLocation = glGetUniformLocation(shaderProgram, "eyePos");
-	lightPosLocation = glGetUniformLocation(shaderProgram, "lightPos");
+	doorLightPosLocation = glGetUniformLocation(shaderProgram, "doorLightPos");
+	emergencyLightPosLocation = glGetUniformLocation(shaderProgram, "emergencyLightPos");
 	specularLocation = glGetUniformLocation(shaderProgram, "specularColor");
 	shininessLocation = glGetUniformLocation(shaderProgram, "shininess");
 
@@ -49,8 +50,9 @@ void CombatMap::Draw(const glm::mat4& scene, const glm::vec3& eye) const
 	glUseProgram(shaderProgram);
 	glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(scene));
 	glUniform3fv(eyeLocation, 1, glm::value_ptr(eye));
-	// 첫 복도 정면 문틀의 발광띠 바로 앞에 있는 고정등이다.
-	glUniform3f(lightPosLocation, 0.f, 3.11f, -17.73f);
+	// 문틀 위 청회색 등과 왼쪽 벽 비상등의 발광면 앞에 각각 둔다.
+	glUniform3f(doorLightPosLocation, 0.f, 3.11f, -17.73f);
+	glUniform3f(emergencyLightPosLocation, -2.75f, 3.01f, -15.f);
 	for (const RenderMesh& mesh : meshes)
 	{
 		glUniform3fv(colorLocation, 1, glm::value_ptr(mesh.color));
