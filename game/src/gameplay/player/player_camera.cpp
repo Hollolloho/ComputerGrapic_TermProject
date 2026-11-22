@@ -1,4 +1,5 @@
 #include "player_camera.h"
+#include "player_settings.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
@@ -34,7 +35,7 @@ glm::mat4 PlayerCamera::ParentTransform() const
 
 glm::vec3 PlayerCamera::EyePosition() const
 {
-    return glm::vec3(ParentTransform() * glm::vec4(0.0f, eyeHeight, 0.0f, 1.0f));
+    return glm::vec3(ParentTransform() * glm::vec4(0.0f, player::EyeHeight, 0.0f, 1.0f));
 }
 
 glm::vec3 PlayerCamera::ViewDirection() const

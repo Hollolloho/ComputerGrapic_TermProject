@@ -159,6 +159,7 @@
     <ClInclude Include="src\loader\model_binary.h" />
     <ClInclude Include="src\gameplay\player\player_camera.h" />
     <ClInclude Include="src\gameplay\player\player_motion.h" />
+    <ClInclude Include="src\gameplay\player\player_settings.h" />
     <ClInclude Include="src\gameplay\player\player_view.h" />
     <ClInclude Include="src\combat_map\terminal_layout.generated.h" />
     <ClInclude Include="src\gameplay\turret\turret_encounter.h" />

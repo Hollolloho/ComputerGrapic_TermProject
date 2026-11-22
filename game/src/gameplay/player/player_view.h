@@ -1,4 +1,5 @@
 #pragma once
+#include "player_settings.h"
 #include <glm/glm.hpp>
 #include "main/GameMath.h"
 #include <glm/gtc/matrix_transform.hpp>
@@ -9,8 +10,8 @@ namespace aegis
 // World-space eye, not the floor/root position. FOV affects projection only.
 struct PlayerView
 {
-    glm::vec3 eye{0, 1.65f, 0}, forward{0, 0, -1}, up{0, 1, 0};
-    float verticalFovDegrees{60};
+    glm::vec3 eye{0, player::EyeHeight, 0}, forward{0, 0, -1}, up{0, 1, 0};
+    float verticalFovDegrees{player::WorldFovY};
 
     glm::mat4 ViewMatrix() const
     {

@@ -193,8 +193,7 @@ void CoreEncounter::UpdateEnemyBullets(float dt, const glm::vec3& eye, const glm
         const auto guard = flight.bullet.sourceWeaponId - GuardShotBase;
         for (auto& target : targets)
             if (target.id == BodyId(guard) || target.id == WeaponId(guard)) target.enabled = false;
-        targets.push_back({PlayerId, HitKind::Body, eye + glm::vec3(-0.3f, -1.65f, -0.3f),
-                            eye + glm::vec3(0.3f, 0.15f, 0.3f)});
+        targets.push_back(PlayerBodyCollider(PlayerId, eye));
         targets.push_back(inventory.HeldCollider(eye, forward));
         Hit hit;
         if (AdvanceBullet(flight.bullet, dt, targets, hit))

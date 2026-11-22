@@ -91,7 +91,7 @@ void CombatScene::Reset()
     if (IsBossMode() || IsCoreMode())
     {
         const auto target = IsCoreMode() ? core.CoreCenter() : boss.CoreCenter();
-        const auto d = glm::normalize(target - (CameraRoot() + glm::vec3(0, 1.65f, 0)));
+        const auto d = glm::normalize(target - (CameraRoot() + glm::vec3(0, player::EyeHeight, 0)));
         rotX = glm::degrees(std::asin(d.y));
     }
     camera.SetPose(CameraRoot(), rotY, rotX);

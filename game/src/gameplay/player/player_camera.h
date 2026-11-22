@@ -20,7 +20,6 @@ private:
     glm::vec3 rootPosition{};
     float rotY{};
     float rotX{};
-    const float eyeHeight = 1.65f;
 };
 
 } // namespace aegis

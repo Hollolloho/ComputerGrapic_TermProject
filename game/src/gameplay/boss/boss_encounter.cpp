@@ -192,8 +192,7 @@ void BossEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& eye
     for (auto& flight : enemyFlights)
     {
         auto boxes = walls;
-        boxes.push_back({24000, HitKind::Body, eye + glm::vec3(-0.3f, -1.65f, -0.3f),
-                         eye + glm::vec3(0.3f, 0.15f, 0.3f)});
+        boxes.push_back(PlayerBodyCollider(24000, eye));
         boxes.push_back(inventory.HeldCollider(eye, forward));
         Hit hit;
         if (AdvanceBullet(flight.bullet, gameDeltaTime, boxes, hit))

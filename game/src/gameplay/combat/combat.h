@@ -28,6 +28,8 @@ struct Collider
     bool enabled{true};
 };
 
+Collider PlayerBodyCollider(ObjectId id, const glm::vec3& eye);
+
 struct Hit
 {
     ObjectId objectId{};

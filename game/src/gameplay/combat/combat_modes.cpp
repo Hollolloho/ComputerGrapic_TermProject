@@ -153,7 +153,7 @@ bool CombatScene::SetPlayerView(const PlayerView& view)
 
 PlayerView CombatScene::CurrentPlayerView() const
 {
-    const PlayerView fallback{camera.EyePosition(), camera.ViewDirection(), {0, 1, 0}, 60};
+    const PlayerView fallback{camera.EyePosition(), camera.ViewDirection(), {0, 1, 0}};
     return externalView.Selected(fallback);
 }
 
@@ -161,7 +161,7 @@ void CombatScene::ToggleBossCover()
 {
     bossCovered = !bossCovered;
     const auto target = bossCovered ? boss_asset::supplyInteraction : boss.CoreCenter();
-    const auto d = glm::normalize(target - (CameraRoot() + glm::vec3(0, 1.65f, 0)));
+    const auto d = glm::normalize(target - (CameraRoot() + glm::vec3(0, player::EyeHeight, 0)));
     rotY = glm::degrees(std::atan2(-d.x, -d.z));
     rotX = glm::degrees(std::asin(d.y));
     camera.SetPose(CameraRoot(), rotY, rotX);

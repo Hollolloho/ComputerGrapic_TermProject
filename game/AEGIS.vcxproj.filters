@@ -185,6 +185,7 @@
     <ClInclude Include="src\loader\model_binary.h"><Filter>Loader</Filter></ClInclude>
     <ClInclude Include="src\gameplay\player\player_camera.h"><Filter>Gameplay\Player</Filter></ClInclude>
     <ClInclude Include="src\gameplay\player\player_motion.h"><Filter>Gameplay\Player</Filter></ClInclude>
+    <ClInclude Include="src\gameplay\player\player_settings.h"><Filter>Gameplay\Player</Filter></ClInclude>
     <ClInclude Include="src\gameplay\player\player_view.h"><Filter>Gameplay\Player</Filter></ClInclude>
     <ClInclude Include="src\gameplay\turret\turret.h"><Filter>Gameplay\Turret</Filter></ClInclude>
     <ClInclude Include="src\combat_map\terminal_layout.generated.h"><Filter>CombatMap</Filter></ClInclude>

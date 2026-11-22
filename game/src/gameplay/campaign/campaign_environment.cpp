@@ -1,6 +1,7 @@
 // 캠페인의 입구와 전투 환경을 불러오고 그린다.
 #include "campaign_environment.h"
 #include "campaign_layout.generated.h"
+#include "gameplay/player/player_settings.h"
 #include "combat_map/terminal_layout.generated.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
@@ -95,7 +96,7 @@ void CampaignEnvironment::DrawEntry(int width, int height) const
     glClearColor(0.03f, 0.06f, 0.09f, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     const auto viewProjection =
-        glm::perspective(glm::radians(60.0f), static_cast<float>(width) / height, 0.05f, 80.0f) *
+        glm::perspective(glm::radians(player::WorldFovY), static_cast<float>(width) / height, 0.05f, 80.0f) *
         camera.ViewMatrix();
     renderer.Begin(camera.EyePosition(), {0.45f, 0.9f, 0.7f}, {1, 1, 1}, 3, 0.35f);
     renderer.Draw(entryRoom, viewProjection, glm::mat4(1));

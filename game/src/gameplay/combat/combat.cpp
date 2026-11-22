@@ -1,5 +1,6 @@
 // 탄환의 이전 위치와 다음 위치 사이에서 가장 가까운 충돌을 찾는다.
 #include "combat.h"
+#include "gameplay/player/player_settings.h"
 #include "main/GameMath.h"
 
 #include <algorithm>
@@ -8,6 +9,14 @@
 
 namespace aegis::combat
 {
+
+Collider PlayerBodyCollider(ObjectId id, const glm::vec3& eye)
+{
+    const float floorY = eye.y - player::EyeHeight;
+    return {id, HitKind::Body,
+            {eye.x - player::Radius, floorY, eye.z - player::Radius},
+            {eye.x + player::Radius, floorY + player::BodyHeight, eye.z + player::Radius}};
+}
 
 void RemoveExpiredFlights(std::vector<Flight>& flights)
 {

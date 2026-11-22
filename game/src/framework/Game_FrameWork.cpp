@@ -1,5 +1,6 @@
 #include "FrameWork.h"
 #include "gameplay/player/player_motion.h"
+#include "gameplay/player/player_settings.h"
 #include "gameplay/player/player_view.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -8,7 +9,6 @@
 
 namespace
 {
-	const float PlayerMoveSpeed = 5.f;
 	const double MaxSimulationStep = 0.05;
 	const float MouseSensitivity = 0.167f;
 	bool moveForward = false;
@@ -142,20 +142,20 @@ void GameFrameWork::Update(double deltaTime)
 
 float GameFrameWork::MovePlayer(const glm::vec3& direction, float step)
 {
-	const glm::vec3 desired = direction * (PlayerMoveSpeed * step);
+	const glm::vec3 desired = direction * (aegis::player::MoveSpeed * step);
 	const auto walls = scene.PlayerObstacles();
 	const auto movement = aegis::combat::MovePlayer(camera.camPos, desired, walls);
 	camera.camPos = movement.eye;
 	camera.camTarget += movement.displacement;
 	camera.UpdateView();
 	actualTravel += glm::length(glm::vec2(movement.displacement.x, movement.displacement.z));
-	movementTimeScale = aegis::combat::MovementTimeScale(movement.displacement, step, PlayerMoveSpeed);
+	movementTimeScale = aegis::combat::MovementTimeScale(movement.displacement, step, aegis::player::MoveSpeed);
 	scene.SetMovementTimeScale(movementTimeScale);
 	SendPlayerView();
 
 	// 충돌 후 실제 이동량을 카메라 좌표로 바꾸면 X가 좌우 이동 거리다.
 	const glm::vec4 cameraMovement = camera.view * glm::vec4(movement.displacement, 0.f);
-	return std::clamp(cameraMovement.x / (PlayerMoveSpeed * step), -1.f, 1.f);
+	return std::clamp(cameraMovement.x / (aegis::player::MoveSpeed * step), -1.f, 1.f);
 }
 
 glm::vec3 GameFrameWork::ReadMovementDirection() const

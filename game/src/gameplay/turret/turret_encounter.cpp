@@ -353,8 +353,7 @@ std::vector<Collider> TurretEncounter::CreateEnemyTargets(const glm::vec3& eye,
                                                           const glm::vec3& forward) const
 {
     auto targets = colliders;
-    targets.push_back(
-        {playerId, HitKind::Body, eye + glm::vec3(-0.3f, -1.65f, -0.3f), eye + glm::vec3(0.3f, 0.15f, 0.3f)});
+    targets.push_back(PlayerBodyCollider(playerId, eye));
     targets.push_back(inventory.HeldCollider(eye, forward));
     return targets;
 }

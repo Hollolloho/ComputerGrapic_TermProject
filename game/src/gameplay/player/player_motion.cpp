@@ -1,5 +1,6 @@
 // 플레이어를 벽에 닿기 직전까지만 이동시키고, 막히지 않은 방향으로 미끄러지게 한다.
 #include "player_motion.h"
+#include "player_settings.h"
 #include "main/GameMath.h"
 #include <glm/glm.hpp>
 #include <algorithm>
@@ -10,14 +11,14 @@ namespace aegis::combat
 {
 namespace
 {
-const float Radius = 0.3f, Skin = 0.001f;
+const float Skin = 0.001f;
 
-bool Blocks(const Collider& wall, float eyeY)
+bool Blocks(const Collider& wall, float floorY)
 {
     return wall.enabled && (wall.kind == HitKind::Wall || wall.kind == HitKind::Armor) &&
            IsFinite(wall.minimum) && IsFinite(wall.maximum) &&
            glm::all(glm::lessThanEqual(wall.minimum, wall.maximum)) &&
-           wall.maximum.y > eyeY - 1.65f + 0.18f && wall.minimum.y < eyeY + 0.15f - Skin;
+           wall.maximum.y > floorY + 0.18f && wall.minimum.y < floorY + player::BodyHeight - Skin;
 }
 
 bool Sweep(const glm::vec2& p, const glm::vec2& d, const glm::vec2& low, const glm::vec2& high, float& time,
@@ -99,18 +100,20 @@ PlayerMove MovePlayer(const glm::vec3& eye, const glm::vec3& desired, const std:
         return result;
     }
     glm::vec2 p(eye.x, eye.z), remaining(desired.x, desired.z);
+    const float floorY = eye.y - player::EyeHeight;
+    const glm::vec2 padding(player::Radius + Skin);
     // Recover a small initial overlap before sweeping. Never iterate without a bound.
     for (int pass = 0; pass < 8; ++pass)
     {
         bool pushed = false;
         for (const auto& wall : walls)
         {
-            if (!Blocks(wall, eye.y))
+            if (!Blocks(wall, floorY))
             {
                 continue;
             }
-            const auto low = glm::vec2(wall.minimum.x, wall.minimum.z) - glm::vec2(Radius + Skin);
-            const auto high = glm::vec2(wall.maximum.x, wall.maximum.z) + glm::vec2(Radius + Skin);
+            const auto low = glm::vec2(wall.minimum.x, wall.minimum.z) - padding;
+            const auto high = glm::vec2(wall.maximum.x, wall.maximum.z) + padding;
             if (p.x <= low.x + 1e-6f || p.x >= high.x - 1e-6f || p.y <= low.y + 1e-6f ||
                 p.y >= high.y - 1e-6f)
             {
@@ -152,12 +155,12 @@ PlayerMove MovePlayer(const glm::vec3& eye, const glm::vec3& desired, const std:
         glm::vec2 normal(0);
         for (const auto& wall : walls)
         {
-            if (!Blocks(wall, eye.y))
+            if (!Blocks(wall, floorY))
             {
                 continue;
             }
-            const auto low = glm::vec2(wall.minimum.x, wall.minimum.z) - glm::vec2(Radius + Skin);
-            const auto high = glm::vec2(wall.maximum.x, wall.maximum.z) + glm::vec2(Radius + Skin);
+            const auto low = glm::vec2(wall.minimum.x, wall.minimum.z) - padding;
+            const auto high = glm::vec2(wall.maximum.x, wall.maximum.z) + padding;
             float time{};
             glm::vec2 n;
             if (!Sweep(p, remaining, low, high, time, n))
