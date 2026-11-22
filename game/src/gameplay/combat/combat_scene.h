@@ -5,6 +5,7 @@
 #include "gameplay/player/player_view.h"
 #include "gameplay/turret/turret_encounter.h"
 #include "gameplay/weapons/weapon_view.h"
+#include "gameplay/weapons/bullet.h"
 #include "drone/drone.h"
 #include "gameplay/turret/turret_view.h"
 #include "gameplay/ui/analysis_session.h"
@@ -247,6 +248,7 @@ private:
     PlayerCamera camera;
     PlayerViewInput externalView;
     WeaponView weapon;
+    BulletView bulletView;
     Drone drone;
     TurretView turretView;
     MeshRenderer terminalRenderer;

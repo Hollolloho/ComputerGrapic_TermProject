@@ -128,6 +128,7 @@
     <ClCompile Include="src\gameplay\turret\turret_view.cpp" />
     <ClCompile Include="src\gameplay\weapons\weapon_inventory.cpp" />
     <ClCompile Include="src\gameplay\weapons\weapon_view.cpp" />
+    <ClCompile Include="src\gameplay\weapons\bullet.cpp" />
     <ClCompile Include="src\gameplay\ui\world_signs.cpp" />
     <ClInclude Include="src\gameplay\ui\analysis_session.h" />
     <ClInclude Include="src\gameplay\rendering\atlas_model.h" />
@@ -164,6 +165,7 @@
     <ClInclude Include="src\gameplay\turret\turret_view.h" />
     <ClInclude Include="src\gameplay\weapons\weapon_inventory.h" />
     <ClInclude Include="src\gameplay\weapons\weapon_view.h" />
+    <ClInclude Include="src\gameplay\weapons\bullet.h" />
     <ClInclude Include="src\gameplay\ui\world_signs.h" />
     <None Include="src\gameplay\boss\boss_triangles.generated.inc" />
     <None Include="shaders\ui.vert" />
@@ -176,6 +178,8 @@
     <None Include="shaders\mesh.frag" />
     <None Include="shaders\turret.vert" />
     <None Include="shaders\turret.frag" />
+    <None Include="shaders\bullet.vert" />
+    <None Include="shaders\bullet.frag" />
     <None Include="shaders\weapon.vert" />
     <None Include="shaders\weapon.frag" />
     <None Include="shaders\core.vert" />

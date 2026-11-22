@@ -66,6 +66,8 @@
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\mesh.vert" TargetPath="shaders\mesh.vert" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\turret.frag" TargetPath="shaders\turret.frag" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\turret.vert" TargetPath="shaders\turret.vert" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\bullet.vert" TargetPath="shaders\bullet.vert" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\bullet.frag" TargetPath="shaders\bullet.frag" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\weapon.frag" TargetPath="shaders\weapon.frag" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\weapon.vert" TargetPath="shaders\weapon.vert" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\ai_core\obj\core_structure.obj" TargetPath="asset\ai_core\obj\core_structure.obj" />

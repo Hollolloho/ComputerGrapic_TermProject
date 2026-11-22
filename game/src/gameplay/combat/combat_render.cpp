@@ -97,16 +97,15 @@ void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
 
 void CombatScene::DrawBullets(const glm::mat4& viewProjection) const
 {
-    const auto& shots = activeBattle->PlayerFlights();
-    for (const auto& flight : shots)
+    const glm::vec3 playerColor(0.48f, 0.90f, 1.0f);
+    const glm::vec3 enemyColor(1.0f, 0.15f, 0.08f);
+    for (const auto& flight : activeBattle->PlayerFlights())
     {
-        const auto p = flight.bullet.position;
-        DrawBox(viewProjection, p - glm::vec3(0.055f), p + glm::vec3(0.055f), {1, 0.85f, 0.15f});
+        bulletView.Draw(viewProjection, flight.bullet, playerColor, 0.055f);
     }
     for (const auto& flight : activeBattle->EnemyFlights())
     {
-        const auto p = flight.bullet.position;
-        DrawBox(viewProjection, p - glm::vec3(0.08f), p + glm::vec3(0.08f), {1, 0.15f, 0.08f});
+        bulletView.Draw(viewProjection, flight.bullet, enemyColor, 0.08f);
     }
 }
 
@@ -190,11 +189,11 @@ void CombatScene::Draw(int width, int height,
         signs.Draw(scene, SupplyPosition(), TerminalPosition(), CanAnalyze(), maintenanceMode, approachMode);
     }
     DrawEnemies(scene);
+    DrawBullets(scene);
     glUseProgram(program);
     glUniform1f(opacityLocation, 1);
     glBindVertexArray(vao);
     DrawCollisionBoxes(scene);
-    DrawBullets(scene);
     DrawWeaponFragments(scene);
     const auto supply = IsBossMode() ? boss_asset::supplyWeapon : SupplyPosition();
     if (!IsBossMode())
