@@ -1,4 +1,5 @@
 #pragma once
+#include "gameplay/effects/destruction_effects.h"
 #include <glm/glm.hpp>
 #include <algorithm>
 #include <cmath>
@@ -6,14 +7,6 @@
 
 namespace aegis::combat
 {
-struct WeaponShard
-{
-    glm::vec3 position{}, velocity{};
-    float age{};
-    float lifetime{};
-    float size{};
-};
-
 // Presentation only: observes committed health/break counters; never changes combat.
 // The caller supplies gameDeltaTime, including zero when the world is stopped.
 class CombatFeedback
@@ -64,22 +57,7 @@ public:
             return;
         }
         damage = std::max(0.0f, damage - gameDeltaTime);
-        const glm::vec3 gravity(0, -3.2f, 0);
-        for (std::size_t i = 0; i < shards.size();)
-        {
-            auto& shard = shards[i];
-            if (shard.age + gameDeltaTime >= shard.lifetime)
-            {
-                shard = shards.back();
-                shards.pop_back();
-                continue;
-            }
-            shard.position +=
-                shard.velocity * gameDeltaTime + gravity * (0.5f * gameDeltaTime * gameDeltaTime);
-            shard.velocity += gravity * gameDeltaTime;
-            shard.age += gameDeltaTime;
-            ++i;
-        }
+        UpdateShards(shards, gameDeltaTime);
     }
 
     float DamageStrength() const
@@ -87,7 +65,7 @@ public:
         return damage / 0.28f;
     }
 
-    const std::vector<WeaponShard>& Shards() const
+    const std::vector<CrystalShard>& Shards() const
     {
         return shards;
     }
@@ -103,7 +81,7 @@ public:
     }
 
 private:
-    std::vector<WeaponShard> shards;
+    std::vector<CrystalShard> shards;
     int lastHealth{100};
     int lastBreaks{};
     int bursts{};

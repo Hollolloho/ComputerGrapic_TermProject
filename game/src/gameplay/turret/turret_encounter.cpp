@@ -162,12 +162,14 @@ void TurretEncounter::ToggleCover()
 void TurretEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm::vec3& eye,
                              const glm::vec3& forward)
 {
-    if (result == EncounterResult::Failed || !std::isfinite(realDeltaTime) || !std::isfinite(gameDeltaTime) ||
+    if (!std::isfinite(realDeltaTime) || !std::isfinite(gameDeltaTime) ||
         realDeltaTime < 0 || gameDeltaTime < 0 || !IsFinite(eye))
     {
         return;
     }
 
+    UpdateShards(impactShards, gameDeltaTime);
+    if (result == EncounterResult::Failed) return;
     UpdateShotCooldown(realDeltaTime);
     damageFlash = std::max(0.0f, damageFlash - gameDeltaTime);
     if (gameDeltaTime == 0)
@@ -291,6 +293,7 @@ void TurretEncounter::UpdatePlayerBullets(float gameDeltaTime)
         Hit hit;
         if (AdvanceBullet(flight.bullet, gameDeltaTime, colliders, hit))
         {
+            ShatterBullet(flight.bullet, false);
             for (std::size_t i = 0; i < turrets.size(); ++i)
             {
                 auto& turret = turrets[i];
@@ -377,6 +380,7 @@ void TurretEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& e
         Hit hit;
         if (AdvanceBullet(flight.bullet, gameDeltaTime, enemyColliders, hit))
         {
+            ShatterBullet(flight.bullet, true);
             if (hit.kind == HitKind::Body && hit.objectId == playerId)
             {
                 health = std::max(0, health - 25);

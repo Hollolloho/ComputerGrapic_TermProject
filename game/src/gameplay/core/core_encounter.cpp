@@ -150,6 +150,7 @@ void CoreEncounter::UpdatePlayerBullets(float dt)
         Hit hit;
         if (AdvanceBullet(flight.bullet, dt, Targets(), hit))
         {
+            ShatterBullet(flight.bullet, false);
             if (hit.objectId == CoreId && CoreAlive())
             {
                 DamageCore(CoreHitDamage);
@@ -198,6 +199,7 @@ void CoreEncounter::UpdateEnemyBullets(float dt, const glm::vec3& eye, const glm
         Hit hit;
         if (AdvanceBullet(flight.bullet, dt, targets, hit))
         {
+            ShatterBullet(flight.bullet, true);
             if (hit.objectId == PlayerId && hit.kind == HitKind::Body)
             {
                 health = std::max(0, health - BulletDamage);
@@ -293,9 +295,10 @@ void CoreEncounter::UpdateMagnetic(float dt, const glm::vec3& eye)
 void CoreEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm::vec3& eye,
                            const glm::vec3& forward)
 {
-    if (result == EncounterResult::Failed || result == EncounterResult::Cleared ||
-        !std::isfinite(realDeltaTime) || !std::isfinite(gameDeltaTime) ||
+    if (!std::isfinite(realDeltaTime) || !std::isfinite(gameDeltaTime) ||
         realDeltaTime < 0 || gameDeltaTime < 0 || !IsFinite(eye) || !IsFinite(forward)) return;
+    UpdateShards(impactShards, gameDeltaTime);
+    if (result == EncounterResult::Failed || result == EncounterResult::Cleared) return;
     UpdateShotCooldown(realDeltaTime);
     damageFlash = std::max(0.0f, damageFlash - gameDeltaTime);
     if (gameDeltaTime == 0) return;

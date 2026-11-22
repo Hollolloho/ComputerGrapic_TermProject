@@ -110,11 +110,13 @@ void BossEncounter::AdvancePattern(float dt, const glm::vec3& eye)
 void BossEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm::vec3& eye,
                            const glm::vec3& forward)
 {
-    if (result == EncounterResult::Failed || !IsFinite(eye) || !std::isfinite(realDeltaTime) ||
+    if (!IsFinite(eye) || !std::isfinite(realDeltaTime) ||
         !std::isfinite(gameDeltaTime) || realDeltaTime < 0 || gameDeltaTime < 0)
     {
         return;
     }
+    UpdateShards(impactShards, gameDeltaTime);
+    if (result == EncounterResult::Failed) return;
     UpdateShotCooldown(realDeltaTime);
     damageFlash = std::max(0.0f, damageFlash - gameDeltaTime);
     if (gameDeltaTime == 0 || result == EncounterResult::Cleared)
@@ -159,6 +161,7 @@ void BossEncounter::UpdatePlayerBullets(float gameDeltaTime)
         {
             bullet.position = hit.position;
             bullet.active = false;
+            ShatterBullet(bullet, false);
             if (hit.kind == HitKind::Body && phase == BossPhase::Exposed)
             {
                 ++coreHits;
@@ -195,6 +198,7 @@ void BossEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& eye
         Hit hit;
         if (AdvanceBullet(flight.bullet, gameDeltaTime, boxes, hit))
         {
+            ShatterBullet(flight.bullet, true);
             if (hit.kind == HitKind::Body && hit.objectId == 24000)
             {
                 health = std::max(0, health - 25);

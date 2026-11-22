@@ -1,6 +1,7 @@
 #pragma once
 
 #include "combat.h"
+#include "gameplay/effects/destruction_effects.h"
 #include "gameplay/weapons/weapon_inventory.h"
 
 namespace aegis::combat
@@ -34,13 +35,16 @@ public:
     const WeaponInventory& Inventory() const { return inventory; }
     const std::vector<Flight>& PlayerFlights() const { return playerFlights; }
     const std::vector<Flight>& EnemyFlights() const { return enemyFlights; }
+    const std::vector<CrystalShard>& ImpactShards() const { return impactShards; }
 
 protected:
     void ResetCombat(const glm::vec3& supplyPosition);
     void UpdateShotCooldown(float realDeltaTime);
+    void ShatterBullet(const Bullet& bullet, bool enemy);
 
     WeaponInventory inventory;
     std::vector<Flight> playerFlights, enemyFlights;
+    std::vector<CrystalShard> impactShards;
     EncounterResult result{EncounterResult::Running};
     int health{100};
     int enemyShots{};

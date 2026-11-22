@@ -6,6 +6,28 @@
 
 namespace aegis::combat
 {
+void UpdateShards(std::vector<CrystalShard>& shards, float gameDeltaTime)
+{
+    if (!std::isfinite(gameDeltaTime) || gameDeltaTime <= 0)
+        return;
+
+    const glm::vec3 gravity(0, -3.2f, 0);
+    for (std::size_t i = 0; i < shards.size();)
+    {
+        auto& shard = shards[i];
+        shard.age += gameDeltaTime;
+        if (shard.age >= shard.lifetime)
+        {
+            shard = shards.back();
+            shards.pop_back();
+            continue;
+        }
+        shard.position += shard.velocity * gameDeltaTime + gravity * (0.5f * gameDeltaTime * gameDeltaTime);
+        shard.velocity += gravity * gameDeltaTime;
+        ++i;
+    }
+}
+
 void DestructionEffects::Reset()
 {
     debris = {};

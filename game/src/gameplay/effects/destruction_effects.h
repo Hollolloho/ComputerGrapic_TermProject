@@ -1,9 +1,21 @@
 #pragma once
 #include <array>
+#include <vector>
 #include <glm/glm.hpp>
 
 namespace aegis::combat
 {
+struct CrystalShard
+{
+    glm::vec3 position{}, velocity{};
+    float age{};
+    float lifetime{};
+    float size{};
+    bool enemy{};
+};
+
+void UpdateShards(std::vector<CrystalShard>& shards, float gameDeltaTime);
+
 struct EnemyDebris
 {
     glm::mat4 world{1};
