@@ -32,6 +32,8 @@
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\corridor\test_scene\door_right.obj" TargetPath="asset\corridor\test_scene\door_right.obj" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\corridor\test_scene\materials.mtl" TargetPath="asset\corridor\test_scene\materials.mtl" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\crystal_cartridge.obj" TargetPath="asset\cw01c\runtime\obj\crystal_cartridge.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\crystal_bullet.obj" TargetPath="asset\cw01c\runtime\obj\crystal_bullet.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\crystal_chip.obj" TargetPath="asset\cw01c\runtime\obj\crystal_chip.obj" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\cw01c.mtl" TargetPath="asset\cw01c\runtime\obj\cw01c.mtl" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\front_trim.obj" TargetPath="asset\cw01c\runtime\obj\front_trim.obj" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\grip.obj" TargetPath="asset\cw01c\runtime\obj\grip.obj" />
