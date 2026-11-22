@@ -107,6 +107,10 @@ void CombatScene::DrawBullets(const glm::mat4& projection, const glm::mat4& view
     {
         bulletView.Draw(projection, view, flight.bullet, enemyColor, 0.08f);
     }
+    for (const auto& shard : activeBattle->ImpactShards())
+    {
+        bulletView.DrawShard(projection, view, shard, shard.enemy ? enemyColor : playerColor);
+    }
 }
 
 void CombatScene::DrawWeaponFragments(const glm::mat4& viewProjection) const

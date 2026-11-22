@@ -38,7 +38,7 @@ bool CombatScene::Init(const std::filesystem::path& projectDirectory)
     glBindVertexArray(0);
     Reset();
     if (!signs.Init(shaderDirectory) || !deathView.Init(projectDirectory) || !turretView.Init(projectDirectory) ||
-        !weapon.Init(projectDirectory) || !bulletView.Init(shaderDirectory) || !terminalRenderer.Init(shaderDirectory) ||
+        !weapon.Init(projectDirectory) || !bulletView.Init(projectDirectory) || !terminalRenderer.Init(shaderDirectory) ||
         !drone.Init(projectDirectory) || !InitTerminal(projectDirectory) || !bossView.Init(projectDirectory) ||
         !coreView.Init(projectDirectory) || !singleModel.Init(projectDirectory, combat::TurretType::SingleC) ||
         !twinModel.Init(projectDirectory, combat::TurretType::Twin))

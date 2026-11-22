@@ -1,15 +1,17 @@
 #version 330 core
 
-layout(location = 0) in vec4 vertex;
+layout(location = 0) in vec3 position;
+layout(location = 1) in vec3 normal;
 uniform mat4 transform;
 uniform mat4 modelView;
 out vec3 viewPosition;
-out float facetU;
+out vec3 viewNormal;
+out vec3 crystalPosition;
 
 void main()
 {
-    vec4 position = vec4(vertex.xyz, 1.0);
-    viewPosition = vec3(modelView * position);
-    facetU = vertex.w;
-    gl_Position = transform * position;
+    crystalPosition = position;
+    viewPosition = vec3(modelView * vec4(position, 1.0));
+    viewNormal = mat3(modelView) * normal;
+    gl_Position = transform * vec4(position, 1.0);
 }
