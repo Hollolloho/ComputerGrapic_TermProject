@@ -237,6 +237,7 @@ void CombatScene::Draw(int width, int height,
     }
     // 벽과 월드 물체의 깊이를 사용하고 1인칭 무기를 그리기 전에 조준선을 합성한다.
     DrawDroneAimLines(scene);
+    bulletView.DrawTrails(projection, view, PlayerEye(), *activeBattle);
     if (Inventory().Armed())
     {
         weapon.Draw(static_cast<float>(width) / height);

@@ -3,7 +3,10 @@
 in vec3 viewPosition;
 in vec3 viewNormal;
 in vec3 crystalPosition;
+in vec2 effectUv;
 uniform vec3 color;
+uniform int effect;
+uniform vec2 effectFade;
 out vec4 fragColor;
 
 float segmentDistance(vec2 p, vec2 start, vec2 end)
@@ -34,6 +37,21 @@ float crackLine(float distanceToCrack, float width, float pixel)
 
 void main()
 {
+    if (effect != 0)
+    {
+        vec2 point = effectUv * 2.0 - 1.0;
+        float edge = effect == 1 ? abs(point.x) : length(point);
+        float glow = 1.0 - smoothstep(0.04, 1.0, edge);
+        float core = 1.0 - smoothstep(0.10, 0.48, edge);
+        float fade = mix(effectFade.x, effectFade.y, effectUv.y);
+        if (effect == 1)
+            fade *= smoothstep(0.0, 0.28, effectUv.y);
+        float nearFade = smoothstep(0.20, 0.60, length(viewPosition));
+        vec3 light = mix(vec3(0.20, 0.68, 1.0), vec3(0.86, 0.98, 1.0), core);
+        fragColor = vec4(light, mix(0.38 * glow, 0.90, core) * fade * nearFade);
+        return;
+    }
+
     vec3 surface = normalize(viewNormal);
     vec3 facet = normalize(cross(dFdx(viewPosition), dFdy(viewPosition)));
     vec3 normal = normalize(mix(surface, facet, 0.34));
