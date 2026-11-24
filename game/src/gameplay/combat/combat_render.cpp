@@ -16,13 +16,18 @@ namespace aegis
 // 전투 화면과 분석 화면을 그린다. 피해 판정은 이 파일에서 변경하지 않는다.
 void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
 {
+    const auto drawDrone = [&](const combat::DroneBehavior& state)
+    {
+        const auto phase = state.Phase();
+        if (phase == combat::DronePhase::Destroyed)
+            return;
+        const bool acquired = phase == combat::DronePhase::Tracking || phase == combat::DronePhase::Warning;
+        drone.Draw(viewProjection, state.WorldTransform(), acquired, state.Armed());
+    };
     if (IsCoreMode())
     {
         for (const auto& state : core.Drones())
-        {
-            if (state.Phase() == combat::DronePhase::Destroyed) continue;
-            drone.Draw(viewProjection, state.WorldTransform(), state.Phase() == combat::DronePhase::Warning, state.Armed());
-        }
+            drawDrone(state);
         for (const auto& turret : core.Turrets())
             twinModel.Draw(viewProjection, PlayerEye(), turret);
         const int magneticStage = core.Phase() == combat::MagneticPhase::Warning ? 1
@@ -32,10 +37,7 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
         return;
     }
     if (IsDroneMode() && encounter.EnemyAlive())
-    {
-        const auto& state = encounter.DroneState();
-        drone.Draw(viewProjection, state.WorldTransform(), state.Phase() == combat::DronePhase::Warning, state.Armed());
-    }
+        drawDrone(encounter.DroneState());
     if (!IsBossMode())
     {
         for (const auto& turret : encounter.Turrets())
@@ -54,6 +56,24 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
         const auto& debris = destruction.Debris(static_cast<int>(i + 1));
         if (debris.active)
             turretView.DrawDebris(viewProjection, debris.world, debris.age);
+    }
+}
+
+void CombatScene::DrawDroneAimLines(const glm::mat4& viewProjection) const
+{
+    const auto drawAimLine = [&](const combat::DroneBehavior& state)
+    {
+        if (state.Phase() == combat::DronePhase::Warning)
+            drone.DrawAimLine(viewProjection, state.Muzzle(), state.AimPoint(), PlayerEye());
+    };
+    if (IsCoreMode())
+    {
+        for (const auto& state : core.Drones())
+            drawAimLine(state);
+    }
+    else if (IsDroneMode() && encounter.EnemyAlive())
+    {
+        drawAimLine(encounter.DroneState());
     }
 }
 
@@ -212,6 +232,8 @@ void CombatScene::Draw(int width, int height,
     {
         weapon.DrawWorld(projection, view, drop.position);
     }
+    // 벽과 월드 물체의 깊이를 사용하고 1인칭 무기를 그리기 전에 조준선을 합성한다.
+    DrawDroneAimLines(scene);
     if (Inventory().Armed())
     {
         weapon.Draw(static_cast<float>(width) / height);
