@@ -124,11 +124,11 @@ void CombatScene::DrawBullets(const glm::mat4& projection, const glm::mat4& view
     const glm::vec3 enemyColor(1.0f, 0.15f, 0.08f);
     for (const auto& flight : activeBattle->PlayerFlights())
     {
-        bulletView.Draw(projection, view, flight.bullet, playerColor, 0.055f);
+        bulletView.Draw(projection, view, flight.bullet, playerColor, 0.0275f);
     }
     for (const auto& flight : activeBattle->EnemyFlights())
     {
-        bulletView.Draw(projection, view, flight.bullet, enemyColor, 0.08f);
+        bulletView.Draw(projection, view, flight.bullet, enemyColor, 0.04f);
     }
     for (const auto& shard : activeBattle->ImpactShards())
     {
