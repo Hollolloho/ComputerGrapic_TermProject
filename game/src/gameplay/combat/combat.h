@@ -46,9 +46,29 @@ struct Bullet
     bool active{true};
 };
 
+const float BulletLifetime = 4.f;
+const float TrailMoteSpacing = 0.18f;
+const float TrailMoteLifetime = 0.30f;
+const float TrailLifetime = 0.16f;
+
 struct Flight
 {
     Bullet bullet;
+    float age{};
+    double distanceToMote{TrailMoteSpacing};
+    unsigned int moteIndex{};
+};
+
+struct CrystalTrail
+{
+    glm::vec3 end{}, velocity{};
+    float flightTime{};
+    float age{};
+};
+
+struct CrystalMote
+{
+    glm::vec3 position{};
     float age{};
 };
 

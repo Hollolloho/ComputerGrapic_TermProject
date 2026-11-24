@@ -36,10 +36,15 @@ public:
     const std::vector<Flight>& PlayerFlights() const { return playerFlights; }
     const std::vector<Flight>& EnemyFlights() const { return enemyFlights; }
     const std::vector<CrystalShard>& ImpactShards() const { return impactShards; }
+    const std::vector<CrystalTrail>& FadingTrails() const { return fadingTrails; }
+    const std::vector<CrystalMote>& TrailMotes() const { return trailMotes; }
 
 protected:
     void ResetCombat(const glm::vec3& supplyPosition);
     void UpdateShotCooldown(float realDeltaTime);
+    void UpdateBulletEffects(float gameDeltaTime);
+    bool AdvanceFlight(Flight& flight, float gameDeltaTime, const std::vector<Collider>& walls, Hit& hit);
+    void RecordFlightTravel(Flight& flight, const glm::vec3& start, float gameDeltaTime, float travelTime);
     void ShatterBullet(const Bullet& bullet, bool enemy);
 
     WeaponInventory inventory;
@@ -56,6 +61,8 @@ private:
 
     float playerCooldown{};
     int playerShots{};
+    std::vector<CrystalTrail> fadingTrails;
+    std::vector<CrystalMote> trailMotes;
 };
 
 } // namespace aegis::combat

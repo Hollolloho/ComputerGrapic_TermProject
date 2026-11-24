@@ -168,7 +168,7 @@ void TurretEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm
         return;
     }
 
-    UpdateShards(impactShards, gameDeltaTime);
+    UpdateBulletEffects(gameDeltaTime);
     if (result == EncounterResult::Failed) return;
     UpdateShotCooldown(realDeltaTime);
     damageFlash = std::max(0.0f, damageFlash - gameDeltaTime);
@@ -291,7 +291,7 @@ void TurretEncounter::UpdatePlayerBullets(float gameDeltaTime)
     for (auto& flight : playerFlights)
     {
         Hit hit;
-        if (AdvanceBullet(flight.bullet, gameDeltaTime, colliders, hit))
+        if (AdvanceFlight(flight, gameDeltaTime, colliders, hit))
         {
             ShatterBullet(flight.bullet, false);
             for (std::size_t i = 0; i < turrets.size(); ++i)
@@ -340,7 +340,6 @@ void TurretEncounter::UpdatePlayerBullets(float gameDeltaTime)
                 }
             }
         }
-        flight.age += gameDeltaTime;
     }
     RemoveExpiredFlights(playerFlights);
     if (RemainingEnemies() == 0)
@@ -377,7 +376,7 @@ void TurretEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& e
         }
         enemyColliders[heldWeaponIndex] = inventory.HeldCollider(eye, forward);
         Hit hit;
-        if (AdvanceBullet(flight.bullet, gameDeltaTime, enemyColliders, hit))
+        if (AdvanceFlight(flight, gameDeltaTime, enemyColliders, hit))
         {
             ShatterBullet(flight.bullet, true);
             if (hit.kind == HitKind::Body && hit.objectId == playerId)
@@ -396,7 +395,6 @@ void TurretEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& e
                 ++blockedEnemyShots;
             }
         }
-        flight.age += gameDeltaTime;
         if (health == 0)
         {
             break;

@@ -12,6 +12,8 @@ void CombatEncounter::ResetCombat(const glm::vec3& supplyPosition)
     playerFlights.clear();
     enemyFlights.clear();
     impactShards.clear();
+    fadingTrails.clear();
+    trailMotes.clear();
     result = EncounterResult::Running;
     health = 100;
     playerShots = enemyShots = 0;
@@ -21,6 +23,82 @@ void CombatEncounter::ResetCombat(const glm::vec3& supplyPosition)
 void CombatEncounter::UpdateShotCooldown(float realDeltaTime)
 {
     playerCooldown = std::max(0.0f, playerCooldown - realDeltaTime);
+}
+
+void CombatEncounter::UpdateBulletEffects(float gameDeltaTime)
+{
+    if (gameDeltaTime <= 0)
+        return;
+    UpdateShards(impactShards, gameDeltaTime);
+
+    std::size_t trailsKept = 0;
+    for (auto& trail : fadingTrails)
+    {
+        trail.age += gameDeltaTime;
+        if (trail.age < TrailLifetime)
+            fadingTrails[trailsKept++] = trail;
+    }
+    fadingTrails.resize(trailsKept);
+
+    std::size_t motesKept = 0;
+    for (auto& mote : trailMotes)
+    {
+        mote.age += gameDeltaTime;
+        if (mote.age < TrailMoteLifetime)
+            trailMotes[motesKept++] = mote;
+    }
+    trailMotes.resize(motesKept);
+}
+
+bool CombatEncounter::AdvanceFlight(Flight& flight, float gameDeltaTime,
+                                    const std::vector<Collider>& walls, Hit& hit)
+{
+    if (!flight.bullet.active)
+        return false;
+    const auto start = flight.bullet.position;
+    const bool collided = AdvanceBullet(flight.bullet, gameDeltaTime, walls, hit);
+    const float travelTime = collided ? gameDeltaTime * hit.fraction : gameDeltaTime;
+    RecordFlightTravel(flight, start, gameDeltaTime, travelTime);
+    return collided;
+}
+
+void CombatEncounter::RecordFlightTravel(Flight& flight, const glm::vec3& start,
+                                         float gameDeltaTime, float travelTime)
+{
+    const auto& bullet = flight.bullet;
+    const glm::vec3 delta = bullet.position - start;
+    const float distance = glm::length(delta);
+    if (std::isfinite(distance) && distance > 0 && travelTime > 0)
+    {
+        const glm::vec3 axis = delta / distance;
+        const glm::vec3 up = std::abs(axis.y) < 0.95f ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
+        const glm::vec3 right = glm::normalize(glm::cross(axis, up));
+        const glm::vec3 across = glm::cross(right, axis);
+        const glm::vec3 scatter[] = {right, -right, across, -across};
+
+        // 지난 프레임에서 남은 거리부터 이번 이동 구간의 입자 간격을 채운다.
+        double offset = flight.distanceToMote;
+        while (offset <= distance)
+        {
+            const float fraction = static_cast<float>(offset / distance);
+            const float age = gameDeltaTime - travelTime * fraction;
+            if (age < TrailMoteLifetime)
+            {
+                const auto step = scatter[flight.moteIndex % 4] * 0.036f;
+                trailMotes.push_back({PointOnSegment(start, bullet.position, fraction) + step, age});
+            }
+            ++flight.moteIndex;
+            offset += TrailMoteSpacing;
+        }
+        flight.distanceToMote = offset - distance;
+    }
+
+    const float duration = flight.age + travelTime;
+    const float endAge = gameDeltaTime - travelTime;
+    flight.age += gameDeltaTime;
+    // 충돌하거나 수명이 끝난 탄의 마지막 잔상도 이후 프레임에서 옅어진다.
+    if ((!bullet.active || flight.age >= BulletLifetime) && duration > 0 && endAge < TrailLifetime)
+        fadingTrails.push_back({bullet.position, bullet.velocity, duration, endAge});
 }
 
 void CombatEncounter::ShatterBullet(const Bullet& bullet, bool enemy)

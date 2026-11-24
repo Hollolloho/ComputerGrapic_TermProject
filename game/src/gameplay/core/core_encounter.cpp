@@ -148,7 +148,7 @@ void CoreEncounter::UpdatePlayerBullets(float dt)
     for (auto& flight : playerFlights)
     {
         Hit hit;
-        if (AdvanceBullet(flight.bullet, dt, Targets(), hit))
+        if (AdvanceFlight(flight, dt, Targets(), hit))
         {
             ShatterBullet(flight.bullet, false);
             if (hit.objectId == CoreId && CoreAlive())
@@ -179,7 +179,6 @@ void CoreEncounter::UpdatePlayerBullets(float dt)
                 }
             }
         }
-        flight.age += dt;
     }
     RemoveExpiredFlights(playerFlights);
 }
@@ -196,7 +195,7 @@ void CoreEncounter::UpdateEnemyBullets(float dt, const glm::vec3& eye, const glm
         targets.push_back(PlayerBodyCollider(PlayerId, eye));
         targets.push_back(inventory.HeldCollider(eye, forward));
         Hit hit;
-        if (AdvanceBullet(flight.bullet, dt, targets, hit))
+        if (AdvanceFlight(flight, dt, targets, hit))
         {
             ShatterBullet(flight.bullet, true);
             if (hit.objectId == PlayerId && hit.kind == HitKind::Body)
@@ -207,7 +206,6 @@ void CoreEncounter::UpdateEnemyBullets(float dt, const glm::vec3& eye, const glm
             else if (hit.kind == HitKind::Weapon)
                 inventory.Break(hit.objectId);
         }
-        flight.age += dt;
         if (health == 0) break;
     }
     RemoveExpiredFlights(enemyFlights);
@@ -296,7 +294,7 @@ void CoreEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm::
 {
     if (!std::isfinite(realDeltaTime) || !std::isfinite(gameDeltaTime) ||
         realDeltaTime < 0 || gameDeltaTime < 0 || !IsFinite(eye) || !IsFinite(forward)) return;
-    UpdateShards(impactShards, gameDeltaTime);
+    UpdateBulletEffects(gameDeltaTime);
     if (result == EncounterResult::Failed || result == EncounterResult::Cleared) return;
     UpdateShotCooldown(realDeltaTime);
     damageFlash = std::max(0.0f, damageFlash - gameDeltaTime);

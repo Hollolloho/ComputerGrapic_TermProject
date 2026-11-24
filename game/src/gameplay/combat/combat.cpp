@@ -24,7 +24,7 @@ void RemoveExpiredFlights(std::vector<Flight>& flights)
     std::size_t kept = 0;
     for (const Flight& flight : flights)
     {
-        if (!flight.bullet.active || flight.age >= 4.0f)
+        if (!flight.bullet.active || flight.age >= BulletLifetime)
             continue;
         flights[kept] = flight;
         ++kept;

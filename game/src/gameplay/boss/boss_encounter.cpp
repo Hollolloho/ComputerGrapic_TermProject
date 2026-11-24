@@ -115,7 +115,7 @@ void BossEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm::
     {
         return;
     }
-    UpdateShards(impactShards, gameDeltaTime);
+    UpdateBulletEffects(gameDeltaTime);
     if (result == EncounterResult::Failed) return;
     UpdateShotCooldown(realDeltaTime);
     damageFlash = std::max(0.0f, damageFlash - gameDeltaTime);
@@ -148,7 +148,10 @@ void BossEncounter::UpdatePlayerBullets(float gameDeltaTime)
     for (auto& flight : playerFlights)
     {
         auto& bullet = flight.bullet;
-        const auto end = bullet.position + bullet.velocity * gameDeltaTime;
+        if (!bullet.active)
+            continue;
+        const auto start = bullet.position;
+        const auto end = start + bullet.velocity * gameDeltaTime;
         Hit hit, bossHit;
         bool found = FindFirstHit(bullet.position, end, walls, hit);
         if (FindBossHit(bullet.position, end, pose, phase == BossPhase::Exposed, bossHit) &&
@@ -157,7 +160,7 @@ void BossEncounter::UpdatePlayerBullets(float gameDeltaTime)
             hit = bossHit;
             found = true;
         }
-        if (bullet.active && found)
+        if (found)
         {
             bullet.position = hit.position;
             bullet.active = false;
@@ -178,11 +181,11 @@ void BossEncounter::UpdatePlayerBullets(float gameDeltaTime)
                 ++blockedShots;
             }
         }
-        else if (bullet.active)
+        else
         {
             bullet.position = end;
         }
-        flight.age += gameDeltaTime;
+        RecordFlightTravel(flight, start, gameDeltaTime, found ? gameDeltaTime * hit.fraction : gameDeltaTime);
     }
     RemoveExpiredFlights(playerFlights);
 }
@@ -195,7 +198,7 @@ void BossEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& eye
         boxes.push_back(PlayerBodyCollider(24000, eye));
         boxes.push_back(inventory.HeldCollider(eye, forward));
         Hit hit;
-        if (AdvanceBullet(flight.bullet, gameDeltaTime, boxes, hit))
+        if (AdvanceFlight(flight, gameDeltaTime, boxes, hit))
         {
             ShatterBullet(flight.bullet, true);
             if (hit.kind == HitKind::Body && hit.objectId == 24000)
@@ -208,7 +211,6 @@ void BossEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& eye
                 inventory.Break(hit.objectId);
             }
         }
-        flight.age += gameDeltaTime;
     }
     RemoveExpiredFlights(enemyFlights);
 }
