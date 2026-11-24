@@ -65,6 +65,7 @@ public:
 private:
     Collider Bounds(ObjectId id, HitKind kind, const glm::vec3& low, const glm::vec3& high) const;
     bool Visible(const glm::vec3& eye, const std::vector<Collider>& walls) const;
+    bool TurnToward(const glm::vec3& eye, float gameDeltaTime);
     void MovingDrone(float gameDeltaTime, const std::vector<Collider>& walls);
 
     bool DetectPlayer(const glm::vec3& eye, const std::vector<Collider>& walls) const;
@@ -78,7 +79,7 @@ private:
     glm::vec3 aimPoint{0};
     DronePhase phase{DronePhase::Patrol};
     float rotY{};
-    float timer{1.5f};
+    double timer{1.5};
     bool movingToEnd{true};
     bool isTurning{};
     float turnDegrees{};
