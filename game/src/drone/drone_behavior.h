@@ -47,6 +47,8 @@ public:
         return aimPoint;
     }
 
+    float WarningElapsed() const;
+
     float RotationYRadians() const
     {
         return rotY;

@@ -35,6 +35,7 @@ private:
 	GLint opacityLocation = -1;
 	GLint beamLocation = -1;
 	GLint eyeLocation = -1;
+	GLint beamEyeLocation = -1;
 	GLint beamFadeLocation = -1;
 
 	std::vector<RotorSide> rotors{};
@@ -47,7 +48,7 @@ public:
 	void Draw(const glm::mat4& scene, const glm::mat4& model, bool targetAcquired = false,
 		bool armed = true, bool staticPose = false, float debrisAge = -1.f) const;
 	void DrawAimLine(const glm::mat4& scene, const glm::vec3& origin, const glm::vec3& target,
-		const glm::vec3& viewer) const;
+		const glm::vec3& viewer, float reach) const;
 	void UpdateRotor(double gameDeltaTime);
 	void Reset();
 	void Clear();

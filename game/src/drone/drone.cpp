@@ -27,7 +27,7 @@ namespace
 
 	bool InitAimBeam(MeshBuffer& beam)
 	{
-		// 정면에서도 보이는 단면을 가진 가는 직육면체다. +Z로 길이를 늘려 사용한다.
+		// 셰이더가 이 부피 안에서 원형 단면의 레이저를 그린다.
 		aegis::ModelMesh mesh;
 		mesh.vertices = {
 			{{-1, -1, 0}}, {{1, -1, 0}}, {{1, 1, 0}}, {{-1, 1, 0}},
@@ -71,9 +71,10 @@ bool Drone::Init(const std::filesystem::path& runtimeRoot)
 	opacityLocation = glGetUniformLocation(shaderProgram, "opacity");
 	beamLocation = glGetUniformLocation(shaderProgram, "drawBeam");
 	eyeLocation = glGetUniformLocation(shaderProgram, "eyePosition");
+	beamEyeLocation = glGetUniformLocation(shaderProgram, "beamEye");
 	beamFadeLocation = glGetUniformLocation(shaderProgram, "beamFadeDistance");
 	if (transformLocation < 0 || modelLocation < 0 || colorLocation < 0 || emissionLocation < 0 ||
-		opacityLocation < 0 || beamLocation < 0 || eyeLocation < 0 || beamFadeLocation < 0)
+		opacityLocation < 0 || beamLocation < 0 || eyeLocation < 0 || beamEyeLocation < 0 || beamFadeLocation < 0)
 	{
 		Clear();
 		return false;
@@ -165,12 +166,12 @@ void Drone::Draw(const glm::mat4& scene, const glm::mat4& model, bool targetAcqu
 		const glm::mat4 transform = scene * model;
 		glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(transform));
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
-		glUniform1f(opacityLocation, 0.30f);
+		glUniform1f(opacityLocation, 0.40f);
 		for (const auto i : eyeMeshes)
 		{
 			const auto& mesh = meshes[i];
 			glUniform3fv(colorLocation, 1, glm::value_ptr(mesh.color));
-			glUniform3fv(emissionLocation, 1, glm::value_ptr(mesh.emission + glm::vec3(0.30f, 0.025f, 0.016f)));
+			glUniform3fv(emissionLocation, 1, glm::value_ptr(mesh.emission + glm::vec3(0.34f, 0.052f, 0.04f)));
 			mesh.Draw();
 		}
 		glDepthFunc(GL_LESS);
@@ -181,31 +182,35 @@ void Drone::Draw(const glm::mat4& scene, const glm::mat4& model, bool targetAcqu
 }
 
 void Drone::DrawAimLine(const glm::mat4& scene, const glm::vec3& origin, const glm::vec3& target,
-	const glm::vec3& viewer) const
+	const glm::vec3& viewer, float reach) const
 {
 	const glm::vec3 offset = target - origin;
 	float length = glm::length(offset);
 	if (length <= 0.001f)
 		return;
 	const glm::vec3 axis = offset / length;
-	const glm::vec3 up = std::abs(axis.y) < 0.99f ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
-	const glm::vec3 right = glm::normalize(glm::cross(up, axis));
+	const glm::vec3 basis = std::abs(axis.y) < 0.99f ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
+	const glm::vec3 right = glm::normalize(glm::cross(basis, axis));
+	const glm::vec3 up = glm::cross(axis, right);
 
 	// 가까운 드론도 선이 남도록 눈앞 거리와 선 굵기를 총구까지의 거리에 비례해 줄인다.
 	const glm::vec3 eyeOffset = viewer - origin;
 	const float nearEye = glm::clamp(glm::length(eyeOffset) * 0.6f, 0.06f, 1.2f);
+	const float eyeAlong = glm::dot(eyeOffset, axis);
 	const glm::vec3 targetOffset = viewer - target;
 	if (glm::dot(targetOffset, targetOffset) < nearEye * nearEye)
 	{
-		const float along = glm::dot(eyeOffset, axis);
-		const glm::vec3 lateral = eyeOffset - along * axis;
-		length = along - std::sqrt(glm::max(0.f, nearEye * nearEye - glm::dot(lateral, lateral)));
-		if (length <= 0.001f)
-			return;
+		const glm::vec3 lateral = eyeOffset - eyeAlong * axis;
+		length = eyeAlong - std::sqrt(glm::max(0.f, nearEye * nearEye - glm::dot(lateral, lateral)));
 	}
 
-	const float radius = 0.0075f * (nearEye / 1.2f);
-	const glm::mat4 model(glm::vec4(right * radius, 0), glm::vec4(glm::cross(axis, right) * radius, 0),
+	length *= glm::clamp(reach, 0.f, 1.f);
+	if (length <= 0.001f)
+		return;
+	const float radius = 0.018f * (nearEye / 1.2f);
+	const glm::vec3 beamEye(glm::dot(eyeOffset, right) / radius, glm::dot(eyeOffset, up) / radius,
+		eyeAlong / length);
+	const glm::mat4 model(glm::vec4(right * radius, 0), glm::vec4(up * radius, 0),
 		glm::vec4(axis * length, 0), glm::vec4(origin, 1));
 	const glm::mat4 transform = scene * model;
 	const AimBlend blend;
@@ -213,9 +218,8 @@ void Drone::DrawAimLine(const glm::mat4& scene, const glm::vec3& origin, const g
 	glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(transform));
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
 	glUniform3fv(eyeLocation, 1, glm::value_ptr(viewer));
+	glUniform3fv(beamEyeLocation, 1, glm::value_ptr(beamEye));
 	glUniform1f(beamFadeLocation, nearEye);
-	glUniform3f(colorLocation, 1.f, 0.22f, 0.14f);
-	glUniform1f(opacityLocation, 0.55f);
 	glUniform1i(beamLocation, GL_TRUE);
 	aimBeam.Draw();
 	glBindVertexArray(0);
@@ -256,5 +260,6 @@ void Drone::Clear()
 	opacityLocation = -1;
 	beamLocation = -1;
 	eyeLocation = -1;
+	beamEyeLocation = -1;
 	beamFadeLocation = -1;
 }

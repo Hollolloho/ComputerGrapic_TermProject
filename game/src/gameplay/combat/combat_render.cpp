@@ -64,7 +64,10 @@ void CombatScene::DrawDroneAimLines(const glm::mat4& viewProjection) const
     const auto drawAimLine = [&](const combat::DroneBehavior& state)
     {
         if (state.Phase() == combat::DronePhase::Warning)
-            drone.DrawAimLine(viewProjection, state.Muzzle(), state.AimPoint(), PlayerEye());
+        {
+            const float reach = glm::mix(0.12f, 1.f, glm::smoothstep(0.f, 0.1f, state.WarningElapsed()));
+            drone.DrawAimLine(viewProjection, state.Muzzle(), state.AimPoint(), PlayerEye(), reach);
+        }
     };
     if (IsCoreMode())
     {

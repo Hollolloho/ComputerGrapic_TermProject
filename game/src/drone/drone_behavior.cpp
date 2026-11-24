@@ -10,6 +10,16 @@
 
 namespace aegis::combat
 {
+namespace
+{
+const double WarningDuration = 1.0;
+}
+
+float DroneBehavior::WarningElapsed() const
+{
+    return phase == DronePhase::Warning ? static_cast<float>(WarningDuration - timer) : 0.f;
+}
+
 bool DroneBehavior::SetSpawn(const glm::vec3& point, float rotYRadians, float endZ)
 {
     if (!IsFinite(point) || !std::isfinite(rotYRadians) || !std::isfinite(endZ))
@@ -222,7 +232,7 @@ bool DroneBehavior::Update(float gameDeltaTime, const glm::vec3& eye, const std:
         if (aligned && Visible(eye, walls))
         {
             phase = DronePhase::Warning;
-            timer = 1.0;
+            timer = WarningDuration;
             aimPoint = eye;
         }
         break;
