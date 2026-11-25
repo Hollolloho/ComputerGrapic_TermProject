@@ -16,12 +16,27 @@ namespace
 {
 const float TimeBarX = 340, TimeBarY = 704, TimeBarWidth = 344, TimeBarHeight = 36;
 const std::uint32_t MenuShade = 0x58000000u;
-const COLORREF MainText = RGB(241, 242, 243);
-const COLORREF SoftText = RGB(207, 210, 214);
-const COLORREF DimText = RGB(170, 174, 180);
+const COLORREF MainText = RGB(205, 201, 188);
+const COLORREF SoftText = RGB(174, 181, 179);
+const COLORREF DimText = RGB(143, 151, 150);
+const COLORREF KeyText = RGB(190, 181, 163);
+const COLORREF HealthFill = RGB(166, 164, 150);
 const COLORREF Rule = RGB(108, 112, 118);
-const COLORREF Alert = RGB(255, 132, 120);
+const COLORREF Alert = RGB(219, 112, 101);
 const UINT SingleLine = DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS;
+const UINT BaselineLine = DT_SINGLELINE | DT_END_ELLIPSIS;
+const wchar_t* const KoreanFace = L"Malgun Gothic";
+const wchar_t* const InstrumentFace = L"Bahnschrift";
+
+const wchar_t* DeviceLabelFace(const std::wstring& text)
+{
+    for (wchar_t ch : text)
+    {
+        if (ch < L' ' || ch > L'~')
+            return KoreanFace;
+    }
+    return InstrumentFace;
+}
 
 // 메뉴와 안내판의 1024 × 768 좌표를 Windows 비트맵에 그린다.
 struct MenuCanvas
@@ -50,17 +65,17 @@ struct MenuCanvas
         FrameRect(dc, &r, brush);
         DeleteObject(brush);
     }
-    HFONT Font(int size, bool bold) const
+    HFONT Font(int size, bool bold, const wchar_t* face) const
     {
         return CreateFontW(-std::max(1, static_cast<int>(std::round(size * std::min(sx, sy)))), 0, 0, 0,
                            bold ? FW_BOLD : FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
-                           CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH, L"Malgun Gothic");
+                           CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH, face);
     }
-    float TextWidth(const std::wstring& value, int size, bool bold) const
+    float TextWidth(const std::wstring& value, int size, bool bold, const wchar_t* face = KoreanFace) const
     {
         if (value.empty())
             return 0;
-        const auto font = Font(size, bold);
+        const auto font = Font(size, bold, face);
         const auto oldFont = SelectObject(dc, font);
         LONG width = 0;
         for (std::size_t start = 0; start < value.size();)
@@ -77,20 +92,26 @@ struct MenuCanvas
         return width / sx;
     }
     void Text(const std::wstring& value, float x, float y, float w, float h, int size, bool bold,
-              COLORREF color, UINT format = DT_LEFT | DT_WORDBREAK) const
+              COLORREF color, UINT format = DT_LEFT | DT_WORDBREAK, const wchar_t* face = KoreanFace) const
     {
         if (value.empty() || w <= 0 || h <= 0)
             return;
-        const auto font = Font(size, bold);
+        const auto font = Font(size, bold, face);
         const auto oldFont = SelectObject(dc, font);
         SetBkMode(dc, TRANSPARENT);
         RECT r = Rectangle(x, y, w, h);
+        if (format == BaselineLine)
+        {
+            TEXTMETRICW metrics{};
+            GetTextMetricsW(dc, &metrics);
+            r.top -= metrics.tmAscent;
+            r.bottom = r.top + metrics.tmHeight;
+        }
         if (shadowText)
         {
             RECT shadow = r;
-            const int offset = std::max(1, static_cast<int>(std::round(std::min(sx, sy))));
-            OffsetRect(&shadow, offset, offset);
-            SetTextColor(dc, RGB(9, 10, 12));
+            OffsetRect(&shadow, 1, 1);
+            SetTextColor(dc, RGB(24, 26, 25));
             DrawTextW(dc, value.c_str(), static_cast<int>(value.size()), &shadow, format | DT_NOPREFIX);
         }
         SetTextColor(dc, color);
@@ -99,6 +120,11 @@ struct MenuCanvas
         SelectObject(dc, oldFont);
         DeleteObject(font);
     }
+    void TextAtBaseline(const std::wstring& value, float x, float y, float w, int size, bool bold,
+                        COLORREF color, const wchar_t* face = KoreanFace) const
+    {
+        Text(value, x, y, w, 1, size, bold, color, BaselineLine, face);
+    }
 };
 
 void DrawNotice(const MenuCanvas& canvas, const std::wstring& text, float y, float height,
@@ -106,16 +132,55 @@ void DrawNotice(const MenuCanvas& canvas, const std::wstring& text, float y, flo
 {
     if (text.empty())
         return;
-    const float width = std::min(maxWidth, canvas.TextWidth(text, size, true) + 30.f);
+    const float width = std::min(maxWidth, canvas.TextWidth(text, size, false) + 30.f);
     const float x = (1024.f - width) * .5f;
     if (danger)
         canvas.Fill(x + 3, y + 8, 3, height - 16, Alert);
-    canvas.Text(text, x + 12, y, width - 24, height, size, true, color, SingleLine | DT_CENTER);
+    canvas.Text(text, x + 12, y, width - 24, height, size, false, color, SingleLine | DT_CENTER);
 }
 
 void DrawTimeStatus(const MenuCanvas& canvas, const std::wstring& timeStatus)
 {
     DrawNotice(canvas, timeStatus, TimeBarY, TimeBarHeight, TimeBarWidth, 18, SoftText);
+}
+
+void DrawPrompt(const MenuCanvas& canvas, const std::wstring& prompt)
+{
+    if (prompt.find(L"E · ") != 0)
+    {
+        DrawNotice(canvas, prompt, 426, 38, 684, 19, MainText);
+        return;
+    }
+    const auto action = prompt.substr(4);
+    const float keyWidth = canvas.TextWidth(L"E", 23, false, InstrumentFace) + 14;
+    const float actionWidth = std::min(684.f - keyWidth, canvas.TextWidth(action, 19, false) + 4.f);
+    const float x = (1024.f - keyWidth - actionWidth) * .5f;
+    canvas.TextAtBaseline(L"E", x, 451, keyWidth, 23, false, KeyText, InstrumentFace);
+    canvas.TextAtBaseline(action, x + keyWidth, 451, actionWidth, 19, false, MainText);
+}
+
+void DrawEquipment(const MenuCanvas& canvas, const UiPage& page)
+{
+    const int health = std::clamp(page.health, 0, 100);
+    const COLORREF healthColor = health <= 25 ? Alert : MainText;
+    const auto count = std::to_wstring(health);
+    const float countWidth = canvas.TextWidth(count, 40, false, InstrumentFace);
+    canvas.TextAtBaseline(L"+", 40, 700, 17, 17, false, health <= 25 ? Alert : SoftText, InstrumentFace);
+    canvas.TextAtBaseline(count, 62, 707, countWidth + 4, 40, false, healthColor, InstrumentFace);
+    canvas.TextAtBaseline(L"/ 100", 71 + countWidth, 707, 60, 16, false, SoftText, InstrumentFace);
+    canvas.Fill(40, 728, 160, 3, RGB(74, 74, 71));
+    canvas.Fill(40, 728, 160.f * health / 100, 3, health <= 25 ? Alert : HealthFill);
+
+    const auto split = page.status.find(L'\n');
+    const auto label = page.status.substr(0, split);
+    const bool hasState = split != std::wstring::npos && split + 1 < page.status.size();
+    canvas.Text(label, 704, hasState ? 672.f : 699.f, 280, 32, 24, false, MainText,
+                SingleLine | DT_RIGHT, DeviceLabelFace(label));
+    if (hasState)
+    {
+        canvas.Text(page.status.substr(split + 1), 704, 706, 280, 27, 19, false,
+                    SoftText, SingleLine | DT_RIGHT);
+    }
 }
 
 bool ButtonOverTimeBar(const UiPage& page)
@@ -137,8 +202,8 @@ void DrawHud(const MenuCanvas& canvas, const UiPage& page)
         const float goalHeight = page.body.empty() ? 0.f : twoLines ? 53.f : 29.f;
         const float titleHeight = page.title.empty() ? 0.f : 36.f;
         const float goalWidth = canvas.TextWidth(page.body, 18, false);
-        const float width = std::min(590.f, std::max(canvas.TextWidth(page.title, 28, true), goalWidth) + 32.f);
-        canvas.Text(page.title, 38, 26, width - 28, titleHeight, 28, true, MainText, SingleLine);
+        const float width = std::min(590.f, std::max(canvas.TextWidth(page.title, 28, false), goalWidth) + 32.f);
+        canvas.Text(page.title, 38, 26, width - 28, titleHeight, 28, false, MainText, SingleLine);
         canvas.Text(page.body, 38, 26 + titleHeight, width - 28, goalHeight, 18, false, SoftText,
                     twoLines ? DT_WORDBREAK : SingleLine);
     }
@@ -146,30 +211,16 @@ void DrawHud(const MenuCanvas& canvas, const UiPage& page)
     {
         const bool twoLines = page.counters.find(L'\n') != std::wstring::npos;
         const float height = twoLines ? 60.f : 36.f;
-        const float width = std::min(284.f, canvas.TextWidth(page.counters, 20, true) + 28.f);
+        const float width = std::min(284.f, canvas.TextWidth(page.counters, 20, false) + 28.f);
         const float x = 1000.f - width;
         canvas.Text(page.counters, x + 12, twoLines ? 28.f : 22.f, width - 24, height - (twoLines ? 10.f : 0.f),
-                    20, true, MainText, DT_RIGHT | (twoLines ? DT_WORDBREAK : SingleLine));
+                    20, false, MainText, DT_RIGHT | (twoLines ? DT_WORDBREAK : SingleLine));
     }
-    DrawNotice(canvas, page.warning, 122, 34, 700, 20, page.danger ? Alert : SoftText, page.danger);
-    DrawNotice(canvas, page.prompt, 426, 38, 684, 19, MainText);
+    DrawNotice(canvas, page.warning, 122, 38, 700, page.danger ? 22 : 19,
+               page.danger ? MainText : SoftText, page.danger);
+    DrawPrompt(canvas, page.prompt);
     if (!page.status.empty())
-    {
-        const int health = std::clamp(page.health, 0, 100);
-        const COLORREF healthColor = health <= 25 ? Alert : MainText;
-        const auto count = std::to_wstring(health);
-        const float countWidth = canvas.TextWidth(count, 46, true);
-        canvas.Text(count, 38, 657, countWidth + 4, 62, 46, true, healthColor, SingleLine);
-        canvas.Text(L"/ 100", 48 + countWidth, 676, 74, 37, 20, false, SoftText, SingleLine);
-        canvas.Fill(38, 723, 170, 4, RGB(75, 79, 83));
-        canvas.Fill(38, 723, 170.f * health / 100, 4, healthColor);
-
-        const bool twoLines = page.status.find(L'\n') != std::wstring::npos;
-        const float width = std::min(276.f, canvas.TextWidth(page.status, 17, true) + 28.f);
-        const float x = 1000.f - width;
-        canvas.Text(page.status, x + 12, twoLines ? 697.f : 704.f, width - 24, twoLines ? 43.f : 36.f,
-                    17, true, MainText, DT_RIGHT | (twoLines ? DT_WORDBREAK : SingleLine));
-    }
+        DrawEquipment(canvas, page);
     DrawTimeStatus(canvas, page.timeStatus);
     DrawNotice(canvas, page.footer, 744, 22, 790, 15, SoftText);
 }
@@ -181,16 +232,16 @@ void DrawButtons(const MenuCanvas& canvas, const UiPage& page, int hover)
         const auto& b = page.buttons[i];
         const bool hovered = b.enabled && hover == i;
         const bool focused = b.enabled && page.focus == i;
-        const int textSize = page.panel ? 21 : 20;
+        const int textSize = page.panel ? 22 : 20;
+        const COLORREF color = !b.enabled ? DimText : hovered || focused ? MainText : SoftText;
         const float textX = b.x + 19, maxWidth = b.width - 33;
         if (focused)
             canvas.Fill(b.x + 6, b.y + 8, 3, b.height - 16, Alert);
-        canvas.Text(b.label, textX, b.y, maxWidth, b.height, textSize, true,
-                    b.enabled ? MainText : DimText, SingleLine);
+        canvas.Text(b.label, textX, b.y, maxWidth, b.height, textSize, false, color, SingleLine);
         if (hovered && maxWidth > 0)
         {
             const float underlineY = b.y + std::min(b.height - 3.f, b.height * .5f + textSize * .62f);
-            const float width = std::min(maxWidth, canvas.TextWidth(b.label, textSize, true));
+            const float width = std::min(maxWidth, canvas.TextWidth(b.label, textSize, false));
             canvas.Fill(textX, underlineY, width, 2, MainText);
         }
     }
@@ -287,12 +338,13 @@ bool KoreanUi::Rasterize(const UiPage& page, int width, int height, int hover, b
         canvas.Fill(0, 0, 1024, 768, RGB(25, 27, 30));
         canvas.Frame(2, 3, 1020, 762, Rule);
         canvas.Fill(6, 12, 12, 744, RGB(153, 65, 60));
-        canvas.Text(page.title, 58, 107, 914, 215, 127, true, MainText);
-        canvas.Text(page.body, 58, 376, 914, 308, 72, true, SoftText);
+        canvas.Text(page.title, 58, 107, 914, 215, 127, true, RGB(241, 242, 243));
+        canvas.Text(page.body, 58, 376, 914, 308, 72, true, RGB(207, 210, 214));
     }
     else if (page.panel)
     {
-        canvas.Text(page.title, 218, 145, 590, 62, 38, true, MainText);
+        canvas.Text(page.title, 218, 136, 590, 85, 50, false, MainText,
+                    SingleLine, DeviceLabelFace(page.title));
         canvas.Text(page.body, 218, 235, 590, 225, 23, false, SoftText);
         canvas.Text(page.footer, 218, 624, 590, 36, 16, false, DimText, SingleLine);
     }
