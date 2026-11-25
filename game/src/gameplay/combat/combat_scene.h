@@ -7,7 +7,6 @@
 #include "gameplay/weapons/weapon_view.h"
 #include "gameplay/weapons/bullet.h"
 #include "drone/drone.h"
-#include "gameplay/turret/turret_view.h"
 #include "gameplay/ui/analysis_session.h"
 #include "gameplay/boss/boss_view.h"
 #include "gameplay/core/core_encounter.h"
@@ -253,7 +252,6 @@ private:
     WeaponView weapon;
     BulletView bulletView;
     Drone drone;
-    TurretView turretView;
     MeshRenderer terminalRenderer;
     GLuint program{};
     GLuint vao{};

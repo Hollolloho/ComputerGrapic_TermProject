@@ -26,6 +26,8 @@ struct Collider
     glm::vec3 minimum{0.0f};
     glm::vec3 maximum{0.0f};
     bool enabled{true};
+    // 회전하는 상자는 월드 AABB 검사 뒤에 실제 상자를 한 번 더 검사한다.
+    glm::vec3 localHalfSize{}, right{}, up{};
 };
 
 Collider PlayerBodyCollider(ObjectId id, const glm::vec3& eye);

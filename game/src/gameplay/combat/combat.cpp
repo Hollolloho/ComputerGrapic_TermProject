@@ -44,18 +44,14 @@ glm::vec3 PointOnSegment(const glm::vec3& start, const glm::vec3& end, float fra
 }
 
 // 선분에서 0은 출발점, 1은 도착점이다. 세 축에서 상자 안에 있는 구간을 겹쳐 본다.
-bool SegmentHitsBox(const glm::vec3& start, const glm::vec3& end, const Collider& box, float& hitFraction)
+static bool SegmentHitsBounds(const glm::vec3& start, const glm::vec3& end,
+                              const glm::vec3& minimum, const glm::vec3& maximum, float& hitFraction)
 {
-    if (!box.enabled || !IsFinite(start) || !IsFinite(end) || !IsFinite(box.minimum) ||
-        !IsFinite(box.maximum))
-    {
-        return false;
-    }
     double enter = 0.0;
     double leave = 1.0;
     for (int axis = 0; axis < 3; ++axis)
     {
-        if (box.minimum[axis] > box.maximum[axis])
+        if (minimum[axis] > maximum[axis])
         {
             return false;
         }
@@ -63,14 +59,14 @@ bool SegmentHitsBox(const glm::vec3& start, const glm::vec3& end, const Collider
         if (movement == 0)
         {
             // 이 축으로 이동하지 않는데 이미 상자 밖이라면 충돌할 수 없다.
-            if (start[axis] < box.minimum[axis] || start[axis] > box.maximum[axis])
+            if (start[axis] < minimum[axis] || start[axis] > maximum[axis])
             {
                 return false;
             }
             continue;
         }
-        double nearTime = (static_cast<double>(box.minimum[axis]) - start[axis]) / movement;
-        double farTime = (static_cast<double>(box.maximum[axis]) - start[axis]) / movement;
+        double nearTime = (static_cast<double>(minimum[axis]) - start[axis]) / movement;
+        double farTime = (static_cast<double>(maximum[axis]) - start[axis]) / movement;
         if (nearTime > farTime)
         {
             std::swap(nearTime, farTime);
@@ -84,6 +80,24 @@ bool SegmentHitsBox(const glm::vec3& start, const glm::vec3& end, const Collider
     }
     hitFraction = static_cast<float>(enter);
     return true;
+}
+
+bool SegmentHitsBox(const glm::vec3& start, const glm::vec3& end, const Collider& box, float& hitFraction)
+{
+    if (!box.enabled || !IsFinite(start) || !IsFinite(end) || !IsFinite(box.minimum) ||
+        !IsFinite(box.maximum) || !SegmentHitsBounds(start, end, box.minimum, box.maximum, hitFraction))
+    {
+        return false;
+    }
+    if (box.localHalfSize.x == 0)
+        return true;
+
+    const auto center = (box.minimum + box.maximum) * .5f;
+    const auto forward = glm::cross(box.right, box.up);
+    const auto a = start - center, b = end - center;
+    const glm::vec3 localStart(glm::dot(a, box.right), glm::dot(a, box.up), glm::dot(a, forward));
+    const glm::vec3 localEnd(glm::dot(b, box.right), glm::dot(b, box.up), glm::dot(b, forward));
+    return SegmentHitsBounds(localStart, localEnd, -box.localHalfSize, box.localHalfSize, hitFraction);
 }
 
 bool MakeBullet(const glm::vec3& origin, const glm::vec3& direction, float speed,

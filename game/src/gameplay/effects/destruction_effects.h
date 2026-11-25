@@ -28,7 +28,7 @@ class DestructionEffects
 {
 public:
     static constexpr float DebrisLifetime = 1.4f, DeathDuration = .8f;
-    static constexpr int DronePieceCount = 4, TurretPieceCount = 3;
+    static constexpr int DronePieceCount = 4;
     void Reset(std::size_t enemyCount = 3);
     void ObserveEnemy(std::size_t slot, bool alive, const glm::mat4& world);
     void UpdateWorld(float gameDeltaTime);

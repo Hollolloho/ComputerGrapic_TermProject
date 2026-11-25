@@ -37,7 +37,7 @@ bool CombatScene::Init(const std::filesystem::path& projectDirectory)
     glEnableVertexAttribArray(0);
     glBindVertexArray(0);
     Reset();
-    if (!signs.Init(shaderDirectory) || !deathView.Init(projectDirectory) || !turretView.Init(projectDirectory) ||
+    if (!signs.Init(shaderDirectory) || !deathView.Init(projectDirectory) ||
         !weapon.Init(projectDirectory) || !bulletView.Init(projectDirectory) || !terminalRenderer.Init(shaderDirectory) ||
         !drone.Init(projectDirectory) || !InitTerminal(projectDirectory) || !bossView.Init(projectDirectory) ||
         !coreView.Init(projectDirectory) || !singleModel.Init(projectDirectory, combat::TurretType::SingleC) ||
@@ -76,7 +76,8 @@ void CombatScene::Reset()
     analysis.Reset();
     ClearPlayerView();
     feedback.Reset();
-    destruction.Reset(1 + encounter.ExtraDrones().size() + encounter.Turrets().size());
+    destruction.Reset(IsCoreMode() ? core.Turrets().size()
+                                  : 1 + encounter.ExtraDrones().size() + encounter.Turrets().size());
     time.Reset();
     forceNormal = false;
     movementTimeAvailable = false;
@@ -155,7 +156,13 @@ void CombatScene::UpdateVisualEffects(double realDeltaTime, double gameDeltaTime
 
 void CombatScene::ObserveDestruction()
 {
-    if (IsCoreMode()) return;
+    if (IsCoreMode())
+    {
+        std::size_t slot = 0;
+        for (const auto& turret : core.Turrets())
+            destruction.ObserveEnemy(slot++, turret.Alive(), turret.BarrelTransform());
+        return;
+    }
     const auto& state = encounter.DroneState();
     destruction.ObserveEnemy(0, IsDroneMode() && encounter.EnemyAlive(), state.WorldTransform());
     if (IsBossMode()) return;
@@ -168,7 +175,7 @@ void CombatScene::ObserveDestruction()
     }
     for (const auto& turret : encounter.Turrets())
     {
-        destruction.ObserveEnemy(slot++, turret.Alive(), glm::translate(glm::mat4(1), turret.Position()));
+        destruction.ObserveEnemy(slot++, turret.Alive(), turret.BarrelTransform());
     }
 }
 
@@ -184,7 +191,6 @@ void CombatScene::Clear()
     ClearDrawMeshes(terminalMeshes);
     signs.Clear();
     deathView.Clear();
-    turretView.Clear();
     drone.Clear();
     terminalRenderer.Clear();
     weapon.Clear();

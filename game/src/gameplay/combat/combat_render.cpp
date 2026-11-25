@@ -29,8 +29,11 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
     {
         for (const auto& state : core.Drones())
             drawDrone(state);
-        for (const auto& turret : core.Turrets())
-            twinModel.Draw(viewProjection, PlayerEye(), turret);
+        for (std::size_t i = 0; i < core.Turrets().size(); ++i)
+        {
+            const auto& debris = destruction.Debris(i);
+            twinModel.Draw(viewProjection, PlayerEye(), core.Turrets()[i], debris.active ? debris.age : -1.f);
+        }
         const int magneticStage = core.Phase() == combat::MagneticPhase::Warning ? 1
                                   : core.Phase() == combat::MagneticPhase::Pulse ? 2 : 0;
         coreView.Draw(viewProjection, PlayerEye(), core.CoreAlive(), magneticStage,
@@ -39,16 +42,9 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
     }
     if (IsDroneMode() && encounter.EnemyAlive())
         drawDrone(encounter.DroneState());
-    if (!IsBossMode())
-    {
-        for (const auto& state : encounter.ExtraDrones())
-            drawDrone(state);
-        for (const auto& turret : encounter.Turrets())
-        {
-            const auto& model = turret.Type() == combat::TurretType::Twin ? twinModel : singleModel;
-            model.Draw(viewProjection, PlayerEye(), turret);
-        }
-    }
+    if (IsBossMode()) return;
+    for (const auto& state : encounter.ExtraDrones())
+        drawDrone(state);
     const std::size_t firstTurretSlot = 1 + encounter.ExtraDrones().size();
     for (std::size_t slot = 0; slot < firstTurretSlot; ++slot)
     {
@@ -58,9 +54,10 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
     }
     for (std::size_t i = 0; i < encounter.Turrets().size(); ++i)
     {
+        const auto& turret = encounter.Turrets()[i];
+        const auto& model = turret.Type() == combat::TurretType::Twin ? twinModel : singleModel;
         const auto& debris = destruction.Debris(firstTurretSlot + i);
-        if (debris.active)
-            turretView.DrawDebris(viewProjection, debris.world, debris.age);
+        model.Draw(viewProjection, PlayerEye(), turret, debris.active ? debris.age : -1.f);
     }
 }
 

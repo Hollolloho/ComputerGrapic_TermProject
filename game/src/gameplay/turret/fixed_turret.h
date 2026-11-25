@@ -1,5 +1,6 @@
 #pragma once
 #include "gameplay/combat/combat.h"
+#include <array>
 #include <glm/mat4x4.hpp>
 
 namespace aegis::combat
@@ -19,6 +20,7 @@ class FixedTurret
 {
 public:
     static constexpr ObjectId BodyId = 502, WeaponId = 503, ShotId = 901;
+    static const int TargetCount = 5;
     bool SetPosition(const glm::vec3& point);
     void Configure(TurretType model, const glm::vec3& point, ObjectId index = 0, float rotYDegrees = 0);
     TurretType Type() const { return type; }
@@ -56,12 +58,15 @@ public:
     }
 
     glm::vec3 Muzzle() const;
+    glm::mat4 HeadTransform() const;
     glm::mat4 BarrelTransform() const;
+    float BarrelOffset(int barrel) const;
+    bool HasBarrels() const { return Alive() ? Armed() : destroyedArmed; }
     Collider Body() const;
     Collider Weapon(int barrel = 0) const;
+    std::array<Collider, TargetCount> Targets() const;
 
 private:
-    float BarrelOffset(int barrel) const;
     glm::vec3 position{-1.55f, 0, -15.9f}, aimPoint{0}, direction{0, 0, 1};
     TurretPhase phase{TurretPhase::Idle};
     float timer{};
@@ -69,5 +74,6 @@ private:
     ObjectId number{};
     float spawnRotY{};
     int firingBarrel{};
+    bool destroyedArmed{};
 };
 } // namespace aegis::combat

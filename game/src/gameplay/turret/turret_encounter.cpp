@@ -25,7 +25,7 @@ TurretEncounter::TurretEncounter()
 
 void TurretEncounter::Reset()
 {
-    // 각 포탑은 본체, 첫 포신, 둘째 포신 순서로 충돌 상자를 둔다. Single_C는 둘째 포신이 비활성이다.
+    // 각 포탑의 받침·머리·코어·포신 충돌 상자를 연속으로 둔다.
     colliders = {{{turretId, HitKind::Body, {-0.6f, 0, -10.4f}, {0.6f, 2.25f, -9.5f}},
                   {200, HitKind::Wall, {-0.85f, 0, -6.3f}, {0.85f, 2.5f, -5.8f}, false},
                   {300, HitKind::Wall, {-6, -0.2f, -14}, {6, 0, 3}},
@@ -34,9 +34,8 @@ void TurretEncounter::Reset()
     for (auto& turret : turrets)
     {
         turret.Reset();
-        colliders.push_back(turret.Body());
-        colliders.push_back(turret.Weapon());
-        colliders.push_back(turret.Weapon(1));
+        const auto targets = turret.Targets();
+        colliders.insert(colliders.end(), targets.begin(), targets.end());
     }
     colliders.resize(colliders.size() + 2 * extraDrones.size());
     for (std::size_t i = 0; i < extraDrones.size(); ++i)
@@ -349,15 +348,15 @@ bool TurretEncounter::UpdateDrone(float gameDeltaTime, const glm::vec3& eye)
 
 void TurretEncounter::SyncTurret(std::size_t index)
 {
-    const auto first = FirstTurretIndex + 3 * index;
-    colliders[first] = turrets[index].Body();
-    colliders[first + 1] = turrets[index].Weapon();
-    colliders[first + 2] = turrets[index].Weapon(1);
+    const auto first = FirstTurretIndex + FixedTurret::TargetCount * index;
+    const auto targets = turrets[index].Targets();
+    for (std::size_t i = 0; i < targets.size(); ++i)
+        colliders[first + i] = targets[i];
 }
 
 std::size_t TurretEncounter::ExtraDroneColliderIndex(std::size_t index) const
 {
-    return FirstTurretIndex + 3 * turrets.size() + 2 * index;
+    return FirstTurretIndex + FixedTurret::TargetCount * turrets.size() + 2 * index;
 }
 
 void TurretEncounter::SyncExtraDrone(std::size_t index)
@@ -382,16 +381,14 @@ void TurretEncounter::UpdatePlayerBullets(float gameDeltaTime)
             for (std::size_t i = 0; i < turrets.size(); ++i)
             {
                 auto& turret = turrets[i];
-                if (hit.objectId == turret.WeaponTarget())
-                    turret.Disarm();
-                else if (hit.objectId == turret.BodyTarget())
-                {
-                    inventory.Break(flight.bullet.sourceWeaponId);
-                    if (turret.Armed())
-                        inventory.SpawnDrop(turret.Position() + glm::vec3(0, 0.12f, 0.9f));
-                    turret.Destroy();
-                }
-                else continue;
+                const bool bodyHit = hit.objectId == turret.BodyTarget();
+                if (!bodyHit && hit.objectId != turret.WeaponTarget())
+                    continue;
+                inventory.Break(flight.bullet.sourceWeaponId);
+                // 포신을 직접 맞혔으면 회수 가능한 무기를 남기지 않는다.
+                if (bodyHit && turret.Armed())
+                    inventory.SpawnDrop(turret.Position() + glm::vec3(0, 0.12f, 0.9f));
+                turret.Destroy();
                 SyncTurret(i);
                 break;
             }
@@ -477,8 +474,8 @@ void TurretEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& e
         for (std::size_t i = 0; i < turrets.size(); ++i)
         {
             const bool otherTurret = turrets[i].ShotSource() != flight.bullet.sourceWeaponId;
-            const auto first = FirstTurretIndex + 3 * i;
-            for (auto slot = first; slot < first + 3; ++slot)
+            const auto first = FirstTurretIndex + FixedTurret::TargetCount * i;
+            for (auto slot = first; slot < first + FixedTurret::TargetCount; ++slot)
                 enemyColliders[slot].enabled = otherTurret && colliders[slot].enabled;
         }
         for (std::size_t i = 0; i < extraDrones.size(); ++i)

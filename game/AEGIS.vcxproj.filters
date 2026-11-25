@@ -152,7 +152,6 @@
     <ClCompile Include="src\gameplay\player\player_motion.cpp"><Filter>Gameplay\Player</Filter></ClCompile>
     <ClCompile Include="src\gameplay\turret\turret.cpp"><Filter>Gameplay\Turret</Filter></ClCompile>
     <ClCompile Include="src\gameplay\turret\turret_encounter.cpp"><Filter>Gameplay\Turret</Filter></ClCompile>
-    <ClCompile Include="src\gameplay\turret\turret_view.cpp"><Filter>Gameplay\Turret</Filter></ClCompile>
     <ClCompile Include="src\gameplay\weapons\weapon_inventory.cpp"><Filter>Gameplay\Weapons</Filter></ClCompile>
     <ClCompile Include="src\gameplay\weapons\weapon_view.cpp"><Filter>Gameplay\Weapons</Filter></ClCompile>
     <ClCompile Include="src\gameplay\weapons\bullet.cpp"><Filter>Gameplay\Weapons</Filter></ClCompile>
@@ -191,7 +190,6 @@
     <ClInclude Include="src\gameplay\turret\turret.h"><Filter>Gameplay\Turret</Filter></ClInclude>
     <ClInclude Include="src\combat_map\terminal_layout.generated.h"><Filter>CombatMap</Filter></ClInclude>
     <ClInclude Include="src\gameplay\turret\turret_encounter.h"><Filter>Gameplay\Turret</Filter></ClInclude>
-    <ClInclude Include="src\gameplay\turret\turret_view.h"><Filter>Gameplay\Turret</Filter></ClInclude>
     <ClInclude Include="src\gameplay\weapons\weapon_inventory.h"><Filter>Gameplay\Weapons</Filter></ClInclude>
     <ClInclude Include="src\gameplay\weapons\weapon_view.h"><Filter>Gameplay\Weapons</Filter></ClInclude>
     <ClInclude Include="src\gameplay\weapons\bullet.h"><Filter>Gameplay\Weapons</Filter></ClInclude>
@@ -209,8 +207,6 @@
     <None Include="shaders\mesh.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\turret_model.vert"><Filter>Shaders</Filter></None>
     <None Include="shaders\turret_model.frag"><Filter>Shaders</Filter></None>
-    <None Include="shaders\turret.vert"><Filter>Shaders</Filter></None>
-    <None Include="shaders\turret.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\bullet.vert"><Filter>Shaders</Filter></None>
     <None Include="shaders\bullet.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\weapon.vert"><Filter>Shaders</Filter></None>

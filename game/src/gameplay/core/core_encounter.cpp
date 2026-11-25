@@ -76,9 +76,11 @@ std::vector<Collider> CoreEncounter::Targets() const
     }
     for (std::size_t i = 0; i < turrets.size(); ++i)
     {
-        targets.push_back(GuardCollider(turrets[i].Body(), BodyId(i + 2)));
-        targets.push_back(GuardCollider(turrets[i].Weapon(), WeaponId(i + 2)));
-        targets.push_back(GuardCollider(turrets[i].Weapon(1), WeaponId(i + 2)));
+        for (auto target : turrets[i].Targets())
+        {
+            target.id = target.kind == HitKind::Weapon ? WeaponId(i + 2) : BodyId(i + 2);
+            targets.push_back(target);
+        }
     }
     return targets;
 }
@@ -169,11 +171,11 @@ void CoreEncounter::UpdatePlayerBullets(float dt)
             }
             for (std::size_t i = 0; i < turrets.size(); ++i)
             {
-                if (hit.objectId == WeaponId(i + 2)) turrets[i].Disarm();
-                if (hit.objectId == BodyId(i + 2))
+                const bool bodyHit = hit.objectId == BodyId(i + 2);
+                if (bodyHit || hit.objectId == WeaponId(i + 2))
                 {
                     inventory.Break(flight.bullet.sourceWeaponId);
-                    if (turrets[i].Armed())
+                    if (bodyHit && turrets[i].Armed())
                         inventory.SpawnDrop(turrets[i].Position() + glm::vec3(0, 0.12f, 0.9f));
                     turrets[i].Destroy();
                 }

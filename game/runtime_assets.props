@@ -66,8 +66,6 @@
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\drone.vert" TargetPath="shaders\drone.vert" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\mesh.frag" TargetPath="shaders\mesh.frag" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\mesh.vert" TargetPath="shaders\mesh.vert" />
-    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\turret.frag" TargetPath="shaders\turret.frag" />
-    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\turret.vert" TargetPath="shaders\turret.vert" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\bullet.vert" TargetPath="shaders\bullet.vert" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\bullet.frag" TargetPath="shaders\bullet.frag" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\weapon.frag" TargetPath="shaders\weapon.frag" />

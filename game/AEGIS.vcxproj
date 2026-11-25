@@ -125,7 +125,6 @@
     <ClCompile Include="src\gameplay\player\player_camera.cpp" />
     <ClCompile Include="src\gameplay\player\player_motion.cpp" />
     <ClCompile Include="src\gameplay\turret\turret_encounter.cpp" />
-    <ClCompile Include="src\gameplay\turret\turret_view.cpp" />
     <ClCompile Include="src\gameplay\weapons\weapon_inventory.cpp" />
     <ClCompile Include="src\gameplay\weapons\weapon_view.cpp" />
     <ClCompile Include="src\gameplay\weapons\bullet.cpp" />
@@ -164,7 +163,6 @@
     <ClInclude Include="src\gameplay\player\player_view.h" />
     <ClInclude Include="src\combat_map\terminal_layout.generated.h" />
     <ClInclude Include="src\gameplay\turret\turret_encounter.h" />
-    <ClInclude Include="src\gameplay\turret\turret_view.h" />
     <ClInclude Include="src\gameplay\weapons\weapon_inventory.h" />
     <ClInclude Include="src\gameplay\weapons\weapon_view.h" />
     <ClInclude Include="src\gameplay\weapons\bullet.h" />
@@ -178,8 +176,6 @@
     <None Include="shaders\death_effect.frag" />
     <None Include="shaders\mesh.vert" />
     <None Include="shaders\mesh.frag" />
-    <None Include="shaders\turret.vert" />
-    <None Include="shaders\turret.frag" />
     <None Include="shaders\bullet.vert" />
     <None Include="shaders\bullet.frag" />
     <None Include="shaders\weapon.vert" />
