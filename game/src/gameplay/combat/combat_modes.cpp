@@ -93,7 +93,7 @@ void CombatScene::SetInterlockMode()
     encounter.SetExtraDrones({{positions[1], 0, scale, patrol}, {positions[2], 0, scale, patrol},
                               {positions[3], 0, scale, patrol}});
     encounter.SetTurrets(combat::TurretType::SingleC,
-                         {{0, 0, -28.3f}, {-3.2f, 0, -26.2f}, {3.4f, 0, -26.2f}, {0, 0, -24.9f}});
+                         {{0, 0, -29.3f}, {-3.2f, 0, -27.2f}, {3.4f, 0, -27.2f}, {0, 0, -26.f}});
     encounter.SetMidboss(interlock_asset::bossMount, interlock_asset::bossScale);
     encounter.SetSupply(SupplyPosition());
     Reset();

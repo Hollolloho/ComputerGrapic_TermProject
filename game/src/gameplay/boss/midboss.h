@@ -37,14 +37,16 @@ public:
 
 private:
     void UpdatePose();
-    void AimAt(const glm::vec3& eye);
+    void SetBeamDirection(const glm::vec3& direction);
+    void AimAt(const glm::vec3& eye, float gameDeltaTime);
     void ClipBeam(const std::vector<Collider>& walls);
 
     BossPose pose{};
     glm::mat4 root{1};
     MidbossBeam beam;
+    glm::vec3 previousEye{};
     double cycleTime{};
     int coreHits{};
-    bool enabled{}, cooldownHit{};
+    bool enabled{}, cooldownHit{}, hasPreviousEye{};
 };
 } // namespace aegis::combat

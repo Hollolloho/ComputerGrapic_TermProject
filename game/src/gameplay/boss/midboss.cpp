@@ -1,5 +1,6 @@
 // E형의 코어와 레이저가 같은 장착 좌표와 게임 시간을 사용한다.
 #include "midboss.h"
+#include "main/GameMath.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 #include <cmath>
@@ -11,6 +12,7 @@ namespace
 const double chargeStart = 1.0, fireStart = 4.0, coolingStart = 6.0, cycleEnd = 10.0;
 const double damageInterval = .5, timeEpsilon = .000001;
 const float beamLength = 24.f, beamHalfWidth = .38f;
+const float aimSpeed = glm::radians(45.f), torsoBelowEye = .95f;
 const ObjectId armorId = 54000;
 
 bool ClipAxis(const MidbossBeam& ray, const glm::vec3& offset, const glm::vec3& halfSize,
@@ -71,13 +73,14 @@ void Midboss::Reset()
     cycleTime = 0;
     coreHits = 0;
     cooldownHit = false;
+    hasPreviousEye = false;
     beam = {};
     if (!enabled)
         return;
     UpdatePose();
     beam.origin = glm::vec3(pose.nodes[boss_asset::core_visual] * glm::vec4(0, .01f, .185f, 1));
     beam.halfWidth = beamHalfWidth;
-    AimAt(beam.origin + glm::vec3(0, -1.3f, 6.f));
+    SetBeamDirection(glm::normalize(glm::vec3(0, -1.9f, 6.f)));
 }
 
 LaserPhase Midboss::Phase() const
@@ -103,16 +106,32 @@ void Midboss::UpdatePose()
     pose = MakeBossPose(root, armorOpen, glm::vec3(root * glm::vec4(0, -2, 8, 1)));
 }
 
-void Midboss::AimAt(const glm::vec3& eye)
+void Midboss::SetBeamDirection(const glm::vec3& direction)
 {
-    const glm::vec3 toward = eye - glm::vec3(0, .6f, 0) - beam.origin;
+    beam.direction = direction;
+    beam.right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), beam.direction));
+    beam.up = glm::cross(beam.direction, beam.right);
+}
+
+void Midboss::AimAt(const glm::vec3& eye, float gameDeltaTime)
+{
+    const glm::vec3 toward = eye - glm::vec3(0, torsoBelowEye, 0) - beam.origin;
     if (toward.z <= .05f)
         return; // 보스 뒤에 들어가도 레이저가 몸체를 관통해 뒤로 돌지 않는다.
     const float limit = toward.z * 1.4f;
     const glm::vec3 aim(std::clamp(toward.x, -limit, limit), std::max(toward.y, -2.f * toward.z), toward.z);
-    beam.direction = glm::normalize(aim);
-    beam.right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), beam.direction));
-    beam.up = glm::cross(beam.direction, beam.right);
+    const auto target = glm::normalize(aim);
+    const auto axis = glm::cross(beam.direction, target);
+    const float sine = glm::length(axis);
+    const float angle = std::atan2(sine, glm::dot(beam.direction, target));
+    const float step = aimSpeed * gameDeltaTime;
+    if (angle <= step)
+        SetBeamDirection(target);
+    else if (sine > 1e-6f)
+    {
+        const auto turn = glm::rotate(glm::mat4(1), step, axis / sine);
+        SetBeamDirection(glm::normalize(glm::vec3(turn * glm::vec4(beam.direction, 0))));
+    }
 }
 
 void Midboss::ClipBeam(const std::vector<Collider>& walls)
@@ -130,26 +149,40 @@ void Midboss::ClipBeam(const std::vector<Collider>& walls)
 
 int Midboss::Update(float gameDeltaTime, const glm::vec3& eye, const std::vector<Collider>& walls)
 {
-    if (!Alive() || !std::isfinite(gameDeltaTime) || gameDeltaTime <= 0)
+    if (!Alive() || !std::isfinite(gameDeltaTime) || gameDeltaTime <= 0 || !IsFinite(eye))
         return 0;
     const auto previousPhase = Phase();
     const bool previousExposure = CoreExposed();
+    const auto startEye = hasPreviousEye ? previousEye : eye;
+    previousEye = eye;
+    hasPreviousEye = true;
     int damage = 0;
     double remaining = gameDeltaTime;
     while (remaining > 0)
     {
-        if (cycleTime + timeEpsilon < fireStart)
-            AimAt(eye);
         const double end = std::min(cycleEnd, cycleTime + remaining);
-        if (end + timeEpsilon >= chargeStart && cycleTime + timeEpsilon < coolingStart)
-            ClipBeam(walls);
+        const double frameElapsed = gameDeltaTime - remaining;
+        double aimedThrough = cycleTime;
+        // 긴 프레임도 피해 틱에서 나눠 빔 회전, 엄폐, 몸통을 그 시각에 검사한다.
         for (double tick = fireStart; tick < coolingStart; tick += damageInterval)
         {
             if (tick <= cycleTime + timeEpsilon || tick > end + timeEpsilon)
                 continue;
+            const double time = std::min(tick, end);
+            const float fraction = static_cast<float>((frameElapsed + time - cycleTime) / gameDeltaTime);
+            const auto tickEye = glm::mix(startEye, eye, fraction);
+            AimAt(tickEye, static_cast<float>(time - aimedThrough));
+            aimedThrough = time;
+            ClipBeam(walls);
             float first;
-            if (BeamHitsBox(beam, PlayerBodyCollider(0, eye), first) && first < beam.length)
+            if (BeamHitsBox(beam, PlayerBodyCollider(0, tickEye), first) && first < beam.length)
                 damage += DamagePerTick;
+        }
+        const double aimEnd = std::min(end, coolingStart);
+        if (aimEnd > aimedThrough)
+        {
+            const float fraction = static_cast<float>((frameElapsed + aimEnd - cycleTime) / gameDeltaTime);
+            AimAt(glm::mix(startEye, eye, fraction), static_cast<float>(aimEnd - aimedThrough));
         }
         remaining -= end - cycleTime;
         cycleTime = end;
@@ -163,7 +196,9 @@ int Midboss::Update(float gameDeltaTime, const glm::vec3& eye, const std::vector
     }
     if (Phase() != previousPhase || CoreExposed() != previousExposure)
         UpdatePose();
-    if (Phase() == LaserPhase::Waiting || Phase() == LaserPhase::Cooling)
+    if (Phase() == LaserPhase::Charging || Phase() == LaserPhase::Firing)
+        ClipBeam(walls);
+    else
         beam.length = 0;
     return damage;
 }
