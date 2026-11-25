@@ -57,9 +57,9 @@ bool BulletView::Init(const std::filesystem::path& root)
     colorLocation = glGetUniformLocation(program, "color");
     effectLocation = glGetUniformLocation(program, "effect");
     effectFadeLocation = glGetUniformLocation(program, "effectFade");
-    droneShotLocation = glGetUniformLocation(program, "droneShot");
+    bulletStyleLocation = glGetUniformLocation(program, "bulletStyle");
     if (transformLocation < 0 || modelViewLocation < 0 || colorLocation < 0 ||
-        effectLocation < 0 || effectFadeLocation < 0 || droneShotLocation < 0 ||
+        effectLocation < 0 || effectFadeLocation < 0 || bulletStyleLocation < 0 ||
         !LoadCrystal(directory / "crystal_bullet.obj", body) ||
         !LoadCrystal(directory / "crystal_chip.obj", chip) || !InitEffectQuad(effectQuad))
     {
@@ -105,12 +105,12 @@ void BulletView::DrawTrails(const glm::mat4& projection, const glm::mat4& view, 
     for (const auto& flight : encounter.PlayerFlights())
     {
         if (flight.bullet.active)
-            DrawTrail(projection, view, eye, {flight.bullet.position, flight.bullet.velocity, flight.age, 0.f, flight.droneShot});
+            DrawTrail(projection, view, eye, {flight.bullet.position, flight.bullet.velocity, flight.age, 0.f, flight.bulletStyle});
     }
     for (const auto& flight : encounter.EnemyFlights())
     {
         if (flight.bullet.active)
-            DrawTrail(projection, view, eye, {flight.bullet.position, flight.bullet.velocity, flight.age, 0.f, flight.droneShot});
+            DrawTrail(projection, view, eye, {flight.bullet.position, flight.bullet.velocity, flight.age, 0.f, flight.bulletStyle});
     }
     for (const auto& trail : encounter.FadingTrails())
         DrawTrail(projection, view, eye, trail);
@@ -119,11 +119,12 @@ void BulletView::DrawTrails(const glm::mat4& projection, const glm::mat4& view, 
     for (const auto& mote : encounter.TrailMotes())
     {
         const float fade = 1.f - mote.age / combat::TrailMoteLifetime;
-        const float radius = 0.019f * (0.55f + 0.45f * fade);
+        const float size = mote.bulletStyle == combat::BulletStyle::Turret ? 0.030f : 0.019f;
+        const float radius = size * (0.55f + 0.45f * fade);
         const glm::mat4 model(glm::vec4(cameraRight * radius, 0), glm::vec4(0, 1, 0, 0),
                               glm::vec4(cameraUp * (2.f * radius), 0),
                               glm::vec4(mote.position - cameraUp * radius, 1));
-        DrawEffect(projection, view * model, fade, fade, mote.droneShot);
+        DrawEffect(projection, view * model, fade, fade, mote.bulletStyle);
     }
     glBindVertexArray(0);
     glUseProgram(0);
@@ -146,20 +147,21 @@ void BulletView::DrawTrail(const glm::mat4& projection, const glm::mat4& view, c
     // 이미 지나간 선분에 면을 놓고 관찰자 쪽으로 돌린다.
     const glm::vec3 side = glm::cross(distance, eye - (start + trail.end) * 0.5f);
     const glm::vec3 cameraRight(view[0][0], view[1][0], view[2][0]);
-    const glm::vec3 width = 0.022f * (glm::dot(side, side) > 1e-8f ? glm::normalize(side) : cameraRight);
+    const float radius = trail.bulletStyle == combat::BulletStyle::Turret ? 0.035f : 0.022f;
+    const glm::vec3 width = radius * (glm::dot(side, side) > 1e-8f ? glm::normalize(side) : cameraRight);
     const glm::mat4 model(glm::vec4(width, 0), glm::vec4(0, 1, 0, 0),
                           glm::vec4(distance, 0), glm::vec4(start, 1));
     DrawEffect(projection, view * model, 1.f - (trail.age + span) / combat::TrailLifetime,
-               1.f - trail.age / combat::TrailLifetime, trail.droneShot);
+               1.f - trail.age / combat::TrailLifetime, trail.bulletStyle);
 }
 
 void BulletView::DrawEffect(const glm::mat4& projection, const glm::mat4& modelView,
-                            float fadeStart, float fadeEnd, bool droneShot) const
+                            float fadeStart, float fadeEnd, combat::BulletStyle bulletStyle) const
 {
     glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(projection * modelView));
     glUniformMatrix4fv(modelViewLocation, 1, GL_FALSE, glm::value_ptr(modelView));
     glUniform2f(effectFadeLocation, fadeStart, fadeEnd);
-    glUniform1i(droneShotLocation, droneShot);
+    glUniform1i(bulletStyleLocation, static_cast<GLint>(bulletStyle));
     effectQuad.Draw();
 }
 

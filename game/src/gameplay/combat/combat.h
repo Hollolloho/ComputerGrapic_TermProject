@@ -51,11 +51,18 @@ const float TrailMoteSpacing = 0.18f;
 const float TrailMoteLifetime = 0.30f;
 const float TrailLifetime = 0.16f;
 
+enum class BulletStyle
+{
+    Crystal = 0,
+    Drone = 1,
+    Turret = 2
+};
+
 struct Flight
 {
     Bullet bullet;
     float age{};
-    bool droneShot{};
+    BulletStyle bulletStyle{BulletStyle::Crystal};
     double distanceToMote{TrailMoteSpacing};
     unsigned int moteIndex{};
 };
@@ -65,14 +72,14 @@ struct CrystalTrail
     glm::vec3 end{}, velocity{};
     float flightTime{};
     float age{};
-    bool droneShot{};
+    BulletStyle bulletStyle{BulletStyle::Crystal};
 };
 
 struct CrystalMote
 {
     glm::vec3 position{};
     float age{};
-    bool droneShot{};
+    BulletStyle bulletStyle{BulletStyle::Crystal};
 };
 
 void RemoveExpiredFlights(std::vector<Flight>& flights);

@@ -85,7 +85,7 @@ void CombatEncounter::RecordFlightTravel(Flight& flight, const glm::vec3& start,
             if (age < TrailMoteLifetime)
             {
                 const auto step = scatter[flight.moteIndex % 4] * 0.036f;
-                trailMotes.push_back({PointOnSegment(start, bullet.position, fraction) + step, age, flight.droneShot});
+                trailMotes.push_back({PointOnSegment(start, bullet.position, fraction) + step, age, flight.bulletStyle});
             }
             ++flight.moteIndex;
             offset += TrailMoteSpacing;
@@ -98,7 +98,7 @@ void CombatEncounter::RecordFlightTravel(Flight& flight, const glm::vec3& start,
     flight.age += gameDeltaTime;
     // 충돌하거나 수명이 끝난 탄의 마지막 잔상도 이후 프레임에서 옅어진다.
     if ((!bullet.active || flight.age >= BulletLifetime) && duration > 0 && endAge < TrailLifetime)
-        fadingTrails.push_back({bullet.position, bullet.velocity, duration, endAge, flight.droneShot});
+        fadingTrails.push_back({bullet.position, bullet.velocity, duration, endAge, flight.bulletStyle});
 }
 
 void CombatEncounter::ShatterBullet(const Bullet& bullet, bool enemy)

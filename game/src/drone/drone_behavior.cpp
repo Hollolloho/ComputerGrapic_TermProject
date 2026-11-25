@@ -1,18 +1,21 @@
 // 드론의 순찰 → 조준 경고 → 사격 → 대기와 무장 해제·파괴 상태를 관리한다.
 #include "drone_behavior.h"
 #include "main/GameMath.h"
+#include "gameplay/player/player_settings.h"
 #include <algorithm>
 #include <cmath>
 #include <limits>
 #include <glm/geometric.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/trigonometric.hpp>
+#include <glm/vec2.hpp>
 
 namespace aegis::combat
 {
 namespace
 {
 const double WarningDuration = 2.0;
+const double AimLockDuration = 0.2;
 }
 
 float DroneBehavior::WarningElapsed() const
@@ -102,9 +105,26 @@ glm::vec3 DroneBehavior::Muzzle() const
     return position + RotateY(glm::vec3(0, -0.43f, 0.68f) * scale, rotY);
 }
 
-bool DroneBehavior::Visible(const glm::vec3& eye, const std::vector<Collider>& walls) const
+glm::vec3 DroneBehavior::PlayerAimPoint(const glm::vec3& eye) const
 {
-    return glm::length(eye - position) < 18 && !IsBlocked(Muzzle(), eye, walls);
+    // 카메라 한 점으로 선이 겹치지 않도록 드론 쪽 상체 표면 안쪽을 조준한다.
+    glm::vec3 target = eye - glm::vec3(0.f, 0.15f, 0.f);
+    const glm::vec3 muzzle = Muzzle();
+    const glm::vec2 towardMuzzle(muzzle.x - eye.x, muzzle.z - eye.z);
+    const float distance = glm::length(towardMuzzle);
+    if (distance > 0.001f)
+    {
+        const float inset = std::min(player::Radius * 0.95f, distance * 0.5f);
+        const glm::vec2 offset = towardMuzzle * (inset / distance);
+        target.x += offset.x;
+        target.z += offset.y;
+    }
+    return target;
+}
+
+bool DroneBehavior::Visible(const glm::vec3& target, const std::vector<Collider>& walls) const
+{
+    return glm::length(target - position) < 18 && !IsBlocked(Muzzle(), target, walls);
 }
 
 bool DroneBehavior::TurnToward(const glm::vec3& eye, float gameDeltaTime)
@@ -229,25 +249,32 @@ bool DroneBehavior::Update(float gameDeltaTime, const glm::vec3& eye, const std:
 
         phase = visible ? DronePhase::Tracking : DronePhase::Patrol;
         // 회전한 총구에서도 사선이 열려 있을 때 조준을 시작한다.
-        if (aligned && Visible(eye, walls))
+        if (aligned)
         {
-            phase = DronePhase::Warning;
-            timer = WarningDuration;
-            aimPoint = eye;
+            const glm::vec3 target = PlayerAimPoint(eye);
+            if (Visible(target, walls))
+            {
+                phase = DronePhase::Warning;
+                timer = WarningDuration;
+                aimPoint = target;
+            }
         }
         break;
     }
     case DronePhase::Warning:
-        TurnToward(eye, gameDeltaTime);
-        if (!Visible(eye, walls))
+        timer -= gameDeltaTime;
+        // 발사 직전에는 총구와 조준점을 함께 고정해 화면에 표시한 선을 사용한다.
+        if (timer > AimLockDuration)
+        {
+            TurnToward(eye, gameDeltaTime);
+            aimPoint = PlayerAimPoint(eye);
+        }
+        if (!Visible(aimPoint, walls))
         {
             phase = DronePhase::Patrol;
             timer = 0;
             break;
         }
-
-        aimPoint = eye;
-        timer -= gameDeltaTime;
 
         if (timer <= 0)
         {

@@ -206,7 +206,7 @@ void TurretEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm
     {
         const auto& turret = turrets[index];
         if (turret.Armed())
-            SpawnEnemyBullet(turret.Muzzle(), turret.AimPoint(), turret.ShotSource());
+            SpawnEnemyBullet(turret.Muzzle(), turret.AimPoint(), turret.ShotSource(), BulletStyle::Turret);
     }
 
     // 4. 적이 모두 죽어도 날아오는 적탄이 없어질 때까지 구역을 열지 않는다.
@@ -234,7 +234,7 @@ void TurretEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm
     {
         if (droneWantsToShoot && drone.Armed())
         {
-            SpawnEnemyBullet(drone.Muzzle(), drone.AimPoint(), 900, true);
+            SpawnEnemyBullet(drone.Muzzle(), drone.AimPoint(), 900, BulletStyle::Drone);
         }
         return;
     }
@@ -411,14 +411,14 @@ void TurretEncounter::FailEncounter()
 }
 
 void TurretEncounter::SpawnEnemyBullet(const glm::vec3& origin, const glm::vec3& target,
-                                       ObjectId sourceWeapon, bool droneShot)
+                                       ObjectId sourceWeapon, BulletStyle bulletStyle)
 {
     Bullet bullet;
     if (!MakeBullet(origin, target - origin, 7.0f, sourceWeapon, bullet))
     {
         return;
     }
-    enemyFlights.push_back({bullet, 0, droneShot});
+    enemyFlights.push_back({bullet, 0, bulletStyle});
     ++enemyShots;
 }
 
@@ -455,12 +455,7 @@ void TurretEncounter::UpdatePrimaryTurret(float gameDeltaTime, const glm::vec3& 
     phaseTime -= gameDeltaTime;
     if (phaseTime <= 0)
     {
-        Bullet bullet;
-        if (MakeBullet(muzzle, aimPoint - muzzle, 7.0f, 900, bullet))
-        {
-            enemyFlights.push_back({bullet, 0});
-            ++enemyShots;
-        }
+        SpawnEnemyBullet(muzzle, aimPoint, 900, BulletStyle::Turret);
         phase = TurretPhase::Cooldown;
         phaseTime = 1.2f;
     }

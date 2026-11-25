@@ -36,7 +36,6 @@ private:
 	GLint beamLocation = -1;
 	GLint eyeLocation = -1;
 	GLint beamEyeLocation = -1;
-	GLint beamFadeLocation = -1;
 
 	std::vector<RotorSide> rotors{};
 	const glm::vec3 leftRotorPivot{ -1.02f, 0.04f, -0.02f };

@@ -122,13 +122,16 @@ void CombatScene::DrawBullets(const glm::mat4& projection, const glm::mat4& view
 {
     const glm::vec3 playerColor(0.48f, 0.90f, 1.0f);
     const glm::vec3 enemyColor(1.0f, 0.15f, 0.08f);
+    const glm::vec3 turretColor(1.0f, 0.66f, 0.12f);
     for (const auto& flight : activeBattle->PlayerFlights())
     {
         bulletView.Draw(projection, view, flight.bullet, playerColor, 0.04125f);
     }
     for (const auto& flight : activeBattle->EnemyFlights())
     {
-        bulletView.Draw(projection, view, flight.bullet, enemyColor, 0.04f);
+        const bool turretShot = flight.bulletStyle == combat::BulletStyle::Turret;
+        bulletView.Draw(projection, view, flight.bullet, turretShot ? turretColor : enemyColor,
+                        turretShot ? 0.08f : 0.04f);
     }
     for (const auto& shard : activeBattle->ImpactShards())
     {

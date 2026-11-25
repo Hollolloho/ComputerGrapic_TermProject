@@ -98,7 +98,7 @@ private:
     void UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& eye, const glm::vec3& forward);
     void UpdatePrimaryTurret(float gameDeltaTime, const glm::vec3& eye);
     std::vector<Collider> CreateEnemyTargets(const glm::vec3& eye, const glm::vec3& forward) const;
-    void SpawnEnemyBullet(const glm::vec3& origin, const glm::vec3& target, ObjectId sourceWeapon, bool droneShot = false);
+    void SpawnEnemyBullet(const glm::vec3& origin, const glm::vec3& target, ObjectId sourceWeapon, BulletStyle bulletStyle);
     void FailEncounter();
     void UpdateDoors(float gameDeltaTime);
 

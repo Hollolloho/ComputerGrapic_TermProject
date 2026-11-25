@@ -66,7 +66,8 @@ public:
 
 private:
     Collider Bounds(ObjectId id, HitKind kind, const glm::vec3& low, const glm::vec3& high) const;
-    bool Visible(const glm::vec3& eye, const std::vector<Collider>& walls) const;
+    glm::vec3 PlayerAimPoint(const glm::vec3& eye) const;
+    bool Visible(const glm::vec3& target, const std::vector<Collider>& walls) const;
     bool TurnToward(const glm::vec3& eye, float gameDeltaTime);
     void MovingDrone(float gameDeltaTime, const std::vector<Collider>& walls);
 

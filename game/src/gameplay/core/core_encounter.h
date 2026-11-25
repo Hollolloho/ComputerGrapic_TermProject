@@ -52,7 +52,7 @@ private:
     void UpdateEnemyBullets(float dt, const glm::vec3& eye, const glm::vec3& forward);
     void UpdateMagnetic(float dt, const glm::vec3& eye);
     void ApplyPulse(const glm::vec3& eye);
-    void SpawnEnemyBullet(const glm::vec3& muzzle, const glm::vec3& target, ObjectId source, bool droneShot = false);
+    void SpawnEnemyBullet(const glm::vec3& muzzle, const glm::vec3& target, ObjectId source, BulletStyle bulletStyle);
     float PhaseDuration() const;
     std::array<DroneBehavior, 2> drones;
     std::array<FixedTurret, 2> turrets;
