@@ -20,10 +20,10 @@ public:
     bool Init(const std::filesystem::path& projectDirectory);
     void Reset();
     void OnShot();
-    void Update(double realDeltaTime);
+    void Update(double realDeltaTime, float strafeAmount = 0.f);
     void Draw(float aspect) const;
     void DrawWorld(const glm::mat4& projection, const glm::mat4& view, const glm::vec3& position,
-                   float yawDegrees = 90) const;
+                   float rotYDegrees = 90) const;
     void Clear();
 
     int ShotCount() const
@@ -35,6 +35,7 @@ private:
     void DrawMeshes(const glm::mat4& projection, const glm::mat4& mount, float glow) const;
     AtlasModel atlas;
     float recoil{};
+    float tiltZ{};
     int shotCount{};
 };
 

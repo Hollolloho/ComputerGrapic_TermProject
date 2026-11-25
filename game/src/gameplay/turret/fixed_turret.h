@@ -20,13 +20,13 @@ class FixedTurret
 public:
     static constexpr ObjectId BodyId = 502, WeaponId = 503, ShotId = 901;
     bool SetPosition(const glm::vec3& point);
-    void Configure(TurretType model, const glm::vec3& point, ObjectId index = 0, float yawDegrees = 0);
+    void Configure(TurretType model, const glm::vec3& point, ObjectId index = 0, float rotYDegrees = 0);
     TurretType Type() const { return type; }
     ObjectId BodyTarget() const { return BodyId + 2 * number; }
     ObjectId WeaponTarget() const { return WeaponId + 2 * number; }
     ObjectId ShotSource() const { return ShotId + number; }
     void Reset();
-    bool Update(float gameDeltaTime, const glm::vec3& eye, std::span<const Collider> walls);
+    bool Update(float gameDeltaTime, const glm::vec3& eye, const std::vector<Collider>& walls);
     void Disarm();
     void Destroy();
 
@@ -67,7 +67,7 @@ private:
     float timer{};
     TurretType type{TurretType::SingleC};
     ObjectId number{};
-    float spawnYaw{};
+    float spawnRotY{};
     int firingBarrel{};
 };
 } // namespace aegis::combat

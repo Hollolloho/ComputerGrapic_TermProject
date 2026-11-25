@@ -1,6 +1,7 @@
 #pragma once
 
 #include "combat_map/CombatMap.h"
+#include "combat_map/corridor_layout.generated.h"
 #include "gameplay/player/player_camera.h"
 #include "gameplay/rendering/mesh_renderer.h"
 #include <array>
@@ -29,7 +30,7 @@ private:
     bool InitEntry(const std::filesystem::path& root);
 
     std::vector<DrawMesh> entryRoom, entryTerminal;
-    std::array<CorridorObject, 5> corridor;
+    std::array<CorridorObject, corridor_asset::placements.size()> corridor;
     CombatMap combatMap;
     MeshRenderer renderer;
     PlayerCamera camera;

@@ -14,7 +14,7 @@ class TurretEncounter : public CombatEncounter
 public:
     TurretEncounter();
     void Reset();
-    void SetEnvironment(std::span<const Collider> walls);
+    void SetEnvironment(const std::vector<Collider>& walls);
     void SetDroneMode(bool enabled);
 
     bool SetDroneScale(float value)
@@ -27,7 +27,7 @@ public:
         return true;
     }
 
-    bool SetDroneSpawn(const glm::vec3& point, float yawRadians, float endZ);
+    bool SetDroneSpawn(const glm::vec3& point, float rotYRadians, float endZ);
     bool SetSupply(const glm::vec3& point);
     void SetExitDoors(ObjectId left, ObjectId right, float distance);
     void SetTurrets(TurretType type, std::initializer_list<glm::vec3> positions, bool primary = true);
@@ -90,7 +90,7 @@ public:
     }
 
 private:
-    std::span<const Collider> InteractionColliders(std::vector<Collider>& storage) const override;
+    const std::vector<Collider>& InteractionColliders(std::vector<Collider>& storage) const override;
     // 한 프레임의 전투를 아래 함수들로 나누어 처리한다.
     bool UpdateDrone(float gameDeltaTime, const glm::vec3& eye);
     void SyncTurret(std::size_t index);
@@ -98,7 +98,7 @@ private:
     void UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& eye, const glm::vec3& forward);
     void UpdatePrimaryTurret(float gameDeltaTime, const glm::vec3& eye);
     std::vector<Collider> CreateEnemyTargets(const glm::vec3& eye, const glm::vec3& forward) const;
-    void SpawnEnemyBullet(const glm::vec3& origin, const glm::vec3& target, ObjectId sourceWeapon);
+    void SpawnEnemyBullet(const glm::vec3& origin, const glm::vec3& target, ObjectId sourceWeapon, BulletStyle bulletStyle);
     void FailEncounter();
     void UpdateDoors(float gameDeltaTime);
 

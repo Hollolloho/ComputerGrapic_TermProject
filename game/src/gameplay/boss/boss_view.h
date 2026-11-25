@@ -14,7 +14,6 @@ public:
     void Clear();
 
 private:
-    bool Load(const std::filesystem::path& file, std::vector<DrawMesh>& meshes);
     AtlasModel model;
     MeshRenderer renderer;
     std::vector<DrawMesh> room, cover, supply;

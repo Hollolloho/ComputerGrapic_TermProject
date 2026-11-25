@@ -1,5 +1,6 @@
 // 드론·포탑 전투의 상태를 관리한다. Update에서 처리 순서를 확인할 수 있다.
 #include "turret_encounter.h"
+#include "main/GameMath.h"
 
 #include <algorithm>
 #include <cmath>
@@ -8,9 +9,9 @@ namespace aegis::combat
 {
 namespace
 {
-constexpr ObjectId turretId = 500;
-constexpr ObjectId playerId = 600;
-constexpr ObjectId turretWeaponId = 501;
+const ObjectId turretId = 500;
+const ObjectId playerId = 600;
+const ObjectId turretWeaponId = 501;
 const glm::vec3 muzzle{0.85f, 1.65f, -9.05f};
 
 } // namespace
@@ -78,9 +79,9 @@ int TurretEncounter::RemainingEnemies() const
     return count;
 }
 
-void TurretEncounter::SetEnvironment(std::span<const Collider> walls)
+void TurretEncounter::SetEnvironment(const std::vector<Collider>& walls)
 {
-    environment.assign(walls.begin(), walls.end());
+    environment = walls;
     Reset();
 }
 
@@ -105,21 +106,22 @@ void TurretEncounter::UpdateDoors(float gameDeltaTime)
         {
             continue;
         }
-        const auto original = std::find_if(environment.begin(), environment.end(),
-                                           [&](const Collider& c) { return c.id == box.id; });
-        if (original == environment.end())
+        for (const auto& original : environment)
         {
-            continue;
+            if (original.id == box.id)
+            {
+                const float offset = (box.id == leftDoor ? -1 : 1) * doorDistance * doorProgress;
+                box.minimum = original.minimum + glm::vec3(offset, 0, 0);
+                box.maximum = original.maximum + glm::vec3(offset, 0, 0);
+                break;
+            }
         }
-        const float offset = (box.id == leftDoor ? -1 : 1) * doorDistance * doorProgress;
-        box.minimum = original->minimum + glm::vec3(offset, 0, 0);
-        box.maximum = original->maximum + glm::vec3(offset, 0, 0);
     }
 }
 
-bool TurretEncounter::SetDroneSpawn(const glm::vec3& point, float yawRadians, float endZ)
+bool TurretEncounter::SetDroneSpawn(const glm::vec3& point, float rotYRadians, float endZ)
 {
-    if (!drone.SetSpawn(point, yawRadians, endZ))
+    if (!drone.SetSpawn(point, rotYRadians, endZ))
     {
         return false;
     }
@@ -144,7 +146,7 @@ void TurretEncounter::SetDroneMode(bool enabled)
     Reset();
 }
 
-std::span<const Collider> TurretEncounter::InteractionColliders(std::vector<Collider>&) const
+const std::vector<Collider>& TurretEncounter::InteractionColliders(std::vector<Collider>&) const
 {
     return colliders;
 }
@@ -160,12 +162,14 @@ void TurretEncounter::ToggleCover()
 void TurretEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm::vec3& eye,
                              const glm::vec3& forward)
 {
-    if (result == EncounterResult::Failed || !std::isfinite(realDeltaTime) || !std::isfinite(gameDeltaTime) ||
+    if (!std::isfinite(realDeltaTime) || !std::isfinite(gameDeltaTime) ||
         realDeltaTime < 0 || gameDeltaTime < 0 || !IsFinite(eye))
     {
         return;
     }
 
+    UpdateBulletEffects(gameDeltaTime);
+    if (result == EncounterResult::Failed) return;
     UpdateShotCooldown(realDeltaTime);
     damageFlash = std::max(0.0f, damageFlash - gameDeltaTime);
     if (gameDeltaTime == 0)
@@ -202,7 +206,7 @@ void TurretEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm
     {
         const auto& turret = turrets[index];
         if (turret.Armed())
-            SpawnEnemyBullet(turret.Muzzle(), turret.AimPoint(), turret.ShotSource());
+            SpawnEnemyBullet(turret.Muzzle(), turret.AimPoint(), turret.ShotSource(), BulletStyle::Turret);
     }
 
     // 4. 적이 모두 죽어도 날아오는 적탄이 없어질 때까지 구역을 열지 않는다.
@@ -230,7 +234,7 @@ void TurretEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm
     {
         if (droneWantsToShoot && drone.Armed())
         {
-            SpawnEnemyBullet(drone.Muzzle(), drone.AimPoint(), 900);
+            SpawnEnemyBullet(drone.Muzzle(), drone.AimPoint(), 900, BulletStyle::Drone);
         }
         return;
     }
@@ -286,14 +290,16 @@ void TurretEncounter::UpdatePlayerBullets(float gameDeltaTime)
     // Player shots never collide with the shooter's body. One impact per bullet.
     for (auto& flight : playerFlights)
     {
-        if (auto hit = AdvanceBullet(flight.bullet, gameDeltaTime, colliders))
+        Hit hit;
+        if (AdvanceFlight(flight, gameDeltaTime, colliders, hit))
         {
+            ShatterBullet(flight.bullet, false);
             for (std::size_t i = 0; i < turrets.size(); ++i)
             {
                 auto& turret = turrets[i];
-                if (hit->objectId == turret.WeaponTarget())
+                if (hit.objectId == turret.WeaponTarget())
                     turret.Disarm();
-                else if (hit->objectId == turret.BodyTarget())
+                else if (hit.objectId == turret.BodyTarget())
                 {
                     inventory.Break(flight.bullet.sourceWeaponId);
                     if (turret.Armed())
@@ -304,7 +310,7 @@ void TurretEncounter::UpdatePlayerBullets(float gameDeltaTime)
                 SyncTurret(i);
                 break;
             }
-            if (hit->objectId == turretWeaponId)
+            if (hit.objectId == turretWeaponId)
             {
                 colliders[PrimaryWeaponIndex].enabled = false;
                 phase = TurretPhase::Disarmed;
@@ -313,7 +319,7 @@ void TurretEncounter::UpdatePlayerBullets(float gameDeltaTime)
                     drone.Disarm();
                 }
             }
-            else if (hit->objectId == turretId)
+            else if (hit.objectId == turretId)
             {
                 inventory.Break(flight.bullet.sourceWeaponId);
                 if (colliders[PrimaryWeaponIndex].enabled)
@@ -334,7 +340,6 @@ void TurretEncounter::UpdatePlayerBullets(float gameDeltaTime)
                 }
             }
         }
-        flight.age += gameDeltaTime;
     }
     RemoveExpiredFlights(playerFlights);
     if (RemainingEnemies() == 0)
@@ -347,8 +352,7 @@ std::vector<Collider> TurretEncounter::CreateEnemyTargets(const glm::vec3& eye,
                                                           const glm::vec3& forward) const
 {
     auto targets = colliders;
-    targets.push_back(
-        {playerId, HitKind::Body, eye + glm::vec3(-0.3f, -1.65f, -0.3f), eye + glm::vec3(0.3f, 0.15f, 0.3f)});
+    targets.push_back(PlayerBodyCollider(playerId, eye));
     targets.push_back(inventory.HeldCollider(eye, forward));
     return targets;
 }
@@ -371,18 +375,19 @@ void TurretEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& e
                 enemyColliders[slot].enabled = otherTurret && colliders[slot].enabled;
         }
         enemyColliders[heldWeaponIndex] = inventory.HeldCollider(eye, forward);
-        const auto hit = AdvanceBullet(flight.bullet, gameDeltaTime, enemyColliders);
-        if (hit)
+        Hit hit;
+        if (AdvanceFlight(flight, gameDeltaTime, enemyColliders, hit))
         {
-            if (hit->kind == HitKind::Body && hit->objectId == playerId)
+            ShatterBullet(flight.bullet, true);
+            if (hit.kind == HitKind::Body && hit.objectId == playerId)
             {
                 health = std::max(0, health - 25);
                 ++hitsTaken;
                 damageFlash = 0.3f;
             }
-            else if (hit->kind == HitKind::Weapon)
+            else if (hit.kind == HitKind::Weapon)
             {
-                inventory.Break(hit->objectId);
+                inventory.Break(hit.objectId);
                 ++blockedEnemyShots;
             }
             else
@@ -390,7 +395,6 @@ void TurretEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& e
                 ++blockedEnemyShots;
             }
         }
-        flight.age += gameDeltaTime;
         if (health == 0)
         {
             break;
@@ -407,14 +411,14 @@ void TurretEncounter::FailEncounter()
 }
 
 void TurretEncounter::SpawnEnemyBullet(const glm::vec3& origin, const glm::vec3& target,
-                                       ObjectId sourceWeapon)
+                                       ObjectId sourceWeapon, BulletStyle bulletStyle)
 {
-    const auto bullet = MakeBullet(origin, target - origin, 7.0f, sourceWeapon);
-    if (!bullet)
+    Bullet bullet;
+    if (!MakeBullet(origin, target - origin, 7.0f, sourceWeapon, bullet))
     {
         return;
     }
-    enemyFlights.push_back({*bullet, 0});
+    enemyFlights.push_back({bullet, 0, bulletStyle});
     ++enemyShots;
 }
 
@@ -424,8 +428,8 @@ void TurretEncounter::UpdatePrimaryTurret(float gameDeltaTime, const glm::vec3& 
     enemyColliders[PrimaryBodyIndex].enabled = false;
     enemyColliders[PrimaryWeaponIndex].enabled = false;
     enemyColliders.back().enabled = false; // 플레이어가 든 총 때문에 적의 시야가 막히지 않게 한다.
-    const auto sight = FindFirstHit(muzzle, eye, enemyColliders);
-    const bool visible = sight && sight->objectId == playerId;
+    Hit sight;
+    const bool visible = FindFirstHit(muzzle, eye, enemyColliders, sight) && sight.objectId == playerId;
     if (phase == TurretPhase::Cooldown)
     {
         phaseTime -= gameDeltaTime;
@@ -451,11 +455,7 @@ void TurretEncounter::UpdatePrimaryTurret(float gameDeltaTime, const glm::vec3& 
     phaseTime -= gameDeltaTime;
     if (phaseTime <= 0)
     {
-        if (auto bullet = MakeBullet(muzzle, aimPoint - muzzle, 7.0f, 900))
-        {
-            enemyFlights.push_back({*bullet, 0});
-            ++enemyShots;
-        }
+        SpawnEnemyBullet(muzzle, aimPoint, 900, BulletStyle::Turret);
         phase = TurretPhase::Cooldown;
         phaseTime = 1.2f;
     }

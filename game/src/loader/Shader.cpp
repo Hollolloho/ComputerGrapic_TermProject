@@ -59,6 +59,10 @@ GLuint LoadShaderProgram(const std::filesystem::path& vertexPath,
 	{
 		glAttachShader(program, vertex);
 		glAttachShader(program, fragment);
+		// 모든 메시 VAO가 같은 순서로 위치, 법선, 텍스처 좌표를 보낸다.
+		glBindAttribLocation(program, 0, "position");
+		glBindAttribLocation(program, 1, "normal");
+		glBindAttribLocation(program, 2, "texcoord");
 		glLinkProgram(program);
 	}
 	glDeleteShader(vertex);

@@ -3,12 +3,12 @@
 
 namespace aegis
 {
-bool WorldSigns::Init()
+bool WorldSigns::Init(const std::filesystem::path& shaderDirectory)
 {
     Clear();
     for (auto& sign : signs)
     {
-        if (!sign.Init())
+        if (!sign.Init(shaderDirectory))
         {
             Clear();
             return false;

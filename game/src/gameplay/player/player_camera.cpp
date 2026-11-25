@@ -1,4 +1,5 @@
 #include "player_camera.h"
+#include "player_settings.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
@@ -18,28 +19,28 @@ void PlayerCamera::Reset()
     SetPose(glm::vec3(0.0f), 0.0f, 0.0f);
 }
 
-void PlayerCamera::SetPose(const glm::vec3& position, float yawDegrees, float pitchDegrees)
+void PlayerCamera::SetPose(const glm::vec3& position, float rotYDegrees, float rotXDegrees)
 {
     rootPosition = position;
-    yaw = yawDegrees;
-    pitch = std::clamp(pitchDegrees, -89.0f, 89.0f);
+    rotY = rotYDegrees;
+    rotX = std::clamp(rotXDegrees, -89.0f, 89.0f);
 }
 
 // Pratice24의 model * local eye/target 방식으로 부모 위치와 회전을 적용한다.
 glm::mat4 PlayerCamera::ParentTransform() const
 {
     glm::mat4 parent = glm::translate(glm::mat4(1.0f), rootPosition);
-    return glm::rotate(parent, glm::radians(yaw), glm::vec3(0.0f, 1.0f, 0.0f));
+    return glm::rotate(parent, glm::radians(rotY), glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 glm::vec3 PlayerCamera::EyePosition() const
 {
-    return glm::vec3(ParentTransform() * glm::vec4(0.0f, eyeHeight, 0.0f, 1.0f));
+    return glm::vec3(ParentTransform() * glm::vec4(0.0f, player::EyeHeight, 0.0f, 1.0f));
 }
 
 glm::vec3 PlayerCamera::ViewDirection() const
 {
-    const float angle = glm::radians(pitch);
+    const float angle = glm::radians(rotX);
     const glm::vec4 localDirection(0.0f, std::sin(angle), -std::cos(angle), 0.0f);
     return glm::normalize(glm::vec3(ParentTransform() * localDirection));
 }

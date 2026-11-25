@@ -1,12 +1,13 @@
 // 보스의 공격 패턴, 약점 명중과 승패를 관리한다.
 #include "boss_encounter.h"
+#include "main/GameMath.h"
 #include <algorithm>
 #include <cmath>
 #include <glm/geometric.hpp>
 
 namespace aegis::combat
 {
-BossEncounter::BossEncounter()
+BossEncounter::BossEncounter() : walls(boss_asset::walls.begin(), boss_asset::walls.end())
 {
     Reset();
 }
@@ -22,9 +23,9 @@ void BossEncounter::Reset()
     pose = MakeBossPose(0, aimPoint);
 }
 
-std::span<const Collider> BossEncounter::InteractionColliders(std::vector<Collider>&) const
+const std::vector<Collider>& BossEncounter::InteractionColliders(std::vector<Collider>&) const
 {
-    return boss_asset::walls;
+    return walls;
 }
 
 void BossEncounter::Shoot(const glm::vec3& eye)
@@ -33,14 +34,15 @@ void BossEncounter::Shoot(const glm::vec3& eye)
     {
         const auto muzzle = BossMuzzle(pose, side);
         // The physical cabinets/room block firing toward a covered player.
-        if (FindFirstHit(muzzle, eye - glm::vec3(0, 0.6f, 0), boss_asset::walls))
+        if (IsBlocked(muzzle, eye - glm::vec3(0, 0.6f, 0), walls))
         {
             continue;
         }
         const auto node = side ? boss_asset::muzzle_R : boss_asset::muzzle_L;
-        if (auto shot = MakeBullet(muzzle, glm::vec3(pose.nodes[node][2]), 7, 23000 + side))
+        Bullet shot;
+        if (MakeBullet(muzzle, glm::vec3(pose.nodes[node][2]), 7, 23000 + side, shot))
         {
-            enemyFlights.push_back({*shot, 0});
+            enemyFlights.push_back({shot, 0});
             ++enemyShots;
         }
     }
@@ -108,11 +110,13 @@ void BossEncounter::AdvancePattern(float dt, const glm::vec3& eye)
 void BossEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm::vec3& eye,
                            const glm::vec3& forward)
 {
-    if (result == EncounterResult::Failed || !IsFinite(eye) || !std::isfinite(realDeltaTime) ||
+    if (!IsFinite(eye) || !std::isfinite(realDeltaTime) ||
         !std::isfinite(gameDeltaTime) || realDeltaTime < 0 || gameDeltaTime < 0)
     {
         return;
     }
+    UpdateBulletEffects(gameDeltaTime);
+    if (result == EncounterResult::Failed) return;
     UpdateShotCooldown(realDeltaTime);
     damageFlash = std::max(0.0f, damageFlash - gameDeltaTime);
     if (gameDeltaTime == 0 || result == EncounterResult::Cleared)
@@ -144,18 +148,24 @@ void BossEncounter::UpdatePlayerBullets(float gameDeltaTime)
     for (auto& flight : playerFlights)
     {
         auto& bullet = flight.bullet;
-        const auto end = bullet.position + bullet.velocity * gameDeltaTime;
-        auto hit = FindFirstHit(bullet.position, end, boss_asset::walls);
-        const auto bossHit = FindBossHit(bullet.position, end, pose, phase == BossPhase::Exposed);
-        if (bossHit && (!hit || bossHit->fraction < hit->fraction))
+        if (!bullet.active)
+            continue;
+        const auto start = bullet.position;
+        const auto end = start + bullet.velocity * gameDeltaTime;
+        Hit hit, bossHit;
+        bool found = FindFirstHit(bullet.position, end, walls, hit);
+        if (FindBossHit(bullet.position, end, pose, phase == BossPhase::Exposed, bossHit) &&
+            (!found || bossHit.fraction < hit.fraction))
         {
             hit = bossHit;
+            found = true;
         }
-        if (bullet.active && hit)
+        if (found)
         {
-            bullet.position = hit->position;
+            bullet.position = hit.position;
             bullet.active = false;
-            if (hit->kind == HitKind::Body && phase == BossPhase::Exposed)
+            ShatterBullet(bullet, false);
+            if (hit.kind == HitKind::Body && phase == BossPhase::Exposed)
             {
                 ++coreHits;
                 inventory.Break(bullet.sourceWeaponId);
@@ -171,11 +181,11 @@ void BossEncounter::UpdatePlayerBullets(float gameDeltaTime)
                 ++blockedShots;
             }
         }
-        else if (bullet.active)
+        else
         {
             bullet.position = end;
         }
-        flight.age += gameDeltaTime;
+        RecordFlightTravel(flight, start, gameDeltaTime, found ? gameDeltaTime * hit.fraction : gameDeltaTime);
     }
     RemoveExpiredFlights(playerFlights);
 }
@@ -184,23 +194,23 @@ void BossEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& eye
 {
     for (auto& flight : enemyFlights)
     {
-        std::vector<Collider> boxes(boss_asset::walls.begin(), boss_asset::walls.end());
-        boxes.push_back({24000, HitKind::Body, eye + glm::vec3(-0.3f, -1.65f, -0.3f),
-                         eye + glm::vec3(0.3f, 0.15f, 0.3f)});
+        auto boxes = walls;
+        boxes.push_back(PlayerBodyCollider(24000, eye));
         boxes.push_back(inventory.HeldCollider(eye, forward));
-        if (auto hit = AdvanceBullet(flight.bullet, gameDeltaTime, boxes))
+        Hit hit;
+        if (AdvanceFlight(flight, gameDeltaTime, boxes, hit))
         {
-            if (hit->kind == HitKind::Body && hit->objectId == 24000)
+            ShatterBullet(flight.bullet, true);
+            if (hit.kind == HitKind::Body && hit.objectId == 24000)
             {
                 health = std::max(0, health - 25);
                 damageFlash = 0.3f;
             }
-            else if (hit->kind == HitKind::Weapon)
+            else if (hit.kind == HitKind::Weapon)
             {
-                inventory.Break(hit->objectId);
+                inventory.Break(hit.objectId);
             }
         }
-        flight.age += gameDeltaTime;
     }
     RemoveExpiredFlights(enemyFlights);
 }

@@ -1,20 +1,12 @@
 #pragma once
+#include "gameplay/effects/destruction_effects.h"
 #include <glm/glm.hpp>
 #include <algorithm>
-#include <array>
 #include <cmath>
-#include <span>
+#include <vector>
 
 namespace aegis::combat
 {
-struct WeaponShard
-{
-    glm::vec3 position{}, velocity{};
-    float age{};
-    float lifetime{};
-    float size{};
-};
-
 // Presentation only: observes committed health/break counters; never changes combat.
 // The caller supplies gameDeltaTime, including zero when the world is stopped.
 class CombatFeedback
@@ -24,7 +16,7 @@ public:
     {
         lastHealth = health;
         lastBreaks = breaks;
-        count = 0;
+        shards.clear();
         damage = 0;
         bursts = hits = 0;
     }
@@ -41,8 +33,8 @@ public:
         {
             // Only the newly committed break creates a burst; polling cannot duplicate it.
             ++bursts;
-            count = shards.size();
-            for (std::size_t i = 0; i < count; ++i)
+            shards.resize(18);
+            for (std::size_t i = 0; i < shards.size(); ++i)
             {
                 const float angle = static_cast<float>(i) * 2.39996323f;
                 const float radius = 0.025f + static_cast<float>(i) * 0.007f;
@@ -65,21 +57,7 @@ public:
             return;
         }
         damage = std::max(0.0f, damage - gameDeltaTime);
-        const glm::vec3 gravity(0, -3.2f, 0);
-        for (std::size_t i = 0; i < count;)
-        {
-            auto& shard = shards[i];
-            if (shard.age + gameDeltaTime >= shard.lifetime)
-            {
-                shard = shards[--count];
-                continue;
-            }
-            shard.position +=
-                shard.velocity * gameDeltaTime + gravity * (0.5f * gameDeltaTime * gameDeltaTime);
-            shard.velocity += gravity * gameDeltaTime;
-            shard.age += gameDeltaTime;
-            ++i;
-        }
+        UpdateShards(shards, gameDeltaTime);
     }
 
     float DamageStrength() const
@@ -87,9 +65,9 @@ public:
         return damage / 0.28f;
     }
 
-    std::span<const WeaponShard> Shards() const
+    const std::vector<CrystalShard>& Shards() const
     {
-        return {shards.data(), count};
+        return shards;
     }
 
     int BreakBursts() const
@@ -103,8 +81,7 @@ public:
     }
 
 private:
-    std::array<WeaponShard, 18> shards{};
-    std::size_t count{};
+    std::vector<CrystalShard> shards;
     int lastHealth{100};
     int lastBreaks{};
     int bursts{};

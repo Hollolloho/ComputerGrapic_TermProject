@@ -3,9 +3,17 @@
 
 namespace aegis
 {
-bool CampaignMenu::Init()
+namespace
 {
-    return ui.Init();
+void AddMenuButton(UiPage& page, UiAction action, const wchar_t* label, float y, float height = 52)
+{
+    page.buttons.push_back({action, label, 218, y, 588, height, true});
+}
+} // namespace
+
+bool CampaignMenu::Init(const std::filesystem::path& shaderDirectory)
+{
+    return ui.Init(shaderDirectory);
 }
 
 void CampaignMenu::Draw(const UiPage& page, int width, int height) const
@@ -70,17 +78,15 @@ UiPage CampaignMenu::Page(const CampaignFlow& flow, bool readyToAdvance) const
         page.footer = L"Esc: 돌아가기";
         return page;
     }
-    const auto add = [&](UiAction action, const wchar_t* label, int row)
-    { page.buttons.push_back({action, label, 218.0f, 430.0f + 64 * row, 588, 52, true}); };
     switch (flow.Screen())
     {
     case CampaignScreen::Title:
         page.title = L"AEGIS  저항 작전";
         page.body = L"중앙 AI가 장악한 시설에 침투하세요.\n전투 복도를 돌파하고 코어를 파괴하는 것이 "
                     L"목표입니다.\n\n시작 → 안전 진입실 → 첫 복도 → 정비 복도 → 코어실 앞 복도 → 코어실";
-        add(UiAction::Start, L"게임 시작", 0);
-        add(UiAction::Help, L"조작 안내", 1);
-        add(UiAction::Quit, L"게임 종료", 2);
+        AddMenuButton(page, UiAction::Start, L"게임 시작", 430);
+        AddMenuButton(page, UiAction::Help, L"조작 안내", 494);
+        AddMenuButton(page, UiAction::Quit, L"게임 종료", 558);
         page.buttons.push_back({UiAction::Credits, L"제작·출처", 650, 155, 156, 42, true});
         page.footer = L"Enter: 게임 시작  ·  마우스로 버튼을 선택할 수 있습니다.";
         break;
@@ -89,21 +95,16 @@ UiPage CampaignMenu::Page(const CampaignFlow& flow, bool readyToAdvance) const
         page.body = L"WASD 이동 · 마우스 조준 · 왼쪽 클릭 사격\n정지: 느린 시간 / 이동: 시간 진행\n사격 후 "
                     L"0.25초는 적도 정상 진행\n본체 명중 → 내 총 파손 / 빈손 + E: 재무장\n모든 적과 적탄 "
                     L"정리 → 다음 구역\nShift 정상 진행 · R 재시작 · Esc 메뉴\n보스: 코어를 공격하고 50% 이하 자기장을 피하세요.";
-        add(UiAction::Title, L"시작 화면으로", 2);
+        AddMenuButton(page, UiAction::Title, L"시작 화면으로", 558);
         page.footer = L"G: 총 내려놓기 · E: 회수·보급·분석 · Enter: 안전 확보 후 다음 구역";
         break;
     case CampaignScreen::Paused:
         page.title = L"일시정지";
         page.body = L"전투와 세계 시간이 멈췄습니다.\n계속 진행하거나 현재 구역을 다시 시작할 수 있습니다.";
-        for (const auto& b :
-             std::vector<std::pair<UiAction, const wchar_t*>>{{UiAction::Resume, L"계속하기"},
-                                                              {UiAction::Retry, L"현재 구역 다시 시작"},
-                                                              {UiAction::Title, L"시작 화면으로"},
-                                                              {UiAction::Quit, L"게임 종료"}})
-        {
-            page.buttons.push_back({b.first, b.second, 218,
-                                    414.0f + 52 * static_cast<float>(page.buttons.size()), 588, 44, true});
-        }
+        AddMenuButton(page, UiAction::Resume, L"계속하기", 414, 44);
+        AddMenuButton(page, UiAction::Retry, L"현재 구역 다시 시작", 466, 44);
+        AddMenuButton(page, UiAction::Title, L"시작 화면으로", 518, 44);
+        AddMenuButton(page, UiAction::Quit, L"게임 종료", 570, 44);
         page.footer = L"Esc 또는 Space: 계속하기";
         break;
     case CampaignScreen::Failed:
@@ -123,18 +124,18 @@ UiPage CampaignMenu::Page(const CampaignFlow& flow, bool readyToAdvance) const
                     ? L"코어실에서 전투 불능이 되었습니다.\n다시 시도하면 보스전부터 시작합니다."
                     : L"전투 복도에서 전투 불능이 되었습니다.\n다시 시도하면 복도 전투부터 시작합니다.";
         }
-        add(UiAction::Retry, L"현재 구역 다시 시작", 0);
-        add(UiAction::Title, L"시작 화면으로", 1);
-        add(UiAction::Quit, L"게임 종료", 2);
+        AddMenuButton(page, UiAction::Retry, L"현재 구역 다시 시작", 430);
+        AddMenuButton(page, UiAction::Title, L"시작 화면으로", 494);
+        AddMenuButton(page, UiAction::Quit, L"게임 종료", 558);
         page.footer = L"R 또는 Enter: 현재 구역 다시 시작";
         break;
     case CampaignScreen::Victory:
         page.title = L"작전 성공";
         page.body = L"중앙 AI의 코어를 파괴했습니다.\n시설 침투 작전을 완료했습니다.\n\n다시 시작하면 안전 "
                     L"진입실부터 진행합니다.";
-        add(UiAction::Restart, L"처음부터 다시 시작", 0);
-        add(UiAction::Title, L"시작 화면으로", 1);
-        add(UiAction::Quit, L"게임 종료", 2);
+        AddMenuButton(page, UiAction::Restart, L"처음부터 다시 시작", 430);
+        AddMenuButton(page, UiAction::Title, L"시작 화면으로", 494);
+        AddMenuButton(page, UiAction::Quit, L"게임 종료", 558);
         page.footer = L"R 또는 Enter: 처음부터 다시 시작";
         break;
     case CampaignScreen::Playing:

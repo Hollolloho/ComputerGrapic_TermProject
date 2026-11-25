@@ -45,6 +45,7 @@ static_assert(sizeof(unsigned int) == sizeof(std::uint32_t));
 static_assert(HeaderBytes == Magic.size() + 2 * CountBytes + ModelFingerprint{}.size() + 8);
 
 using Bytes = std::vector<std::uint8_t>;
+// span은 남은 바이트의 시작 위치와 길이를 함께 보관한다. Read는 길이를 검사한 뒤에만 읽기 위치를 옮긴다.
 using ByteView = std::span<const std::uint8_t>;
 
 bool IsUtf8(std::string_view value)
@@ -385,6 +386,7 @@ Bytes ReadFileBytes(const std::filesystem::path& path)
     {
         return {};
     }
+    // 함수가 어느 경로로 끝나든 Windows 파일 핸들을 닫는다.
     const std::unique_ptr<void, decltype(&CloseHandle)> file(handle, CloseHandle);
     LARGE_INTEGER size{};
     if (!GetFileSizeEx(handle, &size) || size.QuadPart < static_cast<LONGLONG>(HeaderBytes) ||

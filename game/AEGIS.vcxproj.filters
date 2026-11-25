@@ -22,6 +22,9 @@
     <ClCompile Include="src\loader\Shader.cpp">
       <Filter>Loader</Filter>
     </ClCompile>
+    <ClCompile Include="src\loader\Texture.cpp">
+      <Filter>Loader</Filter>
+    </ClCompile>
     <ClCompile Include="src\loader\RenderMesh.cpp">
       <Filter>Loader</Filter>
     </ClCompile>
@@ -59,6 +62,8 @@
     <ClInclude Include="src\combat_map\CombatMap.h">
       <Filter>CombatMap</Filter>
     </ClInclude>
+    <ClCompile Include="src\main\GameMath.cpp"><Filter>main</Filter></ClCompile>
+    <ClInclude Include="src\main\GameMath.h"><Filter>main</Filter></ClInclude>
     <ClInclude Include="src\main\Common.h">
       <Filter>main</Filter>
     </ClInclude>
@@ -66,6 +71,9 @@
       <Filter>Drone</Filter>
     </ClInclude>
     <ClInclude Include="src\loader\Shader.h">
+      <Filter>Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="src\loader\Texture.h">
       <Filter>Loader</Filter>
     </ClInclude>
     <ClInclude Include="src\loader\RenderMesh.h">
@@ -147,6 +155,7 @@
     <ClCompile Include="src\gameplay\turret\turret_view.cpp"><Filter>Gameplay\Turret</Filter></ClCompile>
     <ClCompile Include="src\gameplay\weapons\weapon_inventory.cpp"><Filter>Gameplay\Weapons</Filter></ClCompile>
     <ClCompile Include="src\gameplay\weapons\weapon_view.cpp"><Filter>Gameplay\Weapons</Filter></ClCompile>
+    <ClCompile Include="src\gameplay\weapons\bullet.cpp"><Filter>Gameplay\Weapons</Filter></ClCompile>
     <ClCompile Include="src\gameplay\ui\world_signs.cpp"><Filter>Gameplay\UI</Filter></ClCompile>
     <ClInclude Include="src\gameplay\ui\analysis_session.h"><Filter>Gameplay\UI</Filter></ClInclude>
     <ClInclude Include="src\gameplay\rendering\atlas_model.h"><Filter>Gameplay\Rendering</Filter></ClInclude>
@@ -176,6 +185,7 @@
     <ClInclude Include="src\loader\model_binary.h"><Filter>Loader</Filter></ClInclude>
     <ClInclude Include="src\gameplay\player\player_camera.h"><Filter>Gameplay\Player</Filter></ClInclude>
     <ClInclude Include="src\gameplay\player\player_motion.h"><Filter>Gameplay\Player</Filter></ClInclude>
+    <ClInclude Include="src\gameplay\player\player_settings.h"><Filter>Gameplay\Player</Filter></ClInclude>
     <ClInclude Include="src\gameplay\player\player_view.h"><Filter>Gameplay\Player</Filter></ClInclude>
     <ClInclude Include="src\gameplay\turret\turret.h"><Filter>Gameplay\Turret</Filter></ClInclude>
     <ClInclude Include="src\combat_map\terminal_layout.generated.h"><Filter>CombatMap</Filter></ClInclude>
@@ -183,8 +193,13 @@
     <ClInclude Include="src\gameplay\turret\turret_view.h"><Filter>Gameplay\Turret</Filter></ClInclude>
     <ClInclude Include="src\gameplay\weapons\weapon_inventory.h"><Filter>Gameplay\Weapons</Filter></ClInclude>
     <ClInclude Include="src\gameplay\weapons\weapon_view.h"><Filter>Gameplay\Weapons</Filter></ClInclude>
+    <ClInclude Include="src\gameplay\weapons\bullet.h"><Filter>Gameplay\Weapons</Filter></ClInclude>
     <ClInclude Include="src\gameplay\ui\world_signs.h"><Filter>Gameplay\UI</Filter></ClInclude>
     <None Include="src\gameplay\boss\boss_triangles.generated.inc"><Filter>Gameplay\Boss</Filter></None>
+    <None Include="shaders\ui.vert"><Filter>Shaders</Filter></None>
+    <None Include="shaders\ui.frag"><Filter>Shaders</Filter></None>
+    <None Include="shaders\combat_box.vert"><Filter>Shaders</Filter></None>
+    <None Include="shaders\combat_box.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\death_effect.vert"><Filter>Shaders</Filter></None>
     <None Include="shaders\death_effect.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\core.vert"><Filter>Shaders</Filter></None>
@@ -195,6 +210,8 @@
     <None Include="shaders\turret_model.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\turret.vert"><Filter>Shaders</Filter></None>
     <None Include="shaders\turret.frag"><Filter>Shaders</Filter></None>
+    <None Include="shaders\bullet.vert"><Filter>Shaders</Filter></None>
+    <None Include="shaders\bullet.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\weapon.vert"><Filter>Shaders</Filter></None>
     <None Include="shaders\weapon.frag"><Filter>Shaders</Filter></None>
     <None Include="runtime_assets.props"><Filter>Resources</Filter></None>

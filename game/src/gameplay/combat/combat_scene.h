@@ -5,6 +5,7 @@
 #include "gameplay/player/player_view.h"
 #include "gameplay/turret/turret_encounter.h"
 #include "gameplay/weapons/weapon_view.h"
+#include "gameplay/weapons/bullet.h"
 #include "drone/drone.h"
 #include "gameplay/turret/turret_view.h"
 #include "gameplay/ui/analysis_session.h"
@@ -22,7 +23,6 @@
 #include <GL/glew.h>
 #include <filesystem>
 #include <string>
-#include <functional>
 
 struct GLFWwindow;
 struct Camera;
@@ -30,9 +30,15 @@ struct Camera;
 namespace aegis
 {
 
+class CampaignEnvironment;
+
 class CombatScene
 {
 public:
+    CombatScene() = default;
+    CombatScene(const CombatScene&) = delete;
+    CombatScene& operator=(const CombatScene&) = delete;
+
     bool Init(const std::filesystem::path& projectDirectory);
     void Reset();
     bool SetPlayerView(const PlayerView& view);
@@ -54,9 +60,9 @@ public:
 
     PlayerView CurrentPlayerView() const;
     void SampleInput(GLFWwindow* window, bool canReceiveInput, bool fireClicked);
-    void Update(double realDeltaTime, double gameDeltaTime);
+    void Update(double realDeltaTime, double gameDeltaTime, float strafeAmount = 0.f);
     void Draw(int width, int height,
-              const std::function<void(const glm::mat4&, const glm::vec3&)>& drawEnvironment = {},
+              const CampaignEnvironment* environment = nullptr,
               bool showHud = true, const Camera* playerCamera = nullptr) const;
     void Clear();
 
@@ -73,7 +79,7 @@ public:
 
     void SetBossMode(bool enabled);
     void SetCoreMode();
-    bool IsCoreMode() const { return coreMode; }
+    bool IsCoreMode() const { return activeBattle == &core; }
     const combat::CoreEncounter& CoreState() const { return core; }
 
     combat::EncounterResult BattleResult() const;
@@ -125,17 +131,17 @@ public:
 
     int BossCoreHits() const
     {
-        return coreMode ? core.CoreHits() : boss.CoreHits();
+        return IsCoreMode() ? core.CoreHits() : boss.CoreHits();
     }
 
     bool IsBossMode() const
     {
-        return bossMode;
+        return activeBattle == &boss;
     }
 
     bool IsDroneMode() const
     {
-        return !coreMode && !bossMode && encounter.IsDroneMode();
+        return activeBattle == &encounter && encounter.IsDroneMode();
     }
 
     bool AnalysisActive() const
@@ -158,7 +164,7 @@ public:
 
     bool CanAnalyze() const
     {
-        return !coreMode && !bossMode && encounter.CanAnalyze();
+        return activeBattle == &encounter && encounter.CanAnalyze();
     }
 
     float DoorProgress() const
@@ -174,11 +180,10 @@ public:
     std::string StatusTitle(bool paused) const;
 
 private:
-    const combat::CombatEncounter* ActiveEncounter() const;
-    combat::CombatEncounter* ActiveEncounter();
+    void BeginCombatMap();
     int PlayerHealth() const;
     void UpdateBattle(double realDeltaTime, double gameDeltaTime);
-    void UpdateVisualEffects(double realDeltaTime, double gameDeltaTime);
+    void UpdateVisualEffects(double realDeltaTime, double gameDeltaTime, float strafeAmount);
     bool Fire(const glm::vec3& direction);
     glm::vec3 CameraRoot() const;
 
@@ -199,8 +204,9 @@ private:
 
     void ToggleBossCover();
     void DrawEnemies(const glm::mat4& viewProjection) const;
+    void DrawDroneAimLines(const glm::mat4& viewProjection) const;
     void DrawCollisionBoxes(const glm::mat4& viewProjection) const;
-    void DrawBullets(const glm::mat4& viewProjection) const;
+    void DrawBullets(const glm::mat4& projection, const glm::mat4& view) const;
     void DrawWeaponFragments(const glm::mat4& viewProjection) const;
     void DrawBossHud(int width, int height) const;
     void DrawDamageFeedback(int width, int height) const;
@@ -231,18 +237,19 @@ private:
     combat::CoreEncounter core;
     CoreView coreView;
     Turret singleModel, twinModel;
-    bool coreMode{};
     bool maintenanceMode{};
     bool approachMode{};
     bool combatMapMode{};
-    bool bossMode{};
     bool bossCovered{};
     combat::AnalysisSession analysis;
     std::vector<DrawMesh> terminalMeshes;
     combat::TurretEncounter encounter;
+    // 현재 구역에서 입력과 갱신을 받을 전투 객체를 가리킨다.
+    combat::CombatEncounter* activeBattle = &encounter;
     PlayerCamera camera;
     PlayerViewInput externalView;
     WeaponView weapon;
+    BulletView bulletView;
     Drone drone;
     TurretView turretView;
     MeshRenderer terminalRenderer;
@@ -260,8 +267,8 @@ private:
     bool corridorMode{};
     double lastX{};
     double lastY{};
-    float yaw{};
-    float pitch{};
+    float rotY{};
+    float rotX{};
 };
 
 } // namespace aegis

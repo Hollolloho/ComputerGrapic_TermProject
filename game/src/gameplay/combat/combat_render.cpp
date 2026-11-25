@@ -1,5 +1,6 @@
 // 적·탄환·무기·파편을 그린다. 충돌과 피해 판정은 여기서 처리하지 않는다.
 #include "combat_scene.h"
+#include "gameplay/campaign/campaign_environment.h"
 #include "camera/Camera.h"
 #include "combat_map/corridor_layout.generated.h"
 #include "combat_map/terminal_layout.generated.h"
@@ -15,16 +16,18 @@ namespace aegis
 // 전투 화면과 분석 화면을 그린다. 피해 판정은 이 파일에서 변경하지 않는다.
 void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
 {
-    if (coreMode)
+    const auto drawDrone = [&](const combat::DroneBehavior& state)
+    {
+        const auto phase = state.Phase();
+        if (phase == combat::DronePhase::Destroyed)
+            return;
+        const bool acquired = phase == combat::DronePhase::Tracking || phase == combat::DronePhase::Warning;
+        drone.Draw(viewProjection, state.WorldTransform(), acquired, state.Armed());
+    };
+    if (IsCoreMode())
     {
         for (const auto& state : core.Drones())
-        {
-            if (state.Phase() == combat::DronePhase::Destroyed) continue;
-            auto world = glm::translate(glm::mat4(1), state.Position());
-            world = glm::rotate(world, state.Yaw(), glm::vec3(0, 1, 0));
-            world = glm::scale(world, glm::vec3(state.Scale()));
-            drone.Draw(viewProjection, world, state.Phase() == combat::DronePhase::Warning, state.Armed());
-        }
+            drawDrone(state);
         for (const auto& turret : core.Turrets())
             twinModel.Draw(viewProjection, PlayerEye(), turret);
         const int magneticStage = core.Phase() == combat::MagneticPhase::Warning ? 1
@@ -34,15 +37,8 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
         return;
     }
     if (IsDroneMode() && encounter.EnemyAlive())
-    {
-        const auto& state = encounter.DroneState();
-        // 실습과 같은 순서로 위치 → 회전 → 크기를 적용한다.
-        glm::mat4 world = glm::translate(glm::mat4(1), state.Position());
-        world = glm::rotate(world, state.Yaw(), glm::vec3(0, 1, 0));
-        world = glm::scale(world, glm::vec3(state.Scale()));
-        drone.Draw(viewProjection, world, state.Phase() == combat::DronePhase::Warning, state.Armed());
-    }
-    if (!bossMode)
+        drawDrone(encounter.DroneState());
+    if (!IsBossMode())
     {
         for (const auto& turret : encounter.Turrets())
         {
@@ -63,13 +59,31 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
     }
 }
 
+void CombatScene::DrawDroneAimLines(const glm::mat4& viewProjection) const
+{
+    const auto drawAimLine = [&](const combat::DroneBehavior& state)
+    {
+        if (state.Phase() == combat::DronePhase::Warning)
+        {
+            const float reach = glm::mix(0.12f, 1.f, glm::smoothstep(0.f, 0.1f, state.WarningElapsed()));
+            drone.DrawAimLine(viewProjection, state.Muzzle(), state.AimPoint(), PlayerEye(), reach);
+        }
+    };
+    if (IsCoreMode())
+    {
+        for (const auto& state : core.Drones())
+            drawAimLine(state);
+    }
+    else if (IsDroneMode() && encounter.EnemyAlive())
+    {
+        drawAimLine(encounter.DroneState());
+    }
+}
+
 void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
 {
-    if (coreMode) return;
-    const std::span<const combat::Collider> boxes =
-        bossMode ? std::span<const combat::Collider>()
-                 : std::span<const combat::Collider>(encounter.Colliders());
-    for (const auto& box : boxes)
+    if (IsCoreMode() || IsBossMode()) return;
+    for (const auto& box : encounter.Colliders())
     {
         if ((box.id >= combat::FixedTurret::BodyId &&
              box.id < combat::FixedTurret::BodyId + 2 * encounter.Turrets().size()) ||
@@ -85,7 +99,7 @@ void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
                                                                       : glm::vec3(0.15f, 0.22f, 0.31f);
         DrawBox(viewProjection, box.minimum, box.maximum, color);
     }
-    if (!bossMode && !IsDroneMode() && encounter.EnemyAlive())
+    if (!IsDroneMode() && encounter.EnemyAlive())
     {
         DrawBox(viewProjection, {-0.9f, 0, -10.6f}, {0.9f, 0.35f, -9.3f}, {0.25f, 0.3f, 0.4f});
 
@@ -94,7 +108,7 @@ void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
         DrawBox(viewProjection, {-0.28f, 1.94f, -9.52f}, {0.28f, 2.12f, -9.46f}, sensor);
     }
     // Floor strips make depth and aiming changes visible without extra assets.
-    if (!bossMode && !corridorMode)
+    if (!corridorMode)
     {
         for (int z = 0; z >= -12; --z)
         {
@@ -104,19 +118,24 @@ void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
     }
 }
 
-void CombatScene::DrawBullets(const glm::mat4& viewProjection) const
+void CombatScene::DrawBullets(const glm::mat4& projection, const glm::mat4& view) const
 {
-    const auto* battle = ActiveEncounter();
-    const auto& shots = battle->PlayerFlights();
-    for (const auto& flight : shots)
+    const glm::vec3 playerColor(0.48f, 0.90f, 1.0f);
+    const glm::vec3 enemyColor(1.0f, 0.15f, 0.08f);
+    const glm::vec3 turretColor(1.0f, 0.66f, 0.12f);
+    for (const auto& flight : activeBattle->PlayerFlights())
     {
-        const auto p = flight.bullet.position;
-        DrawBox(viewProjection, p - glm::vec3(0.055f), p + glm::vec3(0.055f), {1, 0.85f, 0.15f});
+        bulletView.Draw(projection, view, flight.bullet, playerColor, 0.04125f);
     }
-    for (const auto& flight : battle->EnemyFlights())
+    for (const auto& flight : activeBattle->EnemyFlights())
     {
-        const auto p = flight.bullet.position;
-        DrawBox(viewProjection, p - glm::vec3(0.08f), p + glm::vec3(0.08f), {1, 0.15f, 0.08f});
+        const bool turretShot = flight.bulletStyle == combat::BulletStyle::Turret;
+        bulletView.Draw(projection, view, flight.bullet, turretShot ? turretColor : enemyColor,
+                        turretShot ? 0.08f : 0.04f);
+    }
+    for (const auto& shard : activeBattle->ImpactShards())
+    {
+        bulletView.DrawShard(projection, view, shard, shard.enemy ? enemyColor : playerColor);
     }
 }
 
@@ -151,7 +170,7 @@ void CombatScene::DrawBox(const glm::mat4& viewProjection, const glm::vec3& mini
 }
 
 void CombatScene::Draw(int width, int height,
-                       const std::function<void(const glm::mat4&, const glm::vec3&)>& drawEnvironment,
+                       const CampaignEnvironment* environment,
                        bool showHud, const Camera* playerCamera) const
 {
     if (width <= 0 || height <= 0)
@@ -182,43 +201,46 @@ void CombatScene::Draw(int width, int height,
                            static_cast<float>(width) / height, 0.05f, 80.0f);
     const glm::mat4 view = playerCamera ? playerCamera->view : PlayerViewMatrix();
     const glm::mat4 scene = projection * view;
-    if (bossMode)
+    if (IsBossMode())
     {
         bossView.Draw(projection, view, PlayerEye(), boss);
     }
-    else if (drawEnvironment)
+    else if (environment)
     {
-        drawEnvironment(scene, PlayerEye());
+        environment->DrawBattle(scene, PlayerEye(), IsCombatMapMode(), DoorProgress());
     }
-    if (corridorMode && !bossMode && !coreMode)
+    if (corridorMode && activeBattle == &encounter)
     {
         terminalRenderer.Begin(PlayerEye(), {0.45f, 0.9f, 0.7f}, {1, 1, 1}, 3, 0.3f);
         terminalRenderer.Draw(terminalMeshes, scene, glm::translate(glm::mat4(1), TerminalPosition()));
     }
-    if (combatMapMode && !coreMode)
+    if (combatMapMode && !IsCoreMode())
     {
         signs.Draw(scene, SupplyPosition(), TerminalPosition(), CanAnalyze(), maintenanceMode, approachMode);
     }
     DrawEnemies(scene);
+    DrawBullets(projection, view);
     glUseProgram(program);
     glUniform1f(opacityLocation, 1);
     glBindVertexArray(vao);
     DrawCollisionBoxes(scene);
-    DrawBullets(scene);
     DrawWeaponFragments(scene);
-    const auto supply = bossMode ? boss_asset::supplyWeapon : SupplyPosition();
-    if (!bossMode)
+    const auto supply = IsBossMode() ? boss_asset::supplyWeapon : SupplyPosition();
+    if (!IsBossMode())
     {
         DrawBox(scene, supply + glm::vec3(-0.32f, -0.5f, -0.27f),
                 supply + glm::vec3(0.32f, -0.15f, 0.27f), {0.1f, 0.55f, 0.38f});
     }
     glBindVertexArray(0);
     glUseProgram(0);
-    weapon.DrawWorld(projection, view, supply, bossMode ? 0.0f : 90.0f);
+    weapon.DrawWorld(projection, view, supply, IsBossMode() ? 0.0f : 90.0f);
     for (const auto& drop : Inventory().Drops())
     {
         weapon.DrawWorld(projection, view, drop.position);
     }
+    // 벽과 월드 물체의 깊이를 사용하고 1인칭 무기를 그리기 전에 조준선을 합성한다.
+    DrawDroneAimLines(scene);
+    bulletView.DrawTrails(projection, view, PlayerEye(), *activeBattle);
     if (Inventory().Armed())
     {
         weapon.Draw(static_cast<float>(width) / height);

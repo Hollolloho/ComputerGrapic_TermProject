@@ -1,6 +1,7 @@
 #pragma once
 
 #include "combat.h"
+#include "gameplay/effects/destruction_effects.h"
 #include "gameplay/weapons/weapon_inventory.h"
 
 namespace aegis::combat
@@ -34,13 +35,21 @@ public:
     const WeaponInventory& Inventory() const { return inventory; }
     const std::vector<Flight>& PlayerFlights() const { return playerFlights; }
     const std::vector<Flight>& EnemyFlights() const { return enemyFlights; }
+    const std::vector<CrystalShard>& ImpactShards() const { return impactShards; }
+    const std::vector<CrystalTrail>& FadingTrails() const { return fadingTrails; }
+    const std::vector<CrystalMote>& TrailMotes() const { return trailMotes; }
 
 protected:
     void ResetCombat(const glm::vec3& supplyPosition);
     void UpdateShotCooldown(float realDeltaTime);
+    void UpdateBulletEffects(float gameDeltaTime);
+    bool AdvanceFlight(Flight& flight, float gameDeltaTime, const std::vector<Collider>& walls, Hit& hit);
+    void RecordFlightTravel(Flight& flight, const glm::vec3& start, float gameDeltaTime, float travelTime);
+    void ShatterBullet(const Bullet& bullet, bool enemy);
 
     WeaponInventory inventory;
     std::vector<Flight> playerFlights, enemyFlights;
+    std::vector<CrystalShard> impactShards;
     EncounterResult result{EncounterResult::Running};
     int health{100};
     int enemyShots{};
@@ -48,10 +57,12 @@ protected:
 
 private:
     // 매 프레임 충돌체를 만드는 전투에서만 storage를 채운다.
-    virtual std::span<const Collider> InteractionColliders(std::vector<Collider>& storage) const = 0;
+    virtual const std::vector<Collider>& InteractionColliders(std::vector<Collider>& storage) const = 0;
 
     float playerCooldown{};
     int playerShots{};
+    std::vector<CrystalTrail> fadingTrails;
+    std::vector<CrystalMote> trailMotes;
 };
 
 } // namespace aegis::combat

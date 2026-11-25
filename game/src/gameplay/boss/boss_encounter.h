@@ -64,11 +64,12 @@ public:
     }
 
 private:
-    std::span<const Collider> InteractionColliders(std::vector<Collider>& storage) const override;
+    const std::vector<Collider>& InteractionColliders(std::vector<Collider>& storage) const override;
     void UpdatePlayerBullets(float gameDeltaTime);
     void UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& eye, const glm::vec3& forward);
     void AdvancePattern(float dt, const glm::vec3& eye);
     void Shoot(const glm::vec3& eye);
+    std::vector<Collider> walls;
     BossPose pose;
     BossPhase phase{BossPhase::Warning};
     glm::vec3 aimPoint{0, 1.05f, -2.4f};

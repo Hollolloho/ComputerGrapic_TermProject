@@ -1,5 +1,6 @@
 #include "FrameWork.h"
 #include "gameplay/player/player_motion.h"
+#include "gameplay/player/player_settings.h"
 #include "gameplay/player/player_view.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -8,9 +9,9 @@
 
 namespace
 {
-	const float PlayerMoveSpeed = 5.f;
 	const double MaxSimulationStep = 0.05;
 	const float MouseSensitivity = 0.167f;
+	constexpr double TitleUpdateInterval = 0.2;
 	bool moveForward = false;
 	bool moveBackward = false;
 	bool moveLeft = false;
@@ -32,6 +33,7 @@ int GameFrameWork::Run()
 	}
 
 	double previousTime = glfwGetTime();
+	double nextTitleUpdate = 0.0;
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
@@ -45,6 +47,11 @@ int GameFrameWork::Run()
 		if (glfwWindowShouldClose(window))
 			break;
 		Draw();
+		if (drawable && currentTime >= nextTitleUpdate)
+		{
+			UpdateWindowTitle();
+			nextTitleUpdate = glfwGetTime() + TitleUpdateInterval;
+		}
 	}
 	Clear();
 	return 0;
@@ -81,6 +88,7 @@ bool GameFrameWork::Init()
 	glfwSetWindowFocusCallback(window, WindowFocusCallback);
 	glfwSetWindowIconifyCallback(window, WindowFocusCallback);
 	WindowFocusCallback(window, glfwGetWindowAttrib(window, GLFW_FOCUSED));
+
 	std::cout << "WASD: move | mouse: aim | LMB: fire | E: use | G: drop | Shift: normal time\n"
 		"Enter: next area | R: checkpoint | Esc/Space: pause | Q: quit\n";
 	return true;
@@ -102,19 +110,21 @@ void GameFrameWork::Update(double deltaTime)
 	movementTimeScale = 0.05;
 	SyncPlayerCamera(inputActive);
 	glm::vec3 direction(0.f);
+	const bool strafing = moveLeft != moveRight;
 	if (cursorCaptured)
 	{
 		// 마우스와 WASD는 렌더 프레임마다 한 번만 읽는다.
 		camera.Rotate(-static_cast<float>(mouseDeltaY) * MouseSensitivity,
 			-static_cast<float>(mouseDeltaX) * MouseSensitivity);
 		camera.UpdateView();
-		scene.SetPlayerView({ camera.camPos, camera.camTarget - camera.camPos, camera.camUp, camera.fovy });
+		SendPlayerView();
 		direction = ReadMovementDirection();
 	}
 	mouseDeltaX = mouseDeltaY = 0.0;
 	scene.SampleInput(window, inputActive, fireClicked);
 	fireClicked = false;
 	SyncPlayerCamera(inputActive);
+
 	if (scene.QuitRequested())
 	{
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -125,28 +135,34 @@ void GameFrameWork::Update(double deltaTime)
 	while (inputActive && remaining > 0.0)
 	{
 		const double step = std::min(remaining, MaxSimulationStep);
+		float strafeAmount = 0.f;
 		if (scene.PlayerControlsActive())
-			MovePlayer(direction, static_cast<float>(step));
-		scene.Update(step, step * scene.PreviewTimeScale());
+			strafeAmount = MovePlayer(direction, static_cast<float>(step));
+		scene.Update(step, step * scene.PreviewTimeScale(), strafing ? strafeAmount : 0.f);
 		remaining -= step;
 	}
+
 	SyncPlayerCamera(inputActive);
 	wasActive = active;
 	restartFrameTime = false;
 }
 
-void GameFrameWork::MovePlayer(const glm::vec3& direction, float step)
+float GameFrameWork::MovePlayer(const glm::vec3& direction, float step)
 {
-	const glm::vec3 desired = direction * (PlayerMoveSpeed * step);
+	const glm::vec3 desired = direction * (aegis::player::MoveSpeed * step);
 	const auto walls = scene.PlayerObstacles();
 	const auto movement = aegis::combat::MovePlayer(camera.camPos, desired, walls);
 	camera.camPos = movement.eye;
 	camera.camTarget += movement.displacement;
 	camera.UpdateView();
 	actualTravel += glm::length(glm::vec2(movement.displacement.x, movement.displacement.z));
-	movementTimeScale = aegis::combat::MovementTimeScale(movement.displacement, step, PlayerMoveSpeed);
+	movementTimeScale = aegis::combat::MovementTimeScale(movement.displacement, step, aegis::player::MoveSpeed);
 	scene.SetMovementTimeScale(movementTimeScale);
-	scene.SetPlayerView({ camera.camPos, camera.camTarget - camera.camPos, camera.camUp, camera.fovy });
+	SendPlayerView();
+
+	// 충돌 후 실제 이동량을 카메라 좌표로 바꾸면 X가 좌우 이동 거리다.
+	const glm::vec4 cameraMovement = camera.view * glm::vec4(movement.displacement, 0.f);
+	return std::clamp(cameraMovement.x / (aegis::player::MoveSpeed * step), -1.f, 1.f);
 }
 
 glm::vec3 GameFrameWork::ReadMovementDirection() const
@@ -159,6 +175,11 @@ glm::vec3 GameFrameWork::ReadMovementDirection() const
 	if (moveRight) rightInput += 1.f;
 	return aegis::combat::RequestedPlayerMovement(camera.camTarget - camera.camPos,
 		forwardInput, rightInput, 1.f);
+}
+
+void GameFrameWork::SendPlayerView()
+{
+	scene.SetPlayerView({ camera.camPos, camera.camTarget - camera.camPos, camera.camUp, camera.fovy });
 }
 
 void GameFrameWork::SyncPlayerCamera(bool inputActive)
@@ -184,7 +205,7 @@ void GameFrameWork::SyncPlayerCamera(bool inputActive)
 	SetCursorCapture(playing && inputActive);
 	if (playing && inputActive)
 	{
-		scene.SetPlayerView({ camera.camPos, camera.camTarget - camera.camPos, camera.camUp, camera.fovy });
+		SendPlayerView();
 		scene.SetMovementTimeScale(movementTimeScale);
 	}
 }
@@ -206,7 +227,6 @@ void GameFrameWork::Draw()
 	}
 	scene.Draw(width, height, playerCamera);
 	glfwSwapBuffers(window);
-	UpdateWindowTitle();
 }
 
 void GameFrameWork::UpdateWindowTitle()

@@ -38,11 +38,12 @@ public:
     bool Break(ObjectId sourceId);
     bool Drop(const glm::vec3& eye, const glm::vec3& direction);
     bool SpawnDrop(const glm::vec3& position);
-    std::optional<float> InteractionDistance(const glm::vec3& eye, const glm::vec3& direction,
-                                             std::span<const Collider> obstacles) const;
+    // 조준선 안에 상호작용할 무기가 없으면 -1을 돌려준다.
+    float InteractionDistance(const glm::vec3& eye, const glm::vec3& direction,
+                              const std::vector<Collider>& obstacles) const;
     WeaponInteraction Hint(const glm::vec3& eye, const glm::vec3& direction,
-                           std::span<const Collider> obstacles) const;
-    bool Interact(const glm::vec3& eye, const glm::vec3& direction, std::span<const Collider> obstacles);
+                           const std::vector<Collider>& obstacles) const;
+    bool Interact(const glm::vec3& eye, const glm::vec3& direction, const std::vector<Collider>& obstacles);
 
     const std::vector<DroppedWeapon>& Drops() const
     {
@@ -72,8 +73,8 @@ public:
     Collider HeldCollider(const glm::vec3& eye, const glm::vec3& direction) const;
 
 private:
-    std::optional<Hit> FindInteraction(const glm::vec3& eye, const glm::vec3& direction,
-                                       std::span<const Collider> obstacles) const;
+    bool FindInteraction(const glm::vec3& eye, const glm::vec3& direction,
+                         const std::vector<Collider>& obstacles, Hit& hit) const;
     glm::vec3 supplyPosition = SupplyPosition();
     ObjectId equipped{1}, nextId{2};
     std::vector<DroppedWeapon> drops;

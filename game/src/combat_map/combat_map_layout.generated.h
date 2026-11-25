@@ -8,7 +8,7 @@ inline constexpr const char* sourceHash="6e029a5b1acdb0f0da5e5b75e9554994c2d93d5
 inline constexpr int triangles=32436;
 inline const glm::vec3 playerStart={0.000000f,0.000000f,-1.500000f};
 inline const glm::vec3 droneSpawn={0.650000f,1.950000f,-11.400000f};
-inline constexpr float droneYawDegrees=-4.420000f;
+inline constexpr float droneRotYDegrees=-4.420000f;
 inline const glm::vec3 supply=playerStart+glm::vec3(-0.8f,1.15f,-1.4f);
 inline const glm::vec3 terminal=playerStart+glm::vec3(0.95f,0,-1.5f);
 inline const std::array<combat::Collider,102> walls={{
@@ -115,7 +115,7 @@ inline const std::array<combat::Collider,102> walls={{
     {30100,combat::HitKind::Wall,{-2.470000f,0.000000f,-8.676500f},{-1.330000f,1.830000f,-6.223500f}}, // Cover_A01
     {30101,combat::HitKind::Wall,{1.260000f,0.000000f,-15.576501f},{2.400000f,1.830000f,-13.623500f}}, // Cover_A02
 }};
-struct DronePlacement { glm::vec3 position; float yawDegrees,scale; };
+struct DronePlacement { glm::vec3 position; float rotYDegrees,scale; };
 inline const std::array<DronePlacement,4> friendDrones={{
     {{0.650000f,1.950000f,-11.400000f},-4.420000f,0.8f},
     {{1.560000f,2.300000f,-40.690000f},12.380000f,0.8f},

@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
-#include <numeric>
 
 namespace aegis
 {
@@ -29,7 +28,8 @@ bool CoreView::LoadPart(const std::filesystem::path& path, std::vector<CoreMesh>
     {
         const auto& material = model.materials.at(source.materialIndex);
         auto& draw = meshes.emplace_back();
-        draw.mesh.Upload(source, material);
+        if (!draw.mesh.Upload(source, material))
+            return false;
         draw.emission = glm::max(material.emissive, glm::vec3(0));
         draw.opacity = std::clamp(material.opacity, 0.0f, 1.0f);
         for (const auto& vertex : source.vertices)
@@ -90,7 +90,7 @@ bool CoreView::Init(const std::filesystem::path& root)
 
     // 바닥 자력장 표시는 작은 고리 메시 하나를 반경에 맞춰 늘린다.
     ModelMesh circle;
-    constexpr int segments = 128;
+    const int segments = 128;
     for (int i = 0; i < segments; ++i)
     {
         const float a = glm::two_pi<float>() * static_cast<float>(i) / segments;
@@ -105,7 +105,11 @@ bool CoreView::Init(const std::filesystem::path& root)
         circle.indices.insert(circle.indices.end(),
                               {first, first + 1, first + 2, first + 2, first + 1, first + 3});
     }
-    ring.Upload(circle, ModelMaterial{});
+    if (!ring.Upload(circle, ModelMaterial{}))
+    {
+        Clear();
+        return false;
+    }
     std::cout << "AI core: structure=" << structure.size() << " hologram=" << hologram.size()
               << " glass=" << glass.size() << '\n';
     return true;
@@ -124,8 +128,7 @@ void CoreView::DrawPart(const std::vector<CoreMesh>& meshes, const glm::mat4& mo
         glUniform1f(metallicLocation, draw.mesh.metallic);
         glUniform1f(roughnessLocation, draw.mesh.roughness);
         glUniform1f(opacityLocation, draw.opacity);
-        glBindVertexArray(draw.mesh.vao);
-        glDrawElements(GL_TRIANGLES, draw.mesh.indexCount, GL_UNSIGNED_INT, nullptr);
+        draw.mesh.Draw();
     }
 }
 
@@ -158,8 +161,7 @@ void CoreView::Draw(const glm::mat4& viewProjection, const glm::vec3& eye, bool 
         glUniform3fv(colorLocation, 1, glm::value_ptr(color));
         glUniform1i(layerLocation, 3);
         glUniform1f(powerLocation, .6f + .4f * std::clamp(phaseProgress, 0.0f, 1.0f));
-        glBindVertexArray(ring.vao);
-        glDrawElements(GL_TRIANGLES, ring.indexCount, GL_UNSIGNED_INT, nullptr);
+        ring.Draw();
     }
 
     // 불투명 구조와 격자를 먼저 그리고 유리 삼각형은 먼 순서로 합성한다.
@@ -167,7 +169,8 @@ void CoreView::Draw(const glm::mat4& viewProjection, const glm::vec3& eye, bool 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_FALSE);
     std::vector<std::size_t> meshOrder(glass.size());
-    std::iota(meshOrder.begin(), meshOrder.end(), 0);
+    for (std::size_t i = 0; i < meshOrder.size(); ++i)
+        meshOrder[i] = i;
     const auto distance = [&](const glm::vec3& center)
     {
         const auto delta = CorePosition + center - eye;
@@ -182,7 +185,8 @@ void CoreView::Draw(const glm::mat4& viewProjection, const glm::vec3& eye, bool 
     {
         const auto& draw = glass[index];
         std::vector<std::size_t> order(draw.triangles.size());
-        std::iota(order.begin(), order.end(), 0);
+        for (std::size_t i = 0; i < order.size(); ++i)
+            order[i] = i;
         std::sort(order.begin(), order.end(), [&](std::size_t a, std::size_t b)
                   { return distance(draw.triangles[a].center) > distance(draw.triangles[b].center); });
         std::vector<unsigned int> indices;

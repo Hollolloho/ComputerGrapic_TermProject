@@ -4,50 +4,46 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
-#include <cstddef>
-#include <fstream>
 #include <iostream>
-#include <sstream>
 
 namespace aegis
 {
-void DrawMesh::Upload(const ModelMesh& mesh, const ModelMaterial& material)
+bool DrawMesh::Upload(const ModelMesh& mesh, const ModelMaterial& material)
 {
     baseColor = material.baseColor;
     metallic = material.metallic;
     roughness = material.roughness;
 
-    // VAO에 정점 속성과 인덱스 버퍼 연결을 기록한다.
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glGenBuffers(1, &ebo);
-    glBindVertexArray(vao);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(ModelVertex), mesh.vertices.data(),
-                 GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int), mesh.indices.data(),
-                 GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ModelVertex),
-                          reinterpret_cast<const void*>(offsetof(ModelVertex, position)));
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ModelVertex),
-                          reinterpret_cast<const void*>(offsetof(ModelVertex, normal)));
-    glEnableVertexAttribArray(1);
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    indexCount = static_cast<GLsizei>(mesh.indices.size());
+    return MeshBuffer::Upload(mesh);
 }
 
-void DrawMesh::Clear()
+bool LoadDrawMeshes(const std::filesystem::path& file, std::vector<DrawMesh>& meshes)
 {
-    glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(1, &vbo);
-    glDeleteBuffers(1, &ebo);
-    vao = vbo = ebo = 0;
-    indexCount = 0;
+    ClearDrawMeshes(meshes);
+    ModelData model;
+    std::string error;
+    if (!LoadModel(file, model, error))
+    {
+        std::cerr << error << '\n';
+        return false;
+    }
+    for (const auto& source : model.meshes)
+    {
+        auto& draw = meshes.emplace_back();
+        if (source.materialIndex >= model.materials.size() || !draw.Upload(source, model.materials[source.materialIndex]))
+        {
+            ClearDrawMeshes(meshes);
+            return false;
+        }
+    }
+    return !meshes.empty();
+}
+
+void ClearDrawMeshes(std::vector<DrawMesh>& meshes)
+{
+    for (auto& mesh : meshes)
+        mesh.Clear();
+    meshes.clear();
 }
 
 bool MeshRenderer::Init(const std::filesystem::path& shaderDirectory)
@@ -104,8 +100,7 @@ void MeshRenderer::Draw(const std::vector<DrawMesh>& meshes, const glm::mat4& sc
         glUniform3fv(specularLocation, 1, glm::value_ptr(mesh.dielectricF0));
         glUniform1f(metallicLocation, mesh.metallic);
         glUniform1f(roughnessLocation, mesh.roughness);
-        glBindVertexArray(mesh.vao);
-        glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, nullptr);
+        mesh.Draw();
     }
     glBindVertexArray(0);
 }

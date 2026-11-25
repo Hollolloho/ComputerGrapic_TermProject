@@ -1,6 +1,6 @@
 // 장착 총, 떨어진 총, 보급과 총 파손을 관리한다. 무기 ID로 같은 총을 중복 처리하지 않는다.
 #include "weapon_inventory.h"
-#include <algorithm>
+#include "main/GameMath.h"
 #include <cmath>
 #include <glm/geometric.hpp>
 
@@ -8,17 +8,12 @@ namespace aegis::combat
 {
 namespace
 {
-constexpr ObjectId supplyId = 0xffffffffu;
-
-bool Finite(const glm::vec3& v)
-{
-    return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
-}
+const ObjectId supplyId = 0xffffffffu;
 
 bool Direction(const glm::vec3& v)
 {
     const auto length2 = glm::dot(v, v);
-    return Finite(v) && std::isfinite(length2) && length2 > 1e-8f;
+    return IsFinite(v) && std::isfinite(length2) && length2 > 1e-8f;
 }
 } // namespace
 
@@ -32,7 +27,7 @@ void WeaponInventory::Reset()
 
 bool WeaponInventory::SetSupplyPosition(const glm::vec3& point)
 {
-    if (!Finite(point))
+    if (!IsFinite(point))
     {
         return false;
     }
@@ -53,7 +48,7 @@ bool WeaponInventory::Break(ObjectId sourceId)
 
 bool WeaponInventory::Drop(const glm::vec3& eye, const glm::vec3& direction)
 {
-    if (!Armed() || !Finite(eye) || !Direction(direction) || drops.size() >= 64)
+    if (!Armed() || !IsFinite(eye) || !Direction(direction) || drops.size() >= 64)
     {
         return false;
     }
@@ -66,7 +61,7 @@ bool WeaponInventory::Drop(const glm::vec3& eye, const glm::vec3& direction)
 
 bool WeaponInventory::SpawnDrop(const glm::vec3& position)
 {
-    if (!Finite(position) || drops.size() >= 64 || nextId == supplyId)
+    if (!IsFinite(position) || drops.size() >= 64 || nextId == supplyId)
     {
         return false;
     }
@@ -74,12 +69,12 @@ bool WeaponInventory::SpawnDrop(const glm::vec3& position)
     return true;
 }
 
-std::optional<Hit> WeaponInventory::FindInteraction(const glm::vec3& eye, const glm::vec3& direction,
-                                                    std::span<const Collider> obstacles) const
+bool WeaponInventory::FindInteraction(const glm::vec3& eye, const glm::vec3& direction,
+                                      const std::vector<Collider>& obstacles, Hit& item) const
 {
-    if (Armed() || !Finite(eye) || !Direction(direction))
+    if (Armed() || !IsFinite(eye) || !Direction(direction))
     {
-        return {};
+        return false;
     }
     const auto end = eye + glm::normalize(direction) * 2.5f;
     std::vector<Collider> candidates;
@@ -90,40 +85,39 @@ std::optional<Hit> WeaponInventory::FindInteraction(const glm::vec3& eye, const 
         candidates.push_back({drop.id, HitKind::Weapon, drop.position - glm::vec3(0.25f, 0.12f, 0.25f),
                               drop.position + glm::vec3(0.25f, 0.12f, 0.25f)});
     }
-    const auto item = FindFirstHit(eye, end, candidates);
-    if (!item)
+    if (!FindFirstHit(eye, end, candidates, item))
     {
-        return {};
+        return false;
     }
     // Walls/armor/body occlude interaction; no pickup through scenery or enemies.
-    const auto obstruction = FindFirstHit(eye, end, obstacles);
-    if (obstruction && obstruction->fraction <= item->fraction)
+    Hit obstruction;
+    if (FindFirstHit(eye, end, obstacles, obstruction) && obstruction.fraction <= item.fraction)
     {
-        return {};
+        return false;
     }
-    return item;
+    return true;
 }
 
-std::optional<float> WeaponInventory::InteractionDistance(const glm::vec3& eye, const glm::vec3& direction,
-                                                          std::span<const Collider> obstacles) const
+float WeaponInventory::InteractionDistance(const glm::vec3& eye, const glm::vec3& direction,
+                                           const std::vector<Collider>& obstacles) const
 {
-    const auto hit = FindInteraction(eye, direction, obstacles);
-    if (!hit)
+    Hit hit;
+    if (!FindInteraction(eye, direction, obstacles, hit))
     {
-        return std::nullopt;
+        return -1.0f;
     }
-    return hit->fraction * 2.5f;
+    return hit.fraction * 2.5f;
 }
 
 WeaponInteraction WeaponInventory::Hint(const glm::vec3& eye, const glm::vec3& direction,
-                                        std::span<const Collider> obstacles) const
+                                        const std::vector<Collider>& obstacles) const
 {
-    const auto hit = FindInteraction(eye, direction, obstacles);
-    if (!hit || hit->objectId == 0)
+    Hit hit;
+    if (!FindInteraction(eye, direction, obstacles, hit) || hit.objectId == 0)
     {
         return WeaponInteraction::None;
     }
-    if (hit->objectId == supplyId)
+    if (hit.objectId == supplyId)
     {
         return WeaponInteraction::Supply;
     }
@@ -131,14 +125,14 @@ WeaponInteraction WeaponInventory::Hint(const glm::vec3& eye, const glm::vec3& d
 }
 
 bool WeaponInventory::Interact(const glm::vec3& eye, const glm::vec3& direction,
-                               std::span<const Collider> obstacles)
+                               const std::vector<Collider>& obstacles)
 {
-    const auto hit = FindInteraction(eye, direction, obstacles);
-    const auto id = hit ? hit->objectId : 0;
-    if (!id)
+    Hit hit;
+    if (!FindInteraction(eye, direction, obstacles, hit) || hit.objectId == 0)
     {
         return false;
     }
+    const ObjectId id = hit.objectId;
     if (id == supplyId)
     {
         if (nextId == supplyId)
@@ -165,7 +159,7 @@ bool WeaponInventory::Interact(const glm::vec3& eye, const glm::vec3& direction,
 
 Collider WeaponInventory::HeldCollider(const glm::vec3& eye, const glm::vec3& direction) const
 {
-    if (!Armed() || !Finite(eye) || !Direction(direction))
+    if (!Armed() || !IsFinite(eye) || !Direction(direction))
     {
         return {0, HitKind::Weapon, {0, 0, 0}, {0, 0, 0}, false};
     }

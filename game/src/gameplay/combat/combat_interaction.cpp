@@ -11,8 +11,7 @@ bool CombatScene::Fire(const glm::vec3& direction)
         return false;
     }
     const glm::vec3 startPosition = PlayerEye();
-    auto* currentBattle = ActiveEncounter();
-    if (!currentBattle->Fire(startPosition, direction))
+    if (!activeBattle->Fire(startPosition, direction))
     {
         return false;
     }
@@ -24,7 +23,7 @@ bool CombatScene::Fire(const glm::vec3& direction)
 
 const combat::WeaponInventory& CombatScene::Inventory() const
 {
-    return ActiveEncounter()->Inventory();
+    return activeBattle->Inventory();
 }
 
 bool CombatScene::Interact(const glm::vec3& direction)
@@ -33,7 +32,7 @@ bool CombatScene::Interact(const glm::vec3& direction)
     {
         return analysis.Open(CanAnalyze(), TerminalCollider(), PlayerEye(), direction, encounter.Colliders());
     }
-    return ActiveEncounter()->Interact(PlayerEye(), direction);
+    return activeBattle->Interact(PlayerEye(), direction);
 }
 
 glm::vec3 CombatScene::TerminalPosition() const
@@ -57,7 +56,7 @@ combat::Collider CombatScene::TerminalCollider() const
 
 glm::vec3 CombatScene::SupplyPosition() const
 {
-    if (coreMode) return combat::CoreEncounter::SupplyPosition();
+    if (IsCoreMode()) return combat::CoreEncounter::SupplyPosition();
     if (approachMode) return CameraRoot() + glm::vec3(-0.8f, 1.15f, -1.4f);
     if (maintenanceMode)
     {
@@ -73,7 +72,7 @@ bool CombatScene::TerminalTarget() const
 
 bool CombatScene::TerminalTarget(const glm::vec3& direction) const
 {
-    if (!corridorMode || bossMode || coreMode)
+    if (!corridorMode || IsBossMode() || IsCoreMode())
     {
         return false;
     }
@@ -88,7 +87,7 @@ combat::WeaponInteraction CombatScene::InteractionHint() const
     {
         return combat::WeaponInteraction::None;
     }
-    return ActiveEncounter()->InteractionHint(PlayerEye(), PlayerForward());
+    return activeBattle->InteractionHint(PlayerEye(), PlayerForward());
 }
 
 } // namespace aegis

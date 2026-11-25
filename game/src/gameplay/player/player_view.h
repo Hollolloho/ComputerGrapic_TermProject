@@ -1,16 +1,17 @@
 #pragma once
+#include "player_settings.h"
 #include <glm/glm.hpp>
+#include "main/GameMath.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
-#include <optional>
 
 namespace aegis
 {
 // World-space eye, not the floor/root position. FOV affects projection only.
 struct PlayerView
 {
-    glm::vec3 eye{0, 1.65f, 0}, forward{0, 0, -1}, up{0, 1, 0};
-    float verticalFovDegrees{60};
+    glm::vec3 eye{0, player::EyeHeight, 0}, forward{0, 0, -1}, up{0, 1, 0};
+    float verticalFovDegrees{player::WorldFovY};
 
     glm::mat4 ViewMatrix() const
     {
@@ -23,9 +24,7 @@ class PlayerViewInput
 public:
     bool Set(const PlayerView& input)
     {
-        const auto finite = [](const glm::vec3& v)
-        { return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z); };
-        if (!finite(input.eye) || !finite(input.forward) || !finite(input.up) ||
+        if (!IsFinite(input.eye) || !IsFinite(input.forward) || !IsFinite(input.up) ||
             !std::isfinite(input.verticalFovDegrees) || input.verticalFovDegrees < 35 ||
             input.verticalFovDegrees > 70)
         {
@@ -45,26 +44,28 @@ public:
             return false;
         }
         candidate.up = glm::normalize(glm::cross(right / length, candidate.forward));
-        value = candidate;
+        view = candidate;
+        active = true;
         return true;
     }
 
     void Clear()
     {
-        value.reset();
+        active = false;
     }
 
     bool Active() const
     {
-        return value.has_value();
+        return active;
     }
 
     PlayerView Selected(const PlayerView& fallback) const
     {
-        return value.value_or(fallback);
+        return active ? view : fallback;
     }
 
 private:
-    std::optional<PlayerView> value;
+    PlayerView view;
+    bool active = false;
 };
 } // namespace aegis

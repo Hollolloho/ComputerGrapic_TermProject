@@ -1,24 +1,22 @@
 // 메뉴의 선택 결과를 캠페인 진행과 전투 장면에 전달한다.
 #include "game_scene.h"
-#include "campaign_menu.h"
-#include "gameplay/combat/combat_scene.h"
 
 namespace aegis
 {
 void GameScene::SampleInput(GLFWwindow* window, bool canReceiveInput, bool fireClicked)
 {
     bool consumed = false;
-    const auto action = menu->SampleInput(window, canReceiveInput && !AnalysisActive(), Page(), consumed);
+    const auto action = menu.SampleInput(window, canReceiveInput && !AnalysisActive(), Page(), consumed);
     ApplyAction(action);
     const bool combatInputActive = canReceiveInput && !consumed && (flow.WorldRuns() || AnalysisActive());
-    combatScene->SampleInput(window, combatInputActive, fireClicked);
+    combatScene.SampleInput(window, combatInputActive, fireClicked);
 }
 
 void GameScene::ApplyAction(UiAction action)
 {
     if (action != UiAction::Credits && action != UiAction::None)
     {
-        menu->ShowCredits(false);
+        menu.ShowCredits(false);
     }
     switch (action)
     {
@@ -29,7 +27,7 @@ void GameScene::ApplyAction(UiAction action)
         }
         break;
     case UiAction::Credits:
-        menu->ShowCredits(true);
+        menu.ShowCredits(true);
         break;
     case UiAction::Help:
         flow.ShowHelp();
@@ -47,7 +45,7 @@ void GameScene::ApplyAction(UiAction action)
     case UiAction::Analyze:
         if (flow.Screen() == CampaignScreen::Playing && flow.Stage() == CampaignStage::Entry)
         {
-            combatScene->OpenEntryAnalysis();
+            combatScene.OpenEntryAnalysis();
         }
         break;
     case UiAction::Resume:
@@ -78,9 +76,9 @@ void GameScene::ApplyAction(UiAction action)
 
 bool GameScene::TogglePause()
 {
-    if (menu->CreditsVisible())
+    if (menu.CreditsVisible())
     {
-        menu->ShowCredits(false);
+        menu.ShowCredits(false);
         return true;
     }
     if (flow.Screen() == CampaignScreen::Help)
@@ -93,24 +91,31 @@ bool GameScene::TogglePause()
 
 UiPage GameScene::Page() const
 {
-    auto page = menu->Page(flow, ReadyToAdvance());
-    if (!menu->CreditsVisible() && flow.Screen() == CampaignScreen::Playing &&
+    auto page = menu.Page(flow, ReadyToAdvance());
+    if (!menu.CreditsVisible() && flow.Screen() == CampaignScreen::Playing &&
         flow.Stage() != CampaignStage::Entry)
     {
-        combatScene->PopulateHud(page);
+        combatScene.PopulateHud(page);
     }
     return page;
 }
 
 std::string GameScene::StatusTitle() const
 {
-    const char* screen = menu->CreditsVisible()                      ? "CREDITS"
-                         : flow.Screen() == CampaignScreen::Title   ? "TITLE"
-                         : flow.Screen() == CampaignScreen::Help    ? "HELP"
-                         : flow.Screen() == CampaignScreen::Paused  ? "PAUSED"
-                         : flow.Screen() == CampaignScreen::Failed  ? "FAILED"
-                         : flow.Screen() == CampaignScreen::Victory ? "VICTORY"
-                                                                    : "PLAYING";
+    const char* screen = "PLAYING";
+    switch (flow.Screen())
+    {
+    case CampaignScreen::Title:   screen = "TITLE"; break;
+    case CampaignScreen::Help:    screen = "HELP"; break;
+    case CampaignScreen::Playing: break;
+    case CampaignScreen::Paused:  screen = "PAUSED"; break;
+    case CampaignScreen::Failed:  screen = "FAILED"; break;
+    case CampaignScreen::Victory: screen = "VICTORY"; break;
+    }
+    if (menu.CreditsVisible())
+    {
+        screen = "CREDITS";
+    }
     const char* stage = "ENTRY";
     switch (flow.Stage())
     {
@@ -131,7 +136,7 @@ std::string GameScene::StatusTitle() const
         break;
     }
     return std::string("AEGIS CAMPAIGN | ") + screen + " | " + stage + " | " +
-           combatScene->StatusTitle(false) + combatScene->TimeDebug();
+           combatScene.StatusTitle(false) + combatScene.TimeDebug();
 }
 
 } // namespace aegis

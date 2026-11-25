@@ -1,8 +1,8 @@
 #version 330 core
 
-layout(location = 0) in vec3 aPosition;
-layout(location = 1) in vec3 aNormal;
-layout(location = 2) in vec2 aUV;
+in vec3 position;
+in vec3 normal;
+in vec2 texcoord;
 uniform mat4 uTransform;
 uniform mat4 uModel;
 out vec3 worldPosition;
@@ -11,8 +11,8 @@ out vec2 uv;
 
 void main()
 {
-    worldPosition = vec3(uModel * vec4(aPosition, 1));
-    worldNormal = mat3(uModel) * aNormal;
-    uv = aUV;
-    gl_Position = uTransform * vec4(aPosition, 1);
+    worldPosition = vec3(uModel * vec4(position, 1));
+    worldNormal = mat3(uModel) * normal;
+    uv = texcoord;
+    gl_Position = uTransform * vec4(position, 1);
 }

@@ -15,73 +15,89 @@ namespace
 	}
 }
 
+bool MeshBuffer::Upload(const aegis::ModelMesh& source)
+{
+	Clear();
+	if (source.vertices.empty() || source.indices.empty() ||
+		source.indices.size() > (std::numeric_limits<GLsizei>::max)())
+		return false;
+
+	glGenVertexArrays(1, &vao);
+	glGenBuffers(1, &vbo);
+	glGenBuffers(1, &ebo);
+	if (!vao || !vbo || !ebo)
+	{
+		Clear();
+		return false;
+	}
+
+	glBindVertexArray(vao);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	const GLsizeiptr vertexBytes = source.vertices.size() * sizeof(aegis::ModelVertex);
+	const GLsizeiptr indexBytes = source.indices.size() * sizeof(unsigned int);
+	if (!UploadBuffer(GL_ARRAY_BUFFER, vertexBytes, source.vertices.data()) ||
+		!UploadBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBytes, source.indices.data()))
+	{
+		Clear();
+		return false;
+	}
+
+	// ModelVertex의 위치, 법선, UV를 각 셰이더의 입력 번호 0, 1, 2에 연결한다.
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(aegis::ModelVertex),
+		reinterpret_cast<const void*>(offsetof(aegis::ModelVertex, position)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(aegis::ModelVertex),
+		reinterpret_cast<const void*>(offsetof(aegis::ModelVertex, normal)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(aegis::ModelVertex),
+		reinterpret_cast<const void*>(offsetof(aegis::ModelVertex, uv)));
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	indexCount = static_cast<GLsizei>(source.indices.size());
+	return true;
+}
+
+void MeshBuffer::Draw() const
+{
+	glBindVertexArray(vao);
+	glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr);
+}
+
+void MeshBuffer::Clear()
+{
+	glDeleteVertexArrays(1, &vao);
+	glDeleteBuffers(1, &vbo);
+	glDeleteBuffers(1, &ebo);
+	vao = vbo = ebo = 0;
+	indexCount = 0;
+}
+
 bool UploadMeshes(const aegis::ModelData& model, std::vector<RenderMesh>& meshes)
 {
 	ClearMeshes(meshes);
 	meshes.reserve(model.meshes.size());
 	for (const auto& source : model.meshes)
 	{
-		if (source.vertices.empty() || source.indices.empty() ||
-			source.indices.size() > (std::numeric_limits<GLsizei>::max)() ||
-			source.materialIndex >= model.materials.size())
+		auto& mesh = meshes.emplace_back();
+		if (source.materialIndex >= model.materials.size() || !mesh.Upload(source))
 		{
 			ClearMeshes(meshes);
 			return false;
 		}
-
-		RenderMesh& mesh = meshes.emplace_back();
-		mesh.indexCount = static_cast<GLsizei>(source.indices.size());
 		const auto& material = model.materials[source.materialIndex];
 		mesh.color = material.diffuse;
 		mesh.emission = material.emissive;
-
-		glGenVertexArrays(1, &mesh.vao);
-		glGenBuffers(1, &mesh.vbo);
-		glGenBuffers(1, &mesh.ebo);
-		if (!mesh.vao || !mesh.vbo || !mesh.ebo)
-		{
-			ClearMeshes(meshes);
-			return false;
-		}
-
-		glBindVertexArray(mesh.vao);
-		glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
-		const auto vertexBytes = static_cast<GLsizeiptr>(source.vertices.size() * sizeof(aegis::ModelVertex));
-		if (!UploadBuffer(GL_ARRAY_BUFFER, vertexBytes, source.vertices.data()))
-		{
-			ClearMeshes(meshes);
-			return false;
-		}
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(aegis::ModelVertex),
-			reinterpret_cast<const void*>(offsetof(aegis::ModelVertex, position)));
-		glEnableVertexAttribArray(0);
-
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(aegis::ModelVertex),
-			reinterpret_cast<const void*>(offsetof(aegis::ModelVertex, normal)));
-		glEnableVertexAttribArray(1);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ebo);
-		const auto indexBytes = static_cast<GLsizeiptr>(source.indices.size() * sizeof(unsigned int));
-		if (!UploadBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBytes, source.indices.data()))
-		{
-			ClearMeshes(meshes);
-			return false;
-		}
+		mesh.specular = material.specular;
+		mesh.shininess = material.shininess;
 	}
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	return !meshes.empty();
 }
 
 void ClearMeshes(std::vector<RenderMesh>& meshes)
 {
-	for (const RenderMesh& mesh : meshes)
-	{
-		glDeleteVertexArrays(1, &mesh.vao);
-		glDeleteBuffers(1, &mesh.vbo);
-		glDeleteBuffers(1, &mesh.ebo);
-	}
+	for (auto& mesh : meshes)
+		mesh.Clear();
 	meshes.clear();
 }

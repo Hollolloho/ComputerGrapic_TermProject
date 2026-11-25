@@ -32,6 +32,8 @@
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\corridor\test_scene\door_right.obj" TargetPath="asset\corridor\test_scene\door_right.obj" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\corridor\test_scene\materials.mtl" TargetPath="asset\corridor\test_scene\materials.mtl" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\crystal_cartridge.obj" TargetPath="asset\cw01c\runtime\obj\crystal_cartridge.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\crystal_bullet.obj" TargetPath="asset\cw01c\runtime\obj\crystal_bullet.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\crystal_chip.obj" TargetPath="asset\cw01c\runtime\obj\crystal_chip.obj" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\cw01c.mtl" TargetPath="asset\cw01c\runtime\obj\cw01c.mtl" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\front_trim.obj" TargetPath="asset\cw01c\runtime\obj\front_trim.obj" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\cw01c\runtime\obj\grip.obj" TargetPath="asset\cw01c\runtime\obj\grip.obj" />
@@ -55,6 +57,10 @@
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\combat_map.frag" TargetPath="shaders\combat_map.frag" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\combat_map.vert" TargetPath="shaders\combat_map.vert" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\death_effect.frag" TargetPath="shaders\death_effect.frag" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\ui.vert" TargetPath="shaders\ui.vert" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\ui.frag" TargetPath="shaders\ui.frag" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\combat_box.vert" TargetPath="shaders\combat_box.vert" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\combat_box.frag" TargetPath="shaders\combat_box.frag" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\death_effect.vert" TargetPath="shaders\death_effect.vert" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\drone.frag" TargetPath="shaders\drone.frag" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\drone.vert" TargetPath="shaders\drone.vert" />
@@ -62,6 +68,8 @@
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\mesh.vert" TargetPath="shaders\mesh.vert" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\turret.frag" TargetPath="shaders\turret.frag" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\turret.vert" TargetPath="shaders\turret.vert" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\bullet.vert" TargetPath="shaders\bullet.vert" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\bullet.frag" TargetPath="shaders\bullet.frag" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\weapon.frag" TargetPath="shaders\weapon.frag" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\weapon.vert" TargetPath="shaders\weapon.vert" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\ai_core\obj\core_structure.obj" TargetPath="asset\ai_core\obj\core_structure.obj" />
