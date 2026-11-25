@@ -5,6 +5,7 @@ namespace aegis
 {
 void GameScene::SampleInput(GLFWwindow* window, bool canReceiveInput, bool fireClicked)
 {
+    inputActive = canReceiveInput;
     bool consumed = false;
     const auto action = menu.SampleInput(window, canReceiveInput && !AnalysisActive(), Page(), consumed);
     ApplyAction(action);
@@ -96,6 +97,17 @@ UiPage GameScene::Page() const
         flow.Stage() != CampaignStage::Entry)
     {
         combatScene.PopulateHud(page);
+        page.title.clear();
+        page.body.clear();
+        page.counters.clear();
+        page.footer.clear();
+        page.timeStatus.clear();
+    }
+    // 입력을 받지 않는 프레임에는 이전 전투 상태 대신 정지 안내를 보여준다.
+    if (!page.panel && !inputActive)
+    {
+        page.warning = L"입력 중지";
+        page.danger = false;
     }
     return page;
 }

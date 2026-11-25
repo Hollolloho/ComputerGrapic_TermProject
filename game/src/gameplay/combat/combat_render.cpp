@@ -220,7 +220,7 @@ void CombatScene::Draw(int width, int height,
         terminalRenderer.Begin(PlayerEye(), {0.45f, 0.9f, 0.7f}, {1, 1, 1}, 3, 0.3f);
         terminalRenderer.Draw(terminalMeshes, scene, glm::translate(glm::mat4(1), TerminalPosition()));
     }
-    if (combatMapMode && !IsCoreMode())
+    if (showHud && combatMapMode && !IsCoreMode())
     {
         glm::vec3 exitSign(0.f, 2.55f, -17.5f);
         if (interlockMode)
@@ -336,16 +336,13 @@ void CombatScene::DrawAnalysis(int width, int height) const
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
     glDisable(GL_CULL_FACE);
-    glClearColor(0.025f, 0.055f, 0.09f, 1);
+    glClearColor(0.025f, 0.027f, 0.03f, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     const glm::vec3 eye = analysis.EyePosition();
     const auto viewProjection =
         glm::perspective(glm::radians(analysis.FieldOfView()), static_cast<float>(width) / height, 0.05f, 30.0f) *
         glm::lookAt(eye, glm::vec3(0), glm::vec3(0, 1, 0));
     drone.Draw(viewProjection, glm::mat4(1), false, true, true);
-    glEnable(GL_SCISSOR_TEST);
-    DrawHud(width, height);
-    glDisable(GL_SCISSOR_TEST);
 }
 
 } // namespace aegis

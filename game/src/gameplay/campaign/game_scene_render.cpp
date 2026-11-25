@@ -12,6 +12,12 @@ void GameScene::Draw(int width, int height, const Camera* playerCamera) const
     if (AnalysisActive())
     {
         combatScene.Draw(width, height, &environment, false, playerCamera);
+        UiPage page;
+        page.panel = false;
+        page.title = L"S-07 분석";
+        page.counters = L"FOV " + std::to_wstring(static_cast<int>(combatScene.AnalysisState().FieldOfView())) + L"°";
+        page.footer = L"드래그: 공전    휠: 확대    E / Esc: 닫기";
+        menu.Draw(page, width, height);
         return;
     }
     if (flow.Stage() == CampaignStage::Entry || flow.Screen() == CampaignScreen::Title ||

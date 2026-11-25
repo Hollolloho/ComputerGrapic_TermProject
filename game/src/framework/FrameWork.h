@@ -39,7 +39,6 @@ private:
 	void SyncPlayerCamera(bool inputActive);
 	void SendPlayerView();
 	void SetCursorCapture(bool captured);
-	void UpdateWindowTitle();
 	glm::vec3 ReadMovementDirection() const;
 	static void CursorPosCallback(GLFWwindow* window, double x, double y);
 	static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
