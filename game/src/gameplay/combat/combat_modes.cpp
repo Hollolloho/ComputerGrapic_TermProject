@@ -1,6 +1,7 @@
 // 전투 구역별 배치, 시점과 이동 충돌 범위를 설정한다.
 #include "combat_scene.h"
 #include "combat_map/corridor_layout.generated.h"
+#include "combat_map/interlock_layout.h"
 #include "combat_map/terminal_layout.generated.h"
 #include <limits>
 
@@ -15,6 +16,7 @@ void CombatScene::SetCorridorMode(bool enabled)
 {
     activeBattle = &encounter;
     combatMapMode = false;
+    interlockMode = false;
     maintenanceMode = false;
     encounter.SetExtraDrones({});
     encounter.SetDroneScale(1);
@@ -40,6 +42,8 @@ void CombatScene::BeginCombatMap()
     activeBattle = &encounter;
     combatMapMode = true;
     corridorMode = true;
+    interlockMode = false;
+    maintenanceMode = false;
     encounter.SetExtraDrones({});
     encounter.SetExitDoors(0, 0, 0);
     encounter.SetDroneMode(true);
@@ -53,7 +57,6 @@ void CombatScene::SetCombatMapMode(bool enabled)
         return;
     }
     BeginCombatMap();
-    maintenanceMode = false;
     encounter.SetDroneScale(1);
     std::vector<combat::Collider> walls(combat_map_asset::walls.begin(), combat_map_asset::walls.end());
     walls.push_back(TerminalCollider());
@@ -64,6 +67,26 @@ void CombatScene::SetCombatMapMode(bool enabled)
     encounter.SetDroneSpawn(droneStart, glm::radians(combat_map_asset::droneRotYDegrees), -14.40f);
     encounter.SetSupply(combat_map_asset::supply);
     encounter.SetTurrets(combat::TurretType::SingleC, {{-1.55f, 0, -15.9f}});
+    Reset();
+}
+
+void CombatScene::SetInterlockMode()
+{
+    BeginCombatMap();
+    interlockMode = true;
+
+    std::vector<combat::Collider> walls;
+    for (const auto& wall : combat_map_asset::playerWalls)
+    {
+        if (wall.minimum.z <= interlock_asset::entranceZ && wall.maximum.z >= interlock_asset::exitZ)
+            walls.push_back(wall);
+    }
+    walls.push_back(TerminalCollider());
+    encounter.SetEnvironment(walls);
+    encounter.SetDroneSpawn({0.8f, 2.3f, -28.f}, 0.f, -25.5f);
+    encounter.SetDroneScale(0.8f);
+    encounter.SetTurrets(combat::TurretType::SingleC, {{-3.8f, 0.f, -29.3f}, {3.4f, 0.f, -26.2f}});
+    encounter.SetSupply(SupplyPosition());
     Reset();
 }
 
@@ -109,6 +132,7 @@ void CombatScene::SetBossMode(bool enabled)
     {
         activeBattle = &boss;
         combatMapMode = false;
+        interlockMode = false;
         maintenanceMode = false;
     }
     Reset();
@@ -118,6 +142,7 @@ void CombatScene::SetCoreMode()
 {
     encounter.SetExtraDrones({});
     activeBattle = &core;
+    interlockMode = false;
     maintenanceMode = false;
     combatMapMode = corridorMode = true;
     Reset();
@@ -133,6 +158,10 @@ glm::vec3 CombatScene::CameraRoot() const
             return combat::BossEncounter::CoverRoot();
         }
         return combat::BossEncounter::FiringRoot();
+    }
+    if (interlockMode)
+    {
+        return interlock_asset::playerStart;
     }
     if (maintenanceMode)
     {
@@ -214,6 +243,15 @@ std::vector<combat::Collider> CombatScene::PlayerObstacles() const
         return walls;
     }
     return encounter.Colliders();
+}
+
+const wchar_t* CombatScene::NextAreaDirection() const
+{
+    if (maintenanceMode)
+        return L"코어실로";
+    if (interlockMode || !combatMapMode)
+        return L"정비 복도로";
+    return L"사각방으로";
 }
 
 } // namespace aegis

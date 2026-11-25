@@ -125,6 +125,9 @@ std::string GameScene::StatusTitle() const
     case CampaignStage::Corridor:
         stage = "CORRIDOR";
         break;
+    case CampaignStage::Interlock:
+        stage = "INTERLOCK";
+        break;
     case CampaignStage::Maintenance:
         stage = "MAINTENANCE";
         break;

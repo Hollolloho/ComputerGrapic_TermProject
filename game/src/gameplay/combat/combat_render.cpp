@@ -1,6 +1,7 @@
 // 적·탄환·무기·파편을 그린다. 충돌과 피해 판정은 여기서 처리하지 않는다.
 #include "combat_scene.h"
 #include "gameplay/campaign/campaign_environment.h"
+#include "combat_map/interlock_layout.h"
 #include "camera/Camera.h"
 #include "combat_map/corridor_layout.generated.h"
 #include "combat_map/terminal_layout.generated.h"
@@ -224,7 +225,12 @@ void CombatScene::Draw(int width, int height,
     }
     if (combatMapMode && !IsCoreMode())
     {
-        signs.Draw(scene, SupplyPosition(), TerminalPosition(), CanAnalyze(), maintenanceMode);
+        glm::vec3 exitSign(0.f, 2.55f, -17.5f);
+        if (interlockMode)
+            exitSign = interlock_asset::exitSign;
+        else if (maintenanceMode)
+            exitSign = glm::vec3(7.8f, 2.55f, -47.3f);
+        signs.Draw(scene, SupplyPosition(), TerminalPosition(), CanAnalyze(), NextAreaDirection(), exitSign);
     }
     DrawEnemies(scene);
     DrawBullets(projection, view);

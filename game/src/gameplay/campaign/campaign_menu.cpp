@@ -83,7 +83,7 @@ UiPage CampaignMenu::Page(const CampaignFlow& flow, bool readyToAdvance) const
     case CampaignScreen::Title:
         page.title = L"AEGIS  저항 작전";
         page.body = L"중앙 AI가 장악한 시설에 침투하세요.\n전투 복도를 돌파하고 코어를 파괴하는 것이 "
-                    L"목표입니다.\n\n시작 → 안전 진입실 → 첫 복도 → 정비 복도 → 코어실";
+                    L"목표입니다.\n\n안전 진입실 → 첫 복도 → 사각방 → 정비 복도 → 코어실";
         AddMenuButton(page, UiAction::Start, L"게임 시작", 430);
         AddMenuButton(page, UiAction::Help, L"조작 안내", 494);
         AddMenuButton(page, UiAction::Quit, L"게임 종료", 558);
@@ -94,7 +94,7 @@ UiPage CampaignMenu::Page(const CampaignFlow& flow, bool readyToAdvance) const
         page.title = L"조작 안내";
         page.body = L"WASD 이동 · 마우스 조준 · 왼쪽 클릭 사격\n정지: 느린 시간 / 이동: 시간 진행\n사격 후 "
                     L"0.25초는 적도 정상 진행\n본체 명중 → 내 총 파손 / 빈손 + E: 재무장\n모든 적과 적탄 "
-                    L"정리 → 다음 구역\nShift 정상 진행 · R 재시작 · Esc 메뉴\n보스: 코어를 공격하고 50% 이하 자기장을 피하세요.";
+                    L"정리 → Enter로 다음 구역\nShift 정상 진행 · R 재시작 · Esc 메뉴\n보스: 코어를 공격하고 50% 이하 자기장을 피하세요.";
         AddMenuButton(page, UiAction::Title, L"시작 화면으로", 558);
         page.footer = L"G: 총 내려놓기 · E: 회수·보급·분석 · Enter: 안전 확보 후 다음 구역";
         break;
@@ -109,7 +109,11 @@ UiPage CampaignMenu::Page(const CampaignFlow& flow, bool readyToAdvance) const
         break;
     case CampaignScreen::Failed:
         page.title = L"임무 실패";
-        if (flow.Stage() == CampaignStage::Maintenance)
+        if (flow.Stage() == CampaignStage::Interlock)
+        {
+            page.body = L"사각방에서 전투 불능이 되었습니다.\n다시 시도하면 사각방 입구부터 시작합니다.";
+        }
+        else if (flow.Stage() == CampaignStage::Maintenance)
         {
             page.body = L"정비 복도에서 전투 불능이 되었습니다.\n다시 시도하면 정비 복도부터 시작합니다.";
         }
@@ -148,15 +152,24 @@ UiPage CampaignMenu::Page(const CampaignFlow& flow, bool readyToAdvance) const
         {
             page.title = L"1스테이지 · 첫 복도";
             page.body = readyToAdvance
-                            ? L"복도가 안전해졌습니다. 오른쪽 단말에서 분석하거나 정비 복도로 진행하세요."
+                            ? L"복도가 안전해졌습니다. 오른쪽 단말에서 분석하거나 사각방으로 진행하세요."
                             : L"드론과 포탑을 제거하고 남은 적탄을 피하세요. 모든 위험이 사라지면 진행할 수 "
                               L"있습니다.";
+            page.buttons.push_back(
+                {UiAction::Advance, L"Enter · 사각방으로", 744, 640, 232, 54, readyToAdvance});
+        }
+        else if (flow.Stage() == CampaignStage::Interlock)
+        {
+            page.title = L"2스테이지 · 사각방";
+            page.body = readyToAdvance
+                            ? L"사각방이 안전해졌습니다. 단말에서 분석하거나 정비 복도로 진행하세요."
+                            : L"엄폐물을 이용해 드론 한 대와 단포신 포탑 두 대를 제거하세요.";
             page.buttons.push_back(
                 {UiAction::Advance, L"Enter · 정비 복도로", 744, 640, 232, 54, readyToAdvance});
         }
         else if (flow.Stage() == CampaignStage::Maintenance)
         {
-            page.title = L"2스테이지 · 정비 복도";
+            page.title = L"3스테이지 · 정비 복도";
             page.body = L"드론 세 대와 단포신 포탑 두 대, 쌍포신 포탑 한 대를 파괴하고 남은 적탄을 정리하세요.";
             page.buttons.push_back(
                 {UiAction::Advance, L"Enter · 코어실로", 744, 640, 232, 54, readyToAdvance});
@@ -164,7 +177,7 @@ UiPage CampaignMenu::Page(const CampaignFlow& flow, bool readyToAdvance) const
 
         else
         {
-            page.title = L"3스테이지 · 코어실 보스전";
+            page.title = L"4스테이지 · 코어실 보스전";
             page.body = L"호위 드론과 포탑을 피하며 중앙 코어를 파괴하세요. 코어 체력 50% 이하에서는 "
                         L"자기장이 발동합니다.\n빈손일 때 입구 보급대 조준 + E  /  Esc로 메뉴";
         }

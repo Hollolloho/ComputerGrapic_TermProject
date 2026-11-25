@@ -70,6 +70,7 @@ public:
     void SetDroneMode(bool enabled);
     void SetCombatMapMode(bool enabled);
 
+    void SetInterlockMode();
     void SetMaintenanceMode();
 
     bool IsCombatMapMode() const
@@ -214,6 +215,7 @@ private:
     glm::vec3 TerminalPosition() const;
     combat::Collider TerminalCollider() const;
     glm::vec3 SupplyPosition() const;
+    const wchar_t* NextAreaDirection() const;
     bool TerminalTarget() const;
     bool TerminalTarget(const glm::vec3& direction) const;
     void DrawAnalysis(int width, int height) const;
@@ -237,6 +239,7 @@ private:
     combat::CoreEncounter core;
     CoreView coreView;
     Turret singleModel, twinModel;
+    bool interlockMode{};
     bool maintenanceMode{};
     bool combatMapMode{};
     bool bossCovered{};

@@ -1,5 +1,6 @@
 // 전투 장면에서 사격, 무기 획득과 분석 단말 상호작용을 처리한다.
 #include "combat_scene.h"
+#include "combat_map/interlock_layout.h"
 #include "combat_map/terminal_layout.generated.h"
 
 namespace aegis
@@ -37,6 +38,8 @@ bool CombatScene::Interact(const glm::vec3& direction)
 
 glm::vec3 CombatScene::TerminalPosition() const
 {
+    if (interlockMode)
+        return interlock_asset::terminal;
     if (maintenanceMode)
     {
         return combat_map_asset::maintenanceTerminal;
@@ -56,6 +59,8 @@ combat::Collider CombatScene::TerminalCollider() const
 glm::vec3 CombatScene::SupplyPosition() const
 {
     if (IsCoreMode()) return combat::CoreEncounter::SupplyPosition();
+    if (interlockMode)
+        return interlock_asset::supply;
     if (maintenanceMode)
     {
         return combat_map_asset::maintenanceSupply;

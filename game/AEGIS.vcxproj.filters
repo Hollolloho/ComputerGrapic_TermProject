@@ -168,6 +168,7 @@
     <ClInclude Include="src\gameplay\combat\combat.h"><Filter>Gameplay\Combat</Filter></ClInclude>
     <ClInclude Include="src\gameplay\combat\combat_feedback.h"><Filter>Gameplay\Combat</Filter></ClInclude>
     <ClInclude Include="src\combat_map\combat_map_layout.generated.h"><Filter>CombatMap</Filter></ClInclude>
+    <ClInclude Include="src\combat_map\interlock_layout.h"><Filter>CombatMap</Filter></ClInclude>
     <ClInclude Include="src\gameplay\combat\combat_scene.h"><Filter>Gameplay\Combat</Filter></ClInclude>
     <ClInclude Include="src\gameplay\combat\combat_time.h"><Filter>Gameplay\Combat</Filter></ClInclude>
     <ClInclude Include="src\gameplay\core\core_encounter.h"><Filter>Gameplay\Core</Filter></ClInclude>

@@ -144,6 +144,7 @@
     <ClInclude Include="src\gameplay\combat\combat.h" />
     <ClInclude Include="src\gameplay\combat\combat_feedback.h" />
     <ClInclude Include="src\combat_map\combat_map_layout.generated.h" />
+    <ClInclude Include="src\combat_map\interlock_layout.h" />
     <ClInclude Include="src\gameplay\combat\combat_scene.h" />
     <ClInclude Include="src\gameplay\combat\combat_time.h" />
     <ClInclude Include="src\combat_map\corridor_layout.generated.h" />

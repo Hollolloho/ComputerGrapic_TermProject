@@ -342,10 +342,8 @@ void CombatScene::PopulateHud(UiPage& page) const
             page.body = L"중앙 AI 코어를 파괴했습니다. 임무를 완료했습니다.";
         else if (!combatMapMode && DoorProgress() < 1)
             page.body = L"출구 문이 열리고 있습니다. 잠시 기다리세요.";
-        else if (maintenanceMode)
-            page.body = L"Enter: 코어실로 진행  /  가까운 단말 조준 + E: 분석";
         else
-            page.body = L"Enter: 정비 복도로 진행  /  가까운 단말 조준 + E: 분석";
+            page.body = std::wstring(L"Enter: ") + NextAreaDirection() + L" 진행  /  가까운 단말 조준 + E: 분석";
     }
     else if (IsCoreMode())
     {
@@ -470,8 +468,7 @@ void CombatScene::PopulateHud(UiPage& page) const
     }
     else if (result == combat::EncounterResult::Cleared && TerminalTarget())
     {
-        page.body = maintenanceMode ? L"E: 드론 분석 열기  /  Enter: 코어실로 진행"
-                                    : L"E: 드론 분석 열기  /  Enter: 정비 복도로 진행";
+        page.body = std::wstring(L"E: 드론 분석 열기  /  Enter: ") + NextAreaDirection() + L" 진행";
     }
 }
 
