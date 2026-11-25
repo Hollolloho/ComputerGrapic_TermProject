@@ -62,6 +62,7 @@
   <ItemGroup>
     <ClCompile Include="src\camera\Camera.cpp" />
     <ClCompile Include="src\combat_map\CombatMap.cpp" />
+    <ClCompile Include="src\combat_map\interlock_layout.cpp" />
     <ClCompile Include="src\drone\drone.cpp" />
     <ClCompile Include="src\framework\Game_FrameWork.cpp" />
     <ClCompile Include="src\main\main.cpp" />
@@ -101,6 +102,8 @@
     <ClCompile Include="src\gameplay\boss\boss_encounter.cpp" />
     <ClCompile Include="src\gameplay\boss\boss_geometry.cpp" />
     <ClCompile Include="src\gameplay\boss\boss_view.cpp" />
+    <ClCompile Include="src\gameplay\boss\midboss.cpp" />
+    <ClCompile Include="src\gameplay\boss\midboss_view.cpp" />
     <ClCompile Include="src\gameplay\campaign\campaign_flow.cpp" />
     <ClCompile Include="src\gameplay\core\core_encounter.cpp" />
     <ClCompile Include="src\gameplay\core\core_view.cpp" />
@@ -134,6 +137,8 @@
     <ClInclude Include="src\gameplay\boss\boss_encounter.h" />
     <ClInclude Include="src\gameplay\boss\boss_geometry.h" />
     <ClInclude Include="src\gameplay\boss\boss_view.h" />
+    <ClInclude Include="src\gameplay\boss\midboss.h" />
+    <ClInclude Include="src\gameplay\boss\midboss_view.h" />
     <ClInclude Include="src\gameplay\boss\boss_layout.generated.h" />
     <ClInclude Include="src\gameplay\campaign\campaign_flow.h" />
     <ClInclude Include="src\gameplay\campaign\campaign_layout.generated.h" />
@@ -172,6 +177,8 @@
     <None Include="shaders\ui.frag" />
     <None Include="shaders\combat_box.vert" />
     <None Include="shaders\combat_box.frag" />
+    <None Include="shaders\midboss_laser.vert" />
+    <None Include="shaders\midboss_laser.frag" />
     <None Include="shaders\death_effect.vert" />
     <None Include="shaders\death_effect.frag" />
     <None Include="shaders\mesh.vert" />

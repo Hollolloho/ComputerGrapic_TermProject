@@ -60,6 +60,7 @@ void TurretEncounter::Reset()
         colliders[PrimaryBodyIndex].enabled = colliders[PrimaryWeaponIndex].enabled = false;
     }
     ResetCombat(supplyPosition);
+    midboss.Reset();
     phase = TurretPhase::Idle;
     phaseTime = doorProgress = 0;
     hitsTaken = blockedEnemyShots = 0;
@@ -97,7 +98,8 @@ void TurretEncounter::SetExtraDrones(std::initializer_list<ExtraDronePlacement> 
     for (const auto& placement : placements)
     {
         DroneBehavior extra;
-        if (!extra.SetSpawn(placement.position, placement.rotationYRadians, placement.position.z) ||
+        if (!extra.SetSpawn(placement.position, placement.rotationYRadians,
+                            placement.position.z + placement.patrolOffsetZ) ||
             !extra.SetScale(placement.scale))
         {
             return;
@@ -115,7 +117,7 @@ bool TurretEncounter::IsExtraDroneCollider(ObjectId id) const
 
 int TurretEncounter::RemainingEnemies() const
 {
-    int count = EnemyAlive() ? 1 : 0;
+    int count = (EnemyAlive() ? 1 : 0) + (midboss.Alive() ? 1 : 0);
     for (const auto& turret : turrets)
         if (turret.Alive()) ++count;
     for (const auto& extra : extraDrones)
@@ -254,8 +256,15 @@ void TurretEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm
     }
 
     // 2. 플레이어 탄환의 명중을 먼저 처리한다. 방금 파괴된 적은 발사할 수 없다.
+    const int laserDamage = midboss.Update(gameDeltaTime, eye, environment);
     UpdatePlayerBullets(gameDeltaTime);
     UpdateEnemyBullets(gameDeltaTime, eye, forward);
+    if (laserDamage > 0 && health > 0 && midboss.Alive())
+    {
+        health = std::max(0, health - laserDamage);
+        hitsTaken += laserDamage / Midboss::DamagePerTick;
+        damageFlash = .3f;
+    }
     if (health == 0)
     {
         FailEncounter();
@@ -374,10 +383,19 @@ void TurretEncounter::UpdatePlayerBullets(float gameDeltaTime)
     // Player shots never collide with the shooter's body. One impact per bullet.
     for (auto& flight : playerFlights)
     {
-        Hit hit;
-        if (AdvanceFlight(flight, gameDeltaTime, colliders, hit))
+        Hit hit, bossHit;
+        const auto start = flight.bullet.position;
+        const auto end = start + flight.bullet.velocity * gameDeltaTime;
+        const bool hitBoss = midboss.FindHit(start, end, bossHit);
+        if (AdvanceFlight(flight, gameDeltaTime, colliders, hit, hitBoss ? &bossHit : nullptr))
         {
             ShatterBullet(flight.bullet, false);
+            if (hit.objectId == Midboss::CoreId && hit.kind == HitKind::Body)
+            {
+                midboss.HitCore();
+                inventory.Break(flight.bullet.sourceWeaponId);
+                continue;
+            }
             for (std::size_t i = 0; i < turrets.size(); ++i)
             {
                 auto& turret = turrets[i];

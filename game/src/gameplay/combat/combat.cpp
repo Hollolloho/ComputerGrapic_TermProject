@@ -169,7 +169,7 @@ bool IsBlocked(const glm::vec3& start, const glm::vec3& end, const std::vector<C
 }
 
 bool AdvanceBullet(Bullet& bullet, float gameDeltaTime,
-                   const std::vector<Collider>& colliders, Hit& hit)
+                   const std::vector<Collider>& colliders, Hit& hit, const Hit* modelHit)
 {
     if (!bullet.active || !std::isfinite(gameDeltaTime) || gameDeltaTime <= 0 ||
         !IsFinite(bullet.position) || !IsFinite(bullet.velocity))
@@ -182,7 +182,13 @@ bool AdvanceBullet(Bullet& bullet, float gameDeltaTime,
     {
         return false;
     }
-    if (FindFirstHit(bullet.position, next, colliders, hit))
+    bool found = FindFirstHit(bullet.position, next, colliders, hit);
+    if (modelHit && (!found || modelHit->fraction < hit.fraction))
+    {
+        hit = *modelHit;
+        found = true;
+    }
+    if (found)
     {
         bullet.position = hit.position;
         bullet.active = false;

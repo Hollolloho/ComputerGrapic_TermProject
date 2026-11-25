@@ -435,6 +435,24 @@ void CombatScene::PopulateHud(UiPage& page) const
     {
         page.body = L"WASD: 이동  /  마우스: 조준  /  왼쪽 클릭: 사격  /  G: 내려놓기  /  Esc: 메뉴";
     }
+    const auto& midboss = encounter.MidbossState();
+    if (interlockMode && midboss.Alive() && result == combat::EncounterResult::Running)
+    {
+        page.status += L"  |  E형 코어 " +
+                       std::to_wstring(combat::Midboss::CoreHitLimit - midboss.CoreHits()) + L" / 3";
+        if (midboss.Phase() == combat::LaserPhase::Charging)
+        {
+            page.warning = L"E형 레이저 충전 중! 엄폐물 뒤로 피하세요.";
+            page.danger = true;
+        }
+        else if (midboss.Phase() == combat::LaserPhase::Firing)
+        {
+            page.warning = L"E형 레이저 발사 중! 사선을 벗어나세요.";
+            page.danger = true;
+        }
+        else if (midboss.CoreExposed() && !page.danger)
+            page.warning = L"E형 냉각 중 · 열린 코어를 조준하세요.";
+    }
     if (IsBossMode() && HasExternalPlayerView() && result == combat::EncounterResult::Running)
     {
         page.warning =

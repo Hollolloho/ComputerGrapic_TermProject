@@ -105,6 +105,6 @@ bool IsBlocked(const glm::vec3& start, const glm::vec3& end, const std::vector<C
 // Stops/deactivates at the first hit; damage and weapon state belong to caller.
 // No work for inactive bullets, paused time or invalid dt.
 bool AdvanceBullet(Bullet& bullet, float gameDeltaTime,
-                   const std::vector<Collider>& colliders, Hit& hit);
+                   const std::vector<Collider>& colliders, Hit& hit, const Hit* modelHit = nullptr);
 
 } // namespace aegis::combat

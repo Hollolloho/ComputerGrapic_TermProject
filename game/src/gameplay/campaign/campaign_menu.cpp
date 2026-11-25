@@ -163,7 +163,7 @@ UiPage CampaignMenu::Page(const CampaignFlow& flow, bool readyToAdvance) const
             page.title = L"2스테이지 · 사각방";
             page.body = readyToAdvance
                             ? L"사각방이 안전해졌습니다. 단말에서 분석하거나 정비 복도로 진행하세요."
-                            : L"엄폐물을 이용해 드론 한 대와 단포신 포탑 두 대를 제거하세요.";
+                            : L"드론 4대, 포탑 4대, E형을 제거하세요. E형 코어는 냉각 중 열립니다.";
             page.buttons.push_back(
                 {UiAction::Advance, L"Enter · 정비 복도로", 744, 640, 232, 54, readyToAdvance});
         }

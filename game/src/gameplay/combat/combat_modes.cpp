@@ -18,6 +18,7 @@ void CombatScene::SetCorridorMode(bool enabled)
     combatMapMode = false;
     interlockMode = false;
     maintenanceMode = false;
+    encounter.ClearMidboss();
     encounter.SetExtraDrones({});
     encounter.SetDroneScale(1);
     encounter.SetTurrets(combat::TurretType::SingleC, {});
@@ -44,6 +45,7 @@ void CombatScene::BeginCombatMap()
     corridorMode = true;
     interlockMode = false;
     maintenanceMode = false;
+    encounter.ClearMidboss();
     encounter.SetExtraDrones({});
     encounter.SetExitDoors(0, 0, 0);
     encounter.SetDroneMode(true);
@@ -76,16 +78,23 @@ void CombatScene::SetInterlockMode()
     interlockMode = true;
 
     std::vector<combat::Collider> walls;
-    for (const auto& wall : combat_map_asset::playerWalls)
+    for (auto wall : combat_map_asset::playerWalls)
     {
+        interlock_asset::MoveCover(wall);
         if (wall.minimum.z <= interlock_asset::entranceZ && wall.maximum.z >= interlock_asset::exitZ)
             walls.push_back(wall);
     }
     walls.push_back(TerminalCollider());
     encounter.SetEnvironment(walls);
-    encounter.SetDroneSpawn({0.8f, 2.3f, -28.f}, 0.f, -25.5f);
-    encounter.SetDroneScale(0.8f);
-    encounter.SetTurrets(combat::TurretType::SingleC, {{-3.8f, 0.f, -29.3f}, {3.4f, 0.f, -26.2f}});
+    const auto& positions = interlock_asset::drones;
+    const float scale = interlock_asset::droneScale, patrol = interlock_asset::dronePatrolOffset;
+    encounter.SetDroneSpawn(positions[0], 0, positions[0].z + patrol);
+    encounter.SetDroneScale(scale);
+    encounter.SetExtraDrones({{positions[1], 0, scale, patrol}, {positions[2], 0, scale, patrol},
+                              {positions[3], 0, scale, patrol}});
+    encounter.SetTurrets(combat::TurretType::SingleC,
+                         {{0, 0, -28.3f}, {-3.2f, 0, -26.2f}, {3.4f, 0, -26.2f}, {0, 0, -24.9f}});
+    encounter.SetMidboss(interlock_asset::bossMount, interlock_asset::bossScale);
     encounter.SetSupply(SupplyPosition());
     Reset();
 }
@@ -126,6 +135,7 @@ void CombatScene::SetDroneMode(bool enabled)
 
 void CombatScene::SetBossMode(bool enabled)
 {
+    encounter.ClearMidboss();
     encounter.SetExtraDrones({});
     activeBattle = &encounter;
     if (enabled)
@@ -140,6 +150,7 @@ void CombatScene::SetBossMode(bool enabled)
 
 void CombatScene::SetCoreMode()
 {
+    encounter.ClearMidboss();
     encounter.SetExtraDrones({});
     activeBattle = &core;
     interlockMode = false;
@@ -232,6 +243,8 @@ std::vector<combat::Collider> CombatScene::PlayerObstacles() const
     {
         std::vector<combat::Collider> walls(combat_map_asset::playerWalls.begin(),
                                             combat_map_asset::playerWalls.end());
+        for (auto& wall : walls)
+            interlock_asset::MoveCover(wall);
         walls.push_back(TerminalCollider());
         for (const auto& turret : encounter.Turrets())
         {

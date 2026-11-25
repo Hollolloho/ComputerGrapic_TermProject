@@ -230,6 +230,18 @@ void CombatScene::Draw(int width, int height,
         signs.Draw(scene, SupplyPosition(), TerminalPosition(), CanAnalyze(), NextAreaDirection(), exitSign);
     }
     DrawEnemies(scene);
+    const auto& midboss = encounter.MidbossState();
+    if (interlockMode && midboss.Alive())
+    {
+        std::array<float, boss_asset::partCount> glow;
+        glow.fill(1);
+        glow[boss_asset::part_core_crystal] = midboss.Phase() == combat::LaserPhase::Firing ? 4.f
+            : midboss.Phase() == combat::LaserPhase::Charging ? 1.f + 2.5f * midboss.ChargeProgress()
+            : midboss.CoreExposed() ? 2.f : .45f;
+        glow[boss_asset::part_turret_warning_L] = .2f;
+        glow[boss_asset::part_turret_warning_R] = .2f;
+        bossView.DrawModel(projection, view, midboss.Pose(), glow);
+    }
     DrawBullets(projection, view);
     glUseProgram(program);
     glUniform1f(opacityLocation, 1);
@@ -251,6 +263,8 @@ void CombatScene::Draw(int width, int height,
     }
     // 벽과 월드 물체의 깊이를 사용하고 1인칭 무기를 그리기 전에 조준선을 합성한다.
     DrawDroneAimLines(scene);
+    if (interlockMode && !DeathStarted())
+        midbossView.DrawBeam(scene, PlayerEye(), midboss);
     bulletView.DrawTrails(projection, view, PlayerEye(), *activeBattle);
     if (Inventory().Armed())
     {

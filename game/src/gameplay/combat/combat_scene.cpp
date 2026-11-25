@@ -40,6 +40,7 @@ bool CombatScene::Init(const std::filesystem::path& projectDirectory)
     if (!signs.Init(shaderDirectory) || !deathView.Init(projectDirectory) ||
         !weapon.Init(projectDirectory) || !bulletView.Init(projectDirectory) || !terminalRenderer.Init(shaderDirectory) ||
         !drone.Init(projectDirectory) || !InitTerminal(projectDirectory) || !bossView.Init(projectDirectory) ||
+        !midbossView.Init(projectDirectory) ||
         !coreView.Init(projectDirectory) || !singleModel.Init(projectDirectory, combat::TurretType::SingleC) ||
         !twinModel.Init(projectDirectory, combat::TurretType::Twin))
     {
@@ -185,6 +186,7 @@ void CombatScene::Clear()
     ClearPlayerView();
     feedback.Reset();
     bossView.Clear();
+    midbossView.Clear();
     coreView.Clear();
     singleModel.Clear();
     twinModel.Clear();

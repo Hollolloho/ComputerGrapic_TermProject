@@ -9,6 +9,7 @@
 #include "drone/drone.h"
 #include "gameplay/ui/analysis_session.h"
 #include "gameplay/boss/boss_view.h"
+#include "gameplay/boss/midboss_view.h"
 #include "gameplay/core/core_encounter.h"
 #include "gameplay/core/core_view.h"
 #include "gameplay/turret/turret.h"
@@ -235,6 +236,7 @@ private:
     void ObserveDestruction();
     combat::BossEncounter boss;
     BossView bossView;
+    MidbossView midbossView;
     combat::CoreEncounter core;
     CoreView coreView;
     Turret singleModel, twinModel;

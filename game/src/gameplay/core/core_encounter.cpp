@@ -1,6 +1,7 @@
 #include "core_encounter.h"
 #include "main/GameMath.h"
 #include "combat_map/combat_map_layout.generated.h"
+#include "combat_map/interlock_layout.h"
 #include <algorithm>
 #include <cmath>
 #include <glm/geometric.hpp>
@@ -28,6 +29,8 @@ Collider GuardCollider(Collider collider, ObjectId id)
 CoreEncounter::CoreEncounter()
 {
     walls.assign(combat_map_asset::playerWalls.begin(), combat_map_asset::playerWalls.end());
+    for (auto& wall : walls)
+        interlock_asset::MoveCover(wall);
     movementWalls = walls;
     Reset();
 }

@@ -43,7 +43,8 @@ protected:
     void ResetCombat(const glm::vec3& supplyPosition);
     void UpdateShotCooldown(float realDeltaTime);
     void UpdateBulletEffects(float gameDeltaTime);
-    bool AdvanceFlight(Flight& flight, float gameDeltaTime, const std::vector<Collider>& walls, Hit& hit);
+    bool AdvanceFlight(Flight& flight, float gameDeltaTime, const std::vector<Collider>& walls,
+                       Hit& hit, const Hit* modelHit = nullptr);
     void RecordFlightTravel(Flight& flight, const glm::vec3& start, float gameDeltaTime, float travelTime);
     void ShatterBullet(const Bullet& bullet, bool enemy);
 
