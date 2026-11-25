@@ -1,5 +1,5 @@
 #pragma once
-#include <array>
+#include <cstddef>
 #include <vector>
 #include <glm/glm.hpp>
 
@@ -29,15 +29,15 @@ class DestructionEffects
 public:
     static constexpr float DebrisLifetime = 1.4f, DeathDuration = .8f;
     static constexpr int DronePieceCount = 4, TurretPieceCount = 3;
-    void Reset();
-    void ObserveEnemy(int slot, bool alive, const glm::mat4& world);
+    void Reset(std::size_t enemyCount = 3);
+    void ObserveEnemy(std::size_t slot, bool alive, const glm::mat4& world);
     void UpdateWorld(float gameDeltaTime);
     void ObserveHealth(int health);
     void UpdateDeath(float realDeltaTime);
 
-    const EnemyDebris& Debris(int slot) const
+    const EnemyDebris& Debris(std::size_t slot) const
     {
-        return debris.at(slot);
+        return enemies.at(slot).debris;
     }
 
     int Bursts() const
@@ -68,8 +68,13 @@ public:
     static glm::mat4 PieceTransform(const glm::mat4& world, int piece, float age);
 
 private:
-    std::array<EnemyDebris, 3> debris{};
-    std::array<bool, 3> known{}, wasAlive{};
+    struct EnemyState
+    {
+        EnemyDebris debris;
+        bool known{};
+        bool wasAlive{};
+    };
+    std::vector<EnemyState> enemies = std::vector<EnemyState>(3);
     int bursts{};
     int deaths{};
     float deathAge{};

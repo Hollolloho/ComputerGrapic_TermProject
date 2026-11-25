@@ -40,20 +40,24 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
         drawDrone(encounter.DroneState());
     if (!IsBossMode())
     {
+        for (const auto& state : encounter.ExtraDrones())
+            drawDrone(state);
         for (const auto& turret : encounter.Turrets())
         {
             const auto& model = turret.Type() == combat::TurretType::Twin ? twinModel : singleModel;
             model.Draw(viewProjection, PlayerEye(), turret);
         }
     }
-    const auto& droneDebris = destruction.Debris(0);
-    if (droneDebris.active)
+    const std::size_t firstTurretSlot = 1 + encounter.ExtraDrones().size();
+    for (std::size_t slot = 0; slot < firstTurretSlot; ++slot)
     {
-        drone.Draw(viewProjection, droneDebris.world, false, false, false, droneDebris.age);
+        const auto& debris = destruction.Debris(slot);
+        if (debris.active)
+            drone.Draw(viewProjection, debris.world, false, false, false, debris.age);
     }
     for (std::size_t i = 0; i < encounter.Turrets().size(); ++i)
     {
-        const auto& debris = destruction.Debris(static_cast<int>(i + 1));
+        const auto& debris = destruction.Debris(firstTurretSlot + i);
         if (debris.active)
             turretView.DrawDebris(viewProjection, debris.world, debris.age);
     }
@@ -74,9 +78,12 @@ void CombatScene::DrawDroneAimLines(const glm::mat4& viewProjection) const
         for (const auto& state : core.Drones())
             drawAimLine(state);
     }
-    else if (IsDroneMode() && encounter.EnemyAlive())
+    else if (!IsBossMode())
     {
-        drawAimLine(encounter.DroneState());
+        if (IsDroneMode() && encounter.EnemyAlive())
+            drawAimLine(encounter.DroneState());
+        for (const auto& state : encounter.ExtraDrones())
+            drawAimLine(state);
     }
 }
 
@@ -88,7 +95,8 @@ void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
         if ((box.id >= combat::FixedTurret::BodyId &&
              box.id < combat::FixedTurret::BodyId + 2 * encounter.Turrets().size()) ||
             (corridorMode && box.id == 12000) || (IsDroneMode() && (box.id == 500 || box.id == 501)) ||
-            !box.enabled || (corridorMode && box.kind == combat::HitKind::Wall))
+            encounter.IsExtraDroneCollider(box.id) || !box.enabled ||
+            (corridorMode && box.kind == combat::HitKind::Wall))
         {
             continue;
         }
@@ -216,7 +224,7 @@ void CombatScene::Draw(int width, int height,
     }
     if (combatMapMode && !IsCoreMode())
     {
-        signs.Draw(scene, SupplyPosition(), TerminalPosition(), CanAnalyze(), maintenanceMode, approachMode);
+        signs.Draw(scene, SupplyPosition(), TerminalPosition(), CanAnalyze(), maintenanceMode);
     }
     DrawEnemies(scene);
     DrawBullets(projection, view);

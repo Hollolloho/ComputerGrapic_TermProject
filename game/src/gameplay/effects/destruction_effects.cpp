@@ -28,28 +28,27 @@ void UpdateShards(std::vector<CrystalShard>& shards, float gameDeltaTime)
     }
 }
 
-void DestructionEffects::Reset()
+void DestructionEffects::Reset(std::size_t enemyCount)
 {
-    debris = {};
-    known = {};
-    wasAlive = {};
+    enemies.assign(enemyCount, {});
     bursts = deaths = 0;
     deathAge = 0;
 }
 
-void DestructionEffects::ObserveEnemy(int slot, bool alive, const glm::mat4& world)
+void DestructionEffects::ObserveEnemy(std::size_t slot, bool alive, const glm::mat4& world)
 {
-    if (slot < 0 || slot >= static_cast<int>(debris.size()))
+    if (slot >= enemies.size())
     {
         return;
     }
-    if (known[slot] && wasAlive[slot] && !alive)
+    auto& enemy = enemies[slot];
+    if (enemy.known && enemy.wasAlive && !alive)
     {
-        debris[slot] = {world, 0, true};
+        enemy.debris = {world, 0, true};
         ++bursts;
     }
-    known[slot] = true;
-    wasAlive[slot] = alive;
+    enemy.known = true;
+    enemy.wasAlive = alive;
 }
 
 void DestructionEffects::UpdateWorld(float gameDeltaTime)
@@ -58,8 +57,9 @@ void DestructionEffects::UpdateWorld(float gameDeltaTime)
     {
         return;
     }
-    for (auto& item : debris)
+    for (auto& enemy : enemies)
     {
+        auto& item = enemy.debris;
         if (item.active)
         {
             item.age = std::min(DebrisLifetime, item.age + gameDeltaTime);

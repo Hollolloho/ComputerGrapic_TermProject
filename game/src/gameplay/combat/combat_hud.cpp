@@ -342,10 +342,8 @@ void CombatScene::PopulateHud(UiPage& page) const
             page.body = L"중앙 AI 코어를 파괴했습니다. 임무를 완료했습니다.";
         else if (!combatMapMode && DoorProgress() < 1)
             page.body = L"출구 문이 열리고 있습니다. 잠시 기다리세요.";
-        else if (approachMode)
-            page.body = L"Enter: 코어실로 진행  /  가까운 단말 조준 + E: 분석";
         else if (maintenanceMode)
-            page.body = L"Enter: 코어실 앞 복도로 진행  /  가까운 단말 조준 + E: 분석";
+            page.body = L"Enter: 코어실로 진행  /  가까운 단말 조준 + E: 분석";
         else
             page.body = L"Enter: 정비 복도로 진행  /  가까운 단말 조준 + E: 분석";
     }
@@ -412,8 +410,19 @@ void CombatScene::PopulateHud(UiPage& page) const
     }
     if (activeBattle == &encounter && !encounter.Turrets().empty() && result == combat::EncounterResult::Running)
     {
-        page.warning = encounter.EnemyAlive() ? L"드론과 포탑을 제거하세요."
-                                              : L"남은 포탑의 본체를 조준하세요.";
+        bool droneAlive = encounter.EnemyAlive();
+        bool droneWarning = droneAlive && encounter.Phase() == combat::TurretPhase::Warning;
+        for (const auto& droneState : encounter.ExtraDrones())
+        {
+            droneAlive = droneAlive || droneState.Phase() != combat::DronePhase::Destroyed;
+            droneWarning = droneWarning || droneState.Phase() == combat::DronePhase::Warning;
+        }
+        page.warning = droneAlive ? L"드론과 포탑을 제거하세요." : L"남은 포탑의 본체를 조준하세요.";
+        if (droneWarning)
+        {
+            page.warning = L"드론이 조준 중! 곧 사격합니다.";
+            page.danger = true;
+        }
         for (const auto& turret : encounter.Turrets())
         {
             if (turret.Phase() == combat::TurretPhase::Warning)
@@ -461,8 +470,7 @@ void CombatScene::PopulateHud(UiPage& page) const
     }
     else if (result == combat::EncounterResult::Cleared && TerminalTarget())
     {
-        page.body = approachMode ? L"E: 분석  /  Enter: 코어실로 진행"
-                     : maintenanceMode ? L"E: 드론 분석 열기  /  Enter: 코어실 앞 복도로 진행"
+        page.body = maintenanceMode ? L"E: 드론 분석 열기  /  Enter: 코어실로 진행"
                                     : L"E: 드론 분석 열기  /  Enter: 정비 복도로 진행";
     }
 }

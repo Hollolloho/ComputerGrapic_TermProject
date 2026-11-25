@@ -70,7 +70,7 @@ public:
     void SetDroneMode(bool enabled);
     void SetCombatMapMode(bool enabled);
 
-    void SetMaintenanceMode(bool coreApproach = false);
+    void SetMaintenanceMode();
 
     bool IsCombatMapMode() const
     {
@@ -238,7 +238,6 @@ private:
     CoreView coreView;
     Turret singleModel, twinModel;
     bool maintenanceMode{};
-    bool approachMode{};
     bool combatMapMode{};
     bool bossCovered{};
     combat::AnalysisSession analysis;

@@ -15,7 +15,8 @@ void CombatScene::SetCorridorMode(bool enabled)
 {
     activeBattle = &encounter;
     combatMapMode = false;
-    maintenanceMode = approachMode = false;
+    maintenanceMode = false;
+    encounter.SetExtraDrones({});
     encounter.SetDroneScale(1);
     encounter.SetTurrets(combat::TurretType::SingleC, {});
     encounter.SetDroneSpawn({-0.65f, 1.8f, -10}, 0, -10.f);
@@ -39,6 +40,7 @@ void CombatScene::BeginCombatMap()
     activeBattle = &encounter;
     combatMapMode = true;
     corridorMode = true;
+    encounter.SetExtraDrones({});
     encounter.SetExitDoors(0, 0, 0);
     encounter.SetDroneMode(true);
 }
@@ -51,7 +53,7 @@ void CombatScene::SetCombatMapMode(bool enabled)
         return;
     }
     BeginCombatMap();
-    maintenanceMode = approachMode = false;
+    maintenanceMode = false;
     encounter.SetDroneScale(1);
     std::vector<combat::Collider> walls(combat_map_asset::walls.begin(), combat_map_asset::walls.end());
     walls.push_back(TerminalCollider());
@@ -65,16 +67,16 @@ void CombatScene::SetCombatMapMode(bool enabled)
     Reset();
 }
 
-// 정비 구간에는 드론과 단포신 두 대, 다음 복도에는 쌍포신 한 대를 배치한다.
-void CombatScene::SetMaintenanceMode(bool coreApproach)
+// 정비 복도 전체에서 드론 세 대와 단포신 두 대, 쌍포신 한 대를 함께 상대한다.
+void CombatScene::SetMaintenanceMode()
 {
     BeginCombatMap();
     maintenanceMode = true;
-    approachMode = coreApproach;
-    if (approachMode)
-        encounter.SetTurrets(combat::TurretType::Twin, {{8.6f, 0, -45.7f}}, false);
-    else
-        encounter.SetTurrets(combat::TurretType::SingleC, {{3.85f, 0, -36.8f}, {3.75f, 0, -40.8f}});
+    encounter.SetTurrets({
+        {combat::TurretType::SingleC, {6.55f, 0, -46.25f}},
+        {combat::TurretType::SingleC, {9.0f, 0, -46.25f}},
+        {combat::TurretType::Twin, {8.8f, 0, -38.7f}}
+    });
 
     std::vector<combat::Collider> walls(combat_map_asset::maintenanceWalls.begin(),
                                         combat_map_asset::maintenanceWalls.end());
@@ -84,32 +86,39 @@ void CombatScene::SetMaintenanceMode(bool coreApproach)
     const auto& placement = combat_map_asset::friendDrones[1];
     encounter.SetDroneSpawn(placement.position, glm::radians(placement.rotYDegrees), placement.position.z);
     encounter.SetDroneScale(placement.scale);
+    encounter.SetExtraDrones({
+        {{3.8f, 2.3f, -37.1f}, 0.f, 0.8f},
+        {{8.9f, 2.3f, -43.2f}, 0.f, 0.8f}
+    });
     encounter.SetSupply(SupplyPosition());
     Reset();
 }
 
 void CombatScene::SetDroneMode(bool enabled)
 {
+    if (!enabled) encounter.SetExtraDrones({});
     encounter.SetDroneMode(enabled);
     Reset();
 }
 
 void CombatScene::SetBossMode(bool enabled)
 {
+    encounter.SetExtraDrones({});
     activeBattle = &encounter;
     if (enabled)
     {
         activeBattle = &boss;
         combatMapMode = false;
-        maintenanceMode = approachMode = false;
+        maintenanceMode = false;
     }
     Reset();
 }
 
 void CombatScene::SetCoreMode()
 {
+    encounter.SetExtraDrones({});
     activeBattle = &core;
-    maintenanceMode = approachMode = false;
+    maintenanceMode = false;
     combatMapMode = corridorMode = true;
     Reset();
 }
@@ -125,7 +134,6 @@ glm::vec3 CombatScene::CameraRoot() const
         }
         return combat::BossEncounter::FiringRoot();
     }
-    if (approachMode) return {7.8f, 0, -40.6f};
     if (maintenanceMode)
     {
         return combat_map_asset::maintenanceStart;

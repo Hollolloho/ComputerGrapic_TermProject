@@ -12,6 +12,8 @@ namespace
 const ObjectId turretId = 500;
 const ObjectId playerId = 600;
 const ObjectId turretWeaponId = 501;
+const ObjectId ExtraDroneBodyId = 20000;
+const ObjectId ExtraDroneShotId = 22000;
 const glm::vec3 muzzle{0.85f, 1.65f, -9.05f};
 
 } // namespace
@@ -35,6 +37,12 @@ void TurretEncounter::Reset()
         colliders.push_back(turret.Body());
         colliders.push_back(turret.Weapon());
         colliders.push_back(turret.Weapon(1));
+    }
+    colliders.resize(colliders.size() + 2 * extraDrones.size());
+    for (std::size_t i = 0; i < extraDrones.size(); ++i)
+    {
+        extraDrones[i].Reset();
+        SyncExtraDrone(i);
     }
     if (!environment.empty())
     {
@@ -71,11 +79,48 @@ void TurretEncounter::SetTurrets(TurretType type, std::initializer_list<glm::vec
     Reset();
 }
 
+void TurretEncounter::SetTurrets(std::initializer_list<TurretPlacement> placements, bool primary)
+{
+    primaryEnabled = primary;
+    turrets.clear();
+    for (const auto& placement : placements)
+    {
+        const auto index = static_cast<ObjectId>(turrets.size());
+        turrets.emplace_back().Configure(placement.type, placement.position, index);
+    }
+    Reset();
+}
+
+void TurretEncounter::SetExtraDrones(std::initializer_list<ExtraDronePlacement> placements)
+{
+    std::vector<DroneBehavior> configured;
+    configured.reserve(placements.size());
+    for (const auto& placement : placements)
+    {
+        DroneBehavior extra;
+        if (!extra.SetSpawn(placement.position, placement.rotationYRadians, placement.position.z) ||
+            !extra.SetScale(placement.scale))
+        {
+            return;
+        }
+        configured.push_back(extra);
+    }
+    extraDrones.swap(configured);
+    Reset();
+}
+
+bool TurretEncounter::IsExtraDroneCollider(ObjectId id) const
+{
+    return id >= ExtraDroneBodyId && id - ExtraDroneBodyId < 2 * extraDrones.size();
+}
+
 int TurretEncounter::RemainingEnemies() const
 {
     int count = EnemyAlive() ? 1 : 0;
     for (const auto& turret : turrets)
         if (turret.Alive()) ++count;
+    for (const auto& extra : extraDrones)
+        if (extra.Phase() != DronePhase::Destroyed) ++count;
     return count;
 }
 
@@ -192,6 +237,23 @@ void TurretEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm
         SyncTurret(i);
     }
 
+    std::vector<std::size_t> readyDrones;
+    if (!extraDrones.empty())
+    {
+        std::vector<Collider> walls;
+        for (const auto& box : colliders)
+        {
+            if (box.enabled && (box.kind == HitKind::Wall || box.kind == HitKind::Armor))
+                walls.push_back(box);
+        }
+        for (std::size_t i = 0; i < extraDrones.size(); ++i)
+        {
+            if (extraDrones[i].Update(gameDeltaTime, eye, walls))
+                readyDrones.push_back(i);
+            SyncExtraDrone(i);
+        }
+    }
+
     // 2. 플레이어 탄환의 명중을 먼저 처리한다. 방금 파괴된 적은 발사할 수 없다.
     UpdatePlayerBullets(gameDeltaTime);
     UpdateEnemyBullets(gameDeltaTime, eye, forward);
@@ -207,6 +269,14 @@ void TurretEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm
         const auto& turret = turrets[index];
         if (turret.Armed())
             SpawnEnemyBullet(turret.Muzzle(), turret.AimPoint(), turret.ShotSource(), BulletStyle::Turret);
+    }
+
+    for (const auto index : readyDrones)
+    {
+        const auto& extra = extraDrones[index];
+        if (extra.Armed())
+            SpawnEnemyBullet(extra.Muzzle(), extra.AimPoint(),
+                             ExtraDroneShotId + static_cast<ObjectId>(index), BulletStyle::Drone);
     }
 
     // 4. 적이 모두 죽어도 날아오는 적탄이 없어질 때까지 구역을 열지 않는다.
@@ -285,6 +355,21 @@ void TurretEncounter::SyncTurret(std::size_t index)
     colliders[first + 2] = turrets[index].Weapon(1);
 }
 
+std::size_t TurretEncounter::ExtraDroneColliderIndex(std::size_t index) const
+{
+    return FirstTurretIndex + 3 * turrets.size() + 2 * index;
+}
+
+void TurretEncounter::SyncExtraDrone(std::size_t index)
+{
+    const auto first = ExtraDroneColliderIndex(index);
+    const auto bodyId = ExtraDroneBodyId + static_cast<ObjectId>(2 * index);
+    colliders[first] = extraDrones[index].Body();
+    colliders[first].id = bodyId;
+    colliders[first + 1] = extraDrones[index].Weapon();
+    colliders[first + 1].id = bodyId + 1;
+}
+
 void TurretEncounter::UpdatePlayerBullets(float gameDeltaTime)
 {
     // Player shots never collide with the shooter's body. One impact per bullet.
@@ -308,6 +393,28 @@ void TurretEncounter::UpdatePlayerBullets(float gameDeltaTime)
                 }
                 else continue;
                 SyncTurret(i);
+                break;
+            }
+            for (std::size_t i = 0; i < extraDrones.size(); ++i)
+            {
+                auto& extra = extraDrones[i];
+                const auto bodyId = ExtraDroneBodyId + static_cast<ObjectId>(2 * i);
+                if (hit.objectId == bodyId + 1)
+                {
+                    extra.Disarm();
+                }
+                else if (hit.objectId == bodyId)
+                {
+                    inventory.Break(flight.bullet.sourceWeaponId);
+                    if (extra.Armed())
+                    {
+                        const auto drop = extra.Muzzle();
+                        inventory.SpawnDrop({drop.x, 0.12f, drop.z});
+                    }
+                    extra.Destroy();
+                }
+                else continue;
+                SyncExtraDrone(i);
                 break;
             }
             if (hit.objectId == turretWeaponId)
@@ -373,6 +480,14 @@ void TurretEncounter::UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& e
             const auto first = FirstTurretIndex + 3 * i;
             for (auto slot = first; slot < first + 3; ++slot)
                 enemyColliders[slot].enabled = otherTurret && colliders[slot].enabled;
+        }
+        for (std::size_t i = 0; i < extraDrones.size(); ++i)
+        {
+            const bool otherDrone =
+                flight.bullet.sourceWeaponId != ExtraDroneShotId + static_cast<ObjectId>(i);
+            const auto first = ExtraDroneColliderIndex(i);
+            enemyColliders[first].enabled = otherDrone && colliders[first].enabled;
+            enemyColliders[first + 1].enabled = otherDrone && colliders[first + 1].enabled;
         }
         enemyColliders[heldWeaponIndex] = inventory.HeldCollider(eye, forward);
         Hit hit;

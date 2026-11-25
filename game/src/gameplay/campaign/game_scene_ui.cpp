@@ -128,9 +128,7 @@ std::string GameScene::StatusTitle() const
     case CampaignStage::Maintenance:
         stage = "MAINTENANCE";
         break;
-    case CampaignStage::CoreApproach:
-        stage = "CORE APPROACH";
-        break;
+
     case CampaignStage::Boss:
         stage = "BOSS";
         break;

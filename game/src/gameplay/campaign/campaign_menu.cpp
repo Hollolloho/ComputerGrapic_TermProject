@@ -83,7 +83,7 @@ UiPage CampaignMenu::Page(const CampaignFlow& flow, bool readyToAdvance) const
     case CampaignScreen::Title:
         page.title = L"AEGIS  저항 작전";
         page.body = L"중앙 AI가 장악한 시설에 침투하세요.\n전투 복도를 돌파하고 코어를 파괴하는 것이 "
-                    L"목표입니다.\n\n시작 → 안전 진입실 → 첫 복도 → 정비 복도 → 코어실 앞 복도 → 코어실";
+                    L"목표입니다.\n\n시작 → 안전 진입실 → 첫 복도 → 정비 복도 → 코어실";
         AddMenuButton(page, UiAction::Start, L"게임 시작", 430);
         AddMenuButton(page, UiAction::Help, L"조작 안내", 494);
         AddMenuButton(page, UiAction::Quit, L"게임 종료", 558);
@@ -109,11 +109,7 @@ UiPage CampaignMenu::Page(const CampaignFlow& flow, bool readyToAdvance) const
         break;
     case CampaignScreen::Failed:
         page.title = L"임무 실패";
-        if (flow.Stage() == CampaignStage::CoreApproach)
-        {
-            page.body = L"코어실 앞 복도에서 전투 불능이 되었습니다. 이 복도부터 다시 시작합니다.";
-        }
-        else if (flow.Stage() == CampaignStage::Maintenance)
+        if (flow.Stage() == CampaignStage::Maintenance)
         {
             page.body = L"정비 복도에서 전투 불능이 되었습니다.\n다시 시도하면 정비 복도부터 시작합니다.";
         }
@@ -161,17 +157,11 @@ UiPage CampaignMenu::Page(const CampaignFlow& flow, bool readyToAdvance) const
         else if (flow.Stage() == CampaignStage::Maintenance)
         {
             page.title = L"2스테이지 · 정비 복도";
-            page.body = L"드론과 Single_C 포탑 두 대를 파괴하고 남은 적탄을 정리하세요.";
-            page.buttons.push_back(
-                {UiAction::Advance, L"Enter · 코어실 앞 복도로", 744, 640, 232, 54, readyToAdvance});
-        }
-        else if (flow.Stage() == CampaignStage::CoreApproach)
-        {
-            page.title = L"3스테이지 · 코어실 앞 복도";
-            page.body = L"Twin 포탑을 파괴하고 코어실로 진입하세요.";
+            page.body = L"드론 세 대와 단포신 포탑 두 대, 쌍포신 포탑 한 대를 파괴하고 남은 적탄을 정리하세요.";
             page.buttons.push_back(
                 {UiAction::Advance, L"Enter · 코어실로", 744, 640, 232, 54, readyToAdvance});
         }
+
         else
         {
             page.title = L"3스테이지 · 코어실 보스전";

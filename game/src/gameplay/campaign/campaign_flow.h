@@ -7,7 +7,6 @@ enum class CampaignStage
     Entry,
     Corridor,
     Maintenance,
-    CoreApproach,
     Boss
 };
 enum class CampaignScreen
