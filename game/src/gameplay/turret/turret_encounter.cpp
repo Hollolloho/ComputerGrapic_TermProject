@@ -234,7 +234,7 @@ void TurretEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm
     {
         if (droneWantsToShoot && drone.Armed())
         {
-            SpawnEnemyBullet(drone.Muzzle(), drone.AimPoint(), 900);
+            SpawnEnemyBullet(drone.Muzzle(), drone.AimPoint(), 900, true);
         }
         return;
     }
@@ -411,14 +411,14 @@ void TurretEncounter::FailEncounter()
 }
 
 void TurretEncounter::SpawnEnemyBullet(const glm::vec3& origin, const glm::vec3& target,
-                                       ObjectId sourceWeapon)
+                                       ObjectId sourceWeapon, bool droneShot)
 {
     Bullet bullet;
     if (!MakeBullet(origin, target - origin, 7.0f, sourceWeapon, bullet))
     {
         return;
     }
-    enemyFlights.push_back({bullet, 0});
+    enemyFlights.push_back({bullet, 0, droneShot});
     ++enemyShots;
 }
 

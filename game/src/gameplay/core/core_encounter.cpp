@@ -211,13 +211,13 @@ void CoreEncounter::UpdateEnemyBullets(float dt, const glm::vec3& eye, const glm
     RemoveExpiredFlights(enemyFlights);
 }
 
-void CoreEncounter::SpawnEnemyBullet(const glm::vec3& muzzle, const glm::vec3& target, ObjectId source)
+void CoreEncounter::SpawnEnemyBullet(const glm::vec3& muzzle, const glm::vec3& target, ObjectId source, bool droneShot)
 {
     if (enemyFlights.size() >= 128) return;
     Bullet shot;
     if (MakeBullet(muzzle, target - muzzle, EnemyShotSpeed, source, shot))
     {
-        enemyFlights.push_back({shot, 0});
+        enemyFlights.push_back({shot, 0, droneShot});
         ++enemyShots;
     }
 }
@@ -330,7 +330,7 @@ void CoreEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm::
         {
             if (droneShots[i] && drones[i].Armed())
                 SpawnEnemyBullet(drones[i].Muzzle(), drones[i].AimPoint(),
-                                 GuardShotBase + static_cast<ObjectId>(i));
+                                 GuardShotBase + static_cast<ObjectId>(i), true);
             if (turretShots[i] && turrets[i].Armed())
                 SpawnEnemyBullet(turrets[i].Muzzle(), turrets[i].AimPoint(),
                                  GuardShotBase + static_cast<ObjectId>(i + 2));

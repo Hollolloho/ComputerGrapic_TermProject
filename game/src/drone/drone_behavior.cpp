@@ -12,7 +12,7 @@ namespace aegis::combat
 {
 namespace
 {
-const double WarningDuration = 1.0;
+const double WarningDuration = 2.0;
 }
 
 float DroneBehavior::WarningElapsed() const
@@ -99,7 +99,7 @@ glm::mat4 DroneBehavior::WorldTransform() const
 
 glm::vec3 DroneBehavior::Muzzle() const
 {
-    return position + RotateY(glm::vec3(0, -0.35f, 0.68f) * scale, rotY);
+    return position + RotateY(glm::vec3(0, -0.43f, 0.68f) * scale, rotY);
 }
 
 bool DroneBehavior::Visible(const glm::vec3& eye, const std::vector<Collider>& walls) const
@@ -228,7 +228,7 @@ bool DroneBehavior::Update(float gameDeltaTime, const glm::vec3& eye, const std:
         }
 
         phase = visible ? DronePhase::Tracking : DronePhase::Patrol;
-        // 회전한 총구에서도 사선이 열려 있을 때 조준점을 고정한다.
+        // 회전한 총구에서도 사선이 열려 있을 때 조준을 시작한다.
         if (aligned && Visible(eye, walls))
         {
             phase = DronePhase::Warning;
@@ -238,14 +238,15 @@ bool DroneBehavior::Update(float gameDeltaTime, const glm::vec3& eye, const std:
         break;
     }
     case DronePhase::Warning:
-        // 현재 플레이어와 예고 때 고정한 조준점의 사선을 모두 확인한다.
-        if (!Visible(eye, walls) || !Visible(aimPoint, walls))
+        TurnToward(eye, gameDeltaTime);
+        if (!Visible(eye, walls))
         {
             phase = DronePhase::Patrol;
             timer = 0;
             break;
         }
 
+        aimPoint = eye;
         timer -= gameDeltaTime;
 
         if (timer <= 0)

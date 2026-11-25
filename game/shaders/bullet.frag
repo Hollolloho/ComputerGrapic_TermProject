@@ -7,6 +7,7 @@ in vec2 effectUv;
 uniform vec3 color;
 uniform int effect;
 uniform vec2 effectFade;
+uniform bool droneShot;
 out vec4 fragColor;
 
 float segmentDistance(vec2 p, vec2 start, vec2 end)
@@ -47,7 +48,8 @@ void main()
         if (effect == 1)
             fade *= smoothstep(0.0, 0.28, effectUv.y);
         float nearFade = smoothstep(0.20, 0.60, length(viewPosition));
-        vec3 light = mix(vec3(0.20, 0.68, 1.0), vec3(0.86, 0.98, 1.0), core);
+        vec3 light = droneShot ? mix(vec3(1.0, 0.16, 0.06), vec3(1.0, 0.62, 0.27), core)
+                               : mix(vec3(0.20, 0.68, 1.0), vec3(0.86, 0.98, 1.0), core);
         fragColor = vec4(light, mix(0.38 * glow, 0.90, core) * fade * nearFade);
         return;
     }

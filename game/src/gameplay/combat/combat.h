@@ -55,6 +55,7 @@ struct Flight
 {
     Bullet bullet;
     float age{};
+    bool droneShot{};
     double distanceToMote{TrailMoteSpacing};
     unsigned int moteIndex{};
 };
@@ -64,12 +65,14 @@ struct CrystalTrail
     glm::vec3 end{}, velocity{};
     float flightTime{};
     float age{};
+    bool droneShot{};
 };
 
 struct CrystalMote
 {
     glm::vec3 position{};
     float age{};
+    bool droneShot{};
 };
 
 void RemoveExpiredFlights(std::vector<Flight>& flights);

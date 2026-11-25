@@ -25,11 +25,12 @@ private:
                    const glm::mat4& modelView, const glm::vec3& color) const;
     void DrawTrail(const glm::mat4& projection, const glm::mat4& view, const glm::vec3& eye,
                    const combat::CrystalTrail& trail) const;
-    void DrawEffect(const glm::mat4& projection, const glm::mat4& modelView, float fadeStart, float fadeEnd) const;
+    void DrawEffect(const glm::mat4& projection, const glm::mat4& modelView,
+                    float fadeStart, float fadeEnd, bool droneShot) const;
     std::vector<RenderMesh> body, chip;
     MeshBuffer effectQuad;
     GLuint program{};
     GLint transformLocation{-1}, modelViewLocation{-1}, colorLocation{-1};
-    GLint effectLocation{-1}, effectFadeLocation{-1};
+    GLint effectLocation{-1}, effectFadeLocation{-1}, droneShotLocation{-1};
 };
 }
