@@ -61,10 +61,11 @@ public:
 
 private:
     void DrawTexture(const glm::mat4& transform) const;
-    bool Rasterize(const UiPage& page, int width, int height, int hover);
+    bool Rasterize(const UiPage& page, int width, int height, int hover, bool timeOnly);
     GLuint program{};
     GLuint texture{};
     GLuint vao{};
     std::wstring cacheKey;
+    std::wstring cachedTimeStatus;
 };
 } // namespace aegis

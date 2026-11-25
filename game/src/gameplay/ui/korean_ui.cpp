@@ -14,16 +14,19 @@ namespace aegis
 {
 namespace
 {
+constexpr float TimeBarX = 24, TimeBarY = 560, TimeBarWidth = 976, TimeBarHeight = 34;
+
 // 메뉴와 안내판의 1024 × 768 좌표를 Windows 비트맵에 그린다.
 struct MenuCanvas
 {
     HDC dc;
     float sx, sy;
+    LONG originX = 0, originY = 0;
 
     RECT Rectangle(float x, float y, float w, float h) const
     {
-        return RECT{static_cast<LONG>(x * sx), static_cast<LONG>(y * sy), static_cast<LONG>((x + w) * sx),
-                    static_cast<LONG>((y + h) * sy)};
+        return RECT{static_cast<LONG>(x * sx) - originX, static_cast<LONG>(y * sy) - originY,
+                    static_cast<LONG>((x + w) * sx) - originX, static_cast<LONG>((y + h) * sy) - originY};
     }
     void Fill(float x, float y, float w, float h, COLORREF color) const
     {
@@ -49,6 +52,15 @@ struct MenuCanvas
         DeleteObject(font);
     }
 };
+
+void DrawTimeStatus(const MenuCanvas& canvas, const std::wstring& timeStatus)
+{
+    if (!timeStatus.empty())
+    {
+        canvas.Fill(TimeBarX, TimeBarY, TimeBarWidth, TimeBarHeight, RGB(12, 21, 34));
+        canvas.Text(timeStatus, 42, 565, 944, 26, 16, false, RGB(167, 211, 234));
+    }
+}
 } // namespace
 
 bool KoreanUi::Init(const std::filesystem::path& shaderDirectory)
@@ -87,12 +99,21 @@ UiAction KoreanUi::Hit(const UiPage& page, float x, float y, bool& consumed)
     return UiAction::None;
 }
 
-bool KoreanUi::Rasterize(const UiPage& page, int width, int height, int hover)
+bool KoreanUi::Rasterize(const UiPage& page, int width, int height, int hover, bool timeOnly)
 {
+    MenuCanvas canvas{nullptr, static_cast<float>(width) / 1024, static_cast<float>(height) / 768};
+    const RECT region = timeOnly ? canvas.Rectangle(TimeBarX, TimeBarY, TimeBarWidth, TimeBarHeight)
+                                 : RECT{0, 0, width, height};
+    const int rasterWidth = region.right - region.left, rasterHeight = region.bottom - region.top;
+    if (rasterWidth <= 0 || rasterHeight <= 0)
+    {
+        return true;
+    }
+    const auto pixelCount = static_cast<std::size_t>(rasterWidth) * rasterHeight;
     BITMAPINFO info{};
     info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    info.bmiHeader.biWidth = width;
-    info.bmiHeader.biHeight = -height;
+    info.bmiHeader.biWidth = rasterWidth;
+    info.bmiHeader.biHeight = -rasterHeight;
     info.bmiHeader.biPlanes = 1;
     info.bmiHeader.biBitCount = 32;
     info.bmiHeader.biCompression = BI_RGB;
@@ -112,9 +133,15 @@ bool KoreanUi::Rasterize(const UiPage& page, int width, int height, int hover)
         return false;
     }
     const auto oldBitmap = SelectObject(dc, bitmap);
-    std::fill_n(static_cast<std::uint32_t*>(pixels), static_cast<std::size_t>(width) * height, 0u);
-    const MenuCanvas canvas{dc, static_cast<float>(width) / 1024, static_cast<float>(height) / 768};
-    if (page.sign)
+    std::fill_n(static_cast<std::uint32_t*>(pixels), pixelCount, 0u);
+    canvas.dc = dc;
+    canvas.originX = region.left;
+    canvas.originY = region.top;
+    if (timeOnly)
+    {
+        DrawTimeStatus(canvas, page.timeStatus);
+    }
+    else if (page.sign)
     {
         canvas.Fill(0, 0, 1024, 768, RGB(12, 24, 34));
         canvas.Fill(0, 0, 20, 768, RGB(45, 212, 191));
@@ -131,11 +158,7 @@ bool KoreanUi::Rasterize(const UiPage& page, int width, int height, int hover)
     }
     else
     {
-        if (!page.timeStatus.empty())
-        {
-            canvas.Fill(24, 560, 976, 34, RGB(12, 21, 34));
-            canvas.Text(page.timeStatus, 42, 565, 944, 26, 16, false, RGB(167, 211, 234));
-        }
+        DrawTimeStatus(canvas, page.timeStatus);
         if (!page.status.empty())
         {
             const auto accent = page.danger ? RGB(255, 120, 95) : RGB(100, 235, 205);
@@ -151,7 +174,7 @@ bool KoreanUi::Rasterize(const UiPage& page, int width, int height, int hover)
         canvas.Text(page.title, 46, 618, 640, 34, 23, true, RGB(167, 243, 208));
         canvas.Text(page.body, 46, 659, page.buttons.empty() ? 930.0f : 650.0f, 54, 17, false, RGB(219, 234, 244));
     }
-    for (std::size_t i = 0; i < page.buttons.size(); ++i)
+    for (std::size_t i = 0; !timeOnly && i < page.buttons.size(); ++i)
     {
         const auto& b = page.buttons[i];
         const bool primary = i == 0;
@@ -167,7 +190,7 @@ bool KoreanUi::Rasterize(const UiPage& page, int width, int height, int hover)
                         : RGB(240, 249, 255));
     }
     auto* rgba = static_cast<std::uint32_t*>(pixels);
-    for (std::size_t i = 0; i < static_cast<std::size_t>(width) * height; ++i)
+    for (std::size_t i = 0; i < pixelCount; ++i)
     {
         if (rgba[i] & 0x00ffffffu)
         {
@@ -175,7 +198,15 @@ bool KoreanUi::Rasterize(const UiPage& page, int width, int height, int hover)
         }
     }
     glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
+    if (timeOnly)
+    {
+        glTexSubImage2D(GL_TEXTURE_2D, 0, region.left, region.top, rasterWidth, rasterHeight,
+                        GL_BGRA, GL_UNSIGNED_BYTE, pixels);
+    }
+    else
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
+    }
     glBindTexture(GL_TEXTURE_2D, 0);
     SelectObject(dc, oldBitmap);
     DeleteObject(bitmap);
@@ -190,7 +221,7 @@ void KoreanUi::Draw(const UiPage& page, int width, int height, float mouseX, flo
         return;
     }
     int hover = -1;
-    std::wstring key = page.title + page.body + page.footer + page.status + page.warning + page.timeStatus +
+    std::wstring key = page.title + page.body + page.footer + page.status + page.warning +
                        std::to_wstring(page.health) + (page.danger ? L"D" : L"S") + std::to_wstring(width) +
                        L"/" + std::to_wstring(height) + (page.panel ? L"P" : L"H");
     for (std::size_t i = 0; i < page.buttons.size(); ++i)
@@ -203,13 +234,15 @@ void KoreanUi::Draw(const UiPage& page, int width, int height, float mouseX, flo
         key += b.label + (b.enabled ? L"Y" : L"N");
     }
     key += std::to_wstring(hover);
-    if (key != cacheKey)
+    const bool fullUpdate = key != cacheKey;
+    if (fullUpdate || (!page.panel && !page.sign && page.timeStatus != cachedTimeStatus))
     {
-        if (!Rasterize(page, width, height, hover))
+        if (!Rasterize(page, width, height, hover, !fullUpdate))
         {
             return;
         }
         cacheKey = key;
+        cachedTimeStatus = page.timeStatus;
     }
     glDisable(GL_SCISSOR_TEST);
     glDisable(GL_DEPTH_TEST);
@@ -236,7 +269,7 @@ void KoreanUi::DrawWorld(const std::wstring& title, const std::wstring& body, co
     const auto key = L"WORLD SIGN:" + title + L"/" + body;
     if (key != cacheKey)
     {
-        if (!Rasterize(page, 512, 256, -1))
+        if (!Rasterize(page, 512, 256, -1, false))
         {
             return;
         }
@@ -282,5 +315,6 @@ void KoreanUi::Clear()
     }
     program = texture = vao = 0;
     cacheKey.clear();
+    cachedTimeStatus.clear();
 }
 } // namespace aegis

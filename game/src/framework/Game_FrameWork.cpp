@@ -11,6 +11,7 @@ namespace
 {
 	const double MaxSimulationStep = 0.05;
 	const float MouseSensitivity = 0.167f;
+	constexpr double TitleUpdateInterval = 0.2;
 	bool moveForward = false;
 	bool moveBackward = false;
 	bool moveLeft = false;
@@ -32,6 +33,7 @@ int GameFrameWork::Run()
 	}
 
 	double previousTime = glfwGetTime();
+	double nextTitleUpdate = 0.0;
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
@@ -45,6 +47,11 @@ int GameFrameWork::Run()
 		if (glfwWindowShouldClose(window))
 			break;
 		Draw();
+		if (drawable && currentTime >= nextTitleUpdate)
+		{
+			UpdateWindowTitle();
+			nextTitleUpdate = glfwGetTime() + TitleUpdateInterval;
+		}
 	}
 	Clear();
 	return 0;
@@ -220,7 +227,6 @@ void GameFrameWork::Draw()
 	}
 	scene.Draw(width, height, playerCamera);
 	glfwSwapBuffers(window);
-	UpdateWindowTitle();
 }
 
 void GameFrameWork::UpdateWindowTitle()
