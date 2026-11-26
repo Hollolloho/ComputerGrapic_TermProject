@@ -50,9 +50,9 @@
     "center": [
       7.8,
       0,
-      -56.0675
+      -58.094317
     ],
-    "room_radius": 8,
+    "room_radius": 10,
     "height": 6.4,
     "reserved_core_radius": 2.05
   },
@@ -135,64 +135,126 @@
     ],
     "core_room": [
       {
-        "id": "core_humanoid_l",
-        "type": "humanoid",
+        "id": "core_drone_1",
+        "type": "drone",
         "position": [
+          1.05,
+          3.2,
+          -54.009942
+        ],
+        "yaw_degrees": 49.280364,
+        "scale": 0.65,
+        "patrol": false,
+        "track_on_entry": true
+      },
+      {
+        "id": "core_drone_2",
+        "type": "drone",
+        "position": [
+          0.425,
           4.0,
-          0,
-          -56.4
+          -59.572442
         ],
-        "yaw_degrees": 23.09
+        "yaw_degrees": 32.963307,
+        "scale": 0.65,
+        "patrol": false,
+        "track_on_entry": true
       },
       {
-        "id": "core_humanoid_r",
-        "type": "humanoid",
-        "position": [
-          11.8,
-          0,
-          -57.3
-        ],
-        "yaw_degrees": -23.3
-      },
-      {
-        "id": "core_drone_l",
+        "id": "core_drone_3",
         "type": "drone",
         "position": [
-          2.55,
+          2.8625,
+          4.7,
+          -63.509942
+        ],
+        "yaw_degrees": 17.87466,
+        "scale": 0.65,
+        "patrol": false,
+        "track_on_entry": true
+      },
+      {
+        "id": "core_drone_4",
+        "type": "drone",
+        "position": [
+          14.55,
+          3.2,
+          -54.009942
+        ],
+        "yaw_degrees": -49.280364,
+        "scale": 0.65,
+        "patrol": false,
+        "track_on_entry": true
+      },
+      {
+        "id": "core_drone_5",
+        "type": "drone",
+        "position": [
+          15.175,
+          4.0,
+          -58.884942
+        ],
+        "yaw_degrees": -34.614357,
+        "scale": 0.65,
+        "patrol": false,
+        "track_on_entry": true
+      },
+      {
+        "id": "core_drone_6",
+        "type": "drone",
+        "position": [
+          12.55,
+          4.7,
+          -63.759942
+        ],
+        "yaw_degrees": -16.975914,
+        "scale": 0.65,
+        "patrol": false,
+        "track_on_entry": true
+      },
+      {
+        "id": "core_turret_1",
+        "type": "turret",
+        "position": [
+          3.55,
+          0,
+          -61.884942
+        ],
+        "yaw_degrees": 17.252721,
+        "model": "Twin"
+      },
+      {
+        "id": "core_turret_2",
+        "type": "turret",
+        "position": [
+          12.675,
+          0,
+          -59.384942
+        ],
+        "yaw_degrees": -23.550165,
+        "model": "Twin"
+      },
+      {
+        "id": "core_turret_3",
+        "type": "turret",
+        "position": [
           2.3,
-          -58.8
+          0,
+          -57.697442
         ],
-        "yaw_degrees": 19.95
+        "yaw_degrees": 30.075274,
+        "model": "Single_C"
       },
       {
-        "id": "core_drone_r",
-        "type": "drone",
-        "position": [
-          12.5,
-          2.4,
-          -54
-        ],
-        "yaw_degrees": -41.82
-      },
-      {
-        "id": "core_turret_l",
+        "id": "core_turret_4",
         "type": "turret",
         "position": [
-          3.95,
+          13.925,
           0,
-          -61.5
+          -55.822442
         ],
-        "yaw_degrees": 3.28
-      },
-      {
-        "id": "core_turret_r",
-        "type": "turret",
-        "position": [
-          11.6,
-          0,
-          -61.2
-        ],
-        "yaw_degrees": -3.81
+        "yaw_degrees": -38.783557,
+        "model": "Single_C"
       },
       {
         "id": "ai_core",
@@ -200,7 +262,7 @@
         "position": [
           7.8,
           0,
-          -56.0675
+          -58.094317
         ],
         "yaw_degrees": 0
       }
@@ -305,9 +367,9 @@
     {
       "id": "D01",
       "center": [
-        5.92,
+        7.8,
         0,
-        -51.3
+        -53.259942
       ],
       "width": 1.72,
       "depth": 1.13,
@@ -316,9 +378,9 @@
     {
       "id": "D02",
       "center": [
-        3.52,
+        3.175,
         0,
-        -54.54
+        -52.309942
       ],
       "width": 1.57,
       "depth": 1.06,
@@ -327,9 +389,9 @@
     {
       "id": "D03",
       "center": [
-        12.8,
+        14.05,
         0,
-        -59.2
+        -62.009942
       ],
       "width": 1.48,
       "depth": 1.06,
@@ -340,7 +402,7 @@
       "center": [
         7.8,
         0,
-        -61.73
+        -65.172442
       ],
       "width": 2.05,
       "depth": 1.02,

@@ -1,4 +1,5 @@
 #include "core_view.h"
+#include "combat_map/combat_map_layout.generated.h"
 #include "loader/Shader.h"
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -11,7 +12,7 @@ namespace aegis
 {
 namespace
 {
-const glm::vec3 CorePosition(7.8f, 0, -56.0675f);
+const glm::vec3 CorePosition = combat_map_asset::corePosition;
 }
 
 bool CoreView::LoadPart(const std::filesystem::path& path, std::vector<CoreMesh>& meshes,

@@ -16,9 +16,7 @@ struct CoverMove
 const CoverMove covers[] = {
     {"Cover_B01", "B01_", 40642, 40660, {-.15f, 0, -2.45f}},
     {"Cover_B02", "B02_", 40661, 40679, {-1.95f, 0, 4.1f}},
-    {"Cover_B03", "B03_", 40680, 40698, {.27f, 0, 6.65f}},
-    {"Cover_D01", "D01_", 40737, 40755, {1.88f, 0, -.9f}},
-    {"Cover_D02", "D02_", 40756, 40774, {.58f, 0, 3.1f}}};
+    {"Cover_B03", "B03_", 40680, 40698, {.27f, 0, 6.65f}}};
 }
 
 glm::vec3 CoverOffset(const std::string& meshName)

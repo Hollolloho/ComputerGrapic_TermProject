@@ -47,8 +47,8 @@ void CoreEncounter::Reset()
 {
     ResetCombat(SupplyPosition());
     const glm::vec3 dronePositions[DroneCount] = {
-        {2.4f, 3.2f, -52.8f}, {1.9f, 4.f, -57.25f}, {3.85f, 4.7f, -60.4f},
-        {13.2f, 3.2f, -52.8f}, {13.7f, 4.f, -56.7f}, {11.6f, 4.7f, -60.6f}};
+        {1.050000f, 3.200000f, -54.009942f}, {0.425000f, 4.000000f, -59.572442f}, {2.862500f, 4.700000f, -63.509942f},
+        {14.550000f, 3.200000f, -54.009942f}, {15.175000f, 4.000000f, -58.884942f}, {12.550000f, 4.700000f, -63.759942f}};
     for (std::size_t i = 0; i < drones.size(); ++i)
     {
         const auto& point = dronePositions[i];
@@ -60,8 +60,8 @@ void CoreEncounter::Reset()
         drones[i].StartTracking();
     }
     const glm::vec3 turretPositions[TurretCount] = {
-        {4.4f, 0, -59.1f}, {11.7f, 0, -57.1f},
-        {3.4f, 0, -55.75f}, {12.7f, 0, -54.25f}};
+        {3.550000f, 0.000000f, -61.884942f}, {12.675000f, 0.000000f, -59.384942f},
+        {2.300000f, 0.000000f, -57.697442f}, {13.925000f, 0.000000f, -55.822442f}};
     for (std::size_t i = 0; i < turrets.size(); ++i)
     {
         const auto& point = turretPositions[i];
@@ -79,8 +79,9 @@ void CoreEncounter::Reset()
 
 Collider CoreEncounter::CoreTarget()
 {
-    return {CoreId, HitKind::Body, {6.45f, 0.5f, -57.4175f},
-            {9.15f, 5.8f, -54.7175f}};
+    const auto position = combat_map_asset::corePosition;
+    return {CoreId, HitKind::Body, position + glm::vec3(-1.35f, .5f, -1.35f),
+            position + glm::vec3(1.35f, 5.8f, 1.35f)};
 }
 
 std::vector<Collider> CoreEncounter::Targets() const
@@ -107,8 +108,9 @@ std::vector<Collider> CoreEncounter::PlayerObstacles() const
 {
     auto obstacles = movementWalls;
     // 코어의 바닥 장치까지 포함한 예약 영역에 플레이어가 들어가지 못하게 한다.
-    obstacles.push_back({CoreId, HitKind::Armor, {5.75f, 0, -58.1175f},
-                          {9.85f, 6.4f, -54.0175f}});
+    const auto position = combat_map_asset::corePosition;
+    obstacles.push_back({CoreId, HitKind::Armor, position + glm::vec3(-2.05f, 0, -2.05f),
+                          position + glm::vec3(2.05f, 6.4f, 2.05f)});
     for (std::size_t i = 0; i < drones.size(); ++i)
     {
         auto body = GuardCollider(drones[i].Body(), BodyId(i));

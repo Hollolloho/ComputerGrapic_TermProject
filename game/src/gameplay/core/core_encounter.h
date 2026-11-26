@@ -1,6 +1,7 @@
 // 코어실의 수호 드론·포탑과 자기장 공격을 세계 시간으로 갱신한다.
 #pragma once
 #include "gameplay/combat/combat_encounter.h"
+#include "combat_map/combat_map_layout.generated.h"
 #include "drone/drone_behavior.h"
 #include "gameplay/turret/fixed_turret.h"
 #include <array>
@@ -14,7 +15,7 @@ struct MagneticConfig
     float warningSeconds{1.5f};
     float pulseSeconds{1.0f};
     float recoverySeconds{4.0f};
-    float radius{8.0f}; // 원형 코어실 전체를 덮는다.
+    float radius{combat_map_asset::coreRoomRadius}; // 원형 코어실 전체를 덮는다.
     int damage{20};
 };
 
@@ -41,7 +42,7 @@ public:
     const std::array<DroneBehavior, DroneCount>& Drones() const { return drones; }
     const std::array<FixedTurret, TurretCount>& Turrets() const { return turrets; }
     std::vector<Collider> PlayerObstacles() const;
-    static glm::vec3 CoreCenter() { return {7.8f, 3.15f, -56.0675f}; }
+    static glm::vec3 CoreCenter() { return combat_map_asset::corePosition + glm::vec3(0, 3.15f, 0); }
     static glm::vec3 PlayerRoot() { return {7.8f, 0, -48.2f}; }
     static glm::vec3 SupplyPosition() { return {6.8f, 1.15f, -49.7f}; }
     static Collider CoreTarget();
