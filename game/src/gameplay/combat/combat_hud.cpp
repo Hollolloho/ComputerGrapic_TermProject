@@ -324,7 +324,8 @@ void CombatScene::PopulateHud(UiPage& page) const
     {
         page.counters = L"코어 " + std::to_wstring(core.CoreHealth()) +
                        L" / 100\n호위 " +
-                       std::to_wstring(core.RemainingEnemies() - (core.CoreAlive() ? 1 : 0)) + L" / 4";
+                       std::to_wstring(core.RemainingEnemies() - (core.CoreAlive() ? 1 : 0)) + L" / " +
+                       std::to_wstring(core.Drones().size() + core.Turrets().size());
     }
     else if (activeBattle == &encounter)
     {

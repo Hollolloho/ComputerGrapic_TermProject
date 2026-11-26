@@ -32,7 +32,9 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
         for (std::size_t i = 0; i < core.Turrets().size(); ++i)
         {
             const auto& debris = destruction.Debris(i);
-            twinModel.Draw(viewProjection, PlayerEye(), core.Turrets()[i], debris.active ? debris.age : -1.f);
+            const auto& turret = core.Turrets()[i];
+            const auto& model = turret.Type() == combat::TurretType::Twin ? twinModel : singleModel;
+            model.Draw(viewProjection, PlayerEye(), turret, debris.active ? debris.age : -1.f);
         }
         const int magneticStage = core.Phase() == combat::MagneticPhase::Warning ? 1
                                   : core.Phase() == combat::MagneticPhase::Pulse ? 2 : 0;

@@ -62,6 +62,13 @@ void DroneBehavior::Reset()
     turnDegrees = 0.f;
 }
 
+void DroneBehavior::StartTracking()
+{
+    if (!Armed()) return;
+    phase = DronePhase::Tracking;
+    timer = 0;
+}
+
 Collider DroneBehavior::Bounds(ObjectId id, HitKind kind, const glm::vec3& low, const glm::vec3& high) const
 {
     // 상자의 여덟 꼭짓점을 모델과 똑같이 회전시킨 뒤, 전체를 감싸는 상자를 만든다.
