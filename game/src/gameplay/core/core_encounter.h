@@ -14,7 +14,7 @@ struct MagneticConfig
     float warningSeconds{1.5f};
     float pulseSeconds{1.0f};
     float recoverySeconds{4.0f};
-    float radius{6.0f};
+    float radius{8.0f}; // 원형 코어실 전체를 덮는다.
     int damage{20};
 };
 
@@ -52,7 +52,7 @@ private:
     void UpdatePlayerBullets(float dt);
     void UpdateEnemyBullets(float dt, const glm::vec3& eye, const glm::vec3& forward);
     void UpdateMagnetic(float dt, const glm::vec3& eye);
-    void ApplyPulse(const glm::vec3& eye);
+    void ApplyPulse(const glm::vec3& eye, float waveRadius);
     void SpawnEnemyBullet(const glm::vec3& muzzle, const glm::vec3& target, ObjectId source, BulletStyle bulletStyle);
     float PhaseDuration() const;
     std::array<DroneBehavior, DroneCount> drones;
@@ -61,7 +61,7 @@ private:
     MagneticConfig magnetic;
     MagneticPhase phase{MagneticPhase::Dormant};
     float phaseTime{};
-    bool pulseHit{};
+    bool pulseChecked{};
     int coreHealth{100}, coreHits{};
 };
 } // namespace aegis::combat

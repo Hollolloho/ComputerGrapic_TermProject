@@ -72,7 +72,7 @@ void CoreEncounter::Reset()
     }
     phase = MagneticPhase::Dormant;
     phaseTime = 0;
-    pulseHit = false;
+    pulseChecked = false;
     coreHealth = 100;
     coreHits = 0;
 }
@@ -158,7 +158,7 @@ bool CoreEncounter::DamageCore(int damage)
     {
         phase = MagneticPhase::Warning;
         phaseTime = 0;
-        pulseHit = false;
+        pulseChecked = false;
     }
     return true;
 }
@@ -259,15 +259,19 @@ float CoreEncounter::PhaseProgress() const
     return duration > 0 ? std::clamp(phaseTime / duration, 0.0f, 1.0f) : 0;
 }
 
-void CoreEncounter::ApplyPulse(const glm::vec3& eye)
+void CoreEncounter::ApplyPulse(const glm::vec3& eye, float waveRadius)
 {
     const auto delta = eye - CoreCenter();
     const float horizontalDistanceSquared = delta.x * delta.x + delta.z * delta.z;
-    if (pulseHit || horizontalDistanceSquared > magnetic.radius * magnetic.radius ||
-        IsBlocked(CoreCenter(), eye - glm::vec3(0, 0.6f, 0), walls)) return;
+    if (pulseChecked || horizontalDistanceSquared > waveRadius * waveRadius) return;
+    pulseChecked = true;
+
+    // 코어 하단에서 가슴 높이로 검사해 낮은 엄폐물도 자기장을 막게 한다.
+    glm::vec3 origin = CoreCenter();
+    origin.y = .9f;
+    if (IsBlocked(origin, eye - glm::vec3(0, .6f, 0), walls)) return;
     health = std::max(0, health - magnetic.damage);
     damageFlash = 0.3f;
-    pulseHit = true;
 }
 
 void CoreEncounter::UpdateMagnetic(float dt, const glm::vec3& eye)
@@ -283,25 +287,26 @@ void CoreEncounter::UpdateMagnetic(float dt, const glm::vec3& eye)
             const int pulses = static_cast<int>(std::min(std::floor(remaining / cycle), 5.0));
             for (int i = 0; i < pulses && health > 0; ++i)
             {
-                pulseHit = false;
-                ApplyPulse(eye);
+                pulseChecked = false;
+                ApplyPulse(eye, magnetic.radius);
             }
             remaining = std::fmod(remaining, cycle);
-            pulseHit = false;
+            pulseChecked = false;
             continue;
         }
-        if (phase == MagneticPhase::Pulse) ApplyPulse(eye);
         const double step = std::min(remaining, static_cast<double>(PhaseDuration() - phaseTime));
         phaseTime += static_cast<float>(step);
         remaining -= step;
+        // 화면의 파동과 같은 반경까지 도달했을 때 한 번만 엄폐·피해를 판정한다.
+        if (phase == MagneticPhase::Pulse)
+            ApplyPulse(eye, magnetic.radius * PhaseProgress());
         if (phaseTime >= PhaseDuration())
         {
             phaseTime = 0;
             if (phase == MagneticPhase::Warning)
             {
                 phase = MagneticPhase::Pulse;
-                pulseHit = false;
-                ApplyPulse(eye);
+                pulseChecked = false;
             }
             else if (phase == MagneticPhase::Pulse) phase = MagneticPhase::Recovery;
             else phase = MagneticPhase::Warning;

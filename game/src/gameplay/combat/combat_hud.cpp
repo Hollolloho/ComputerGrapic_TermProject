@@ -122,8 +122,8 @@ void CombatScene::DrawHud(int width, int height) const
     {
         Label("CORE " + std::to_string(core.CoreHealth()) + "/100", 24, height - 40, scale, {0.2f, 1, 0.8f});
         Label("HP " + std::to_string(core.Health()) + "/100", 24, height - 75, scale, {1, 0.8f, 0.3f});
-        const char* magnetic = core.Phase() == combat::MagneticPhase::Warning ? "MAGNETIC WARNING / LEAVE RING"
-                               : core.Phase() == combat::MagneticPhase::Pulse ? "MAGNETIC PULSE"
+        const char* magnetic = core.Phase() == combat::MagneticPhase::Warning ? "MAGNETIC WARNING / TAKE COVER"
+                               : core.Phase() == combat::MagneticPhase::Pulse ? "MAGNETIC PULSE / STAY IN COVER"
                                : core.CoreAlive() ? "DESTROY THE AI CORE" : "CORE DESTROYED";
         Label(magnetic, 24, height - 110, 2, {1, 0.4f, 0.2f});
         Label("LMB FIRE  E SUPPLY  G DROP  R RETRY  ESC MENU", 24, 24, 2, {0.8f, 0.9f, 1});
@@ -358,9 +358,9 @@ void CombatScene::PopulateHud(UiPage& page) const
     {
         const auto phase = core.Phase();
         page.warning = phase == combat::MagneticPhase::Warning
-                           ? L"자기장 예고 · 주황 원 밖으로"
+                           ? L"자기장 예고 · 엄폐물 뒤로"
                        : phase == combat::MagneticPhase::Pulse
-                           ? L"자기장 방출 · 붉은 원 밖으로"
+                           ? L"자기장 방출 · 엄폐 유지"
                            : L"";
         page.danger = page.danger || phase == combat::MagneticPhase::Warning ||
                       phase == combat::MagneticPhase::Pulse;

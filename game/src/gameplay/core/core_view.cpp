@@ -152,9 +152,11 @@ void CoreView::Draw(const glm::mat4& viewProjection, const glm::vec3& eye, bool 
     {
         DrawPart(hologram, model, 1, 1);
     }
-    if (coreAlive && magneticStage > 0 && fieldRadius > 0)
+    const float waveRadius = magneticStage == 2
+        ? fieldRadius * std::clamp(phaseProgress, 0.0f, 1.0f) : fieldRadius;
+    if (coreAlive && magneticStage > 0 && waveRadius > .001f)
     {
-        const auto ringModel = glm::scale(model, glm::vec3(fieldRadius, 1, fieldRadius));
+        const auto ringModel = glm::scale(model, glm::vec3(waveRadius, 1, waveRadius));
         const glm::vec3 color = magneticStage == 1 ? glm::vec3(1, .25f, .025f)
                                                   : glm::vec3(1, .03f, .12f);
         glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(ringModel));
