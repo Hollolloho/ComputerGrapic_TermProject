@@ -9,6 +9,7 @@ enum class TurretPhase
 {
     Idle,
     Warning,
+    Firing,
     Cooldown,
     Disarmed,
     Destroyed
@@ -58,6 +59,7 @@ public:
     }
 
     glm::vec3 Muzzle() const;
+    glm::vec3 Muzzle(int barrel) const;
     glm::mat4 HeadTransform() const;
     glm::mat4 BarrelTransform() const;
     float BarrelOffset(int barrel) const;

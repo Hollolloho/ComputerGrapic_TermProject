@@ -134,7 +134,8 @@ void Turret::Draw(const glm::mat4& viewProjection, const glm::vec3& eye,
     glDisable(GL_CULL_FACE);
     glUseProgram(program);
     glUniform3fv(eyeLocation, 1, glm::value_ptr(eye));
-    glUniform1f(warningLocation, turret.Phase() == combat::TurretPhase::Warning ? 1.0f : 0.0f);
+    glUniform1f(warningLocation, (turret.Phase() == combat::TurretPhase::Warning ||
+        turret.Phase() == combat::TurretPhase::Firing) ? 1.0f : 0.0f);
     for (std::size_t i = 0; i < textures.size(); ++i)
     {
         glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(i));

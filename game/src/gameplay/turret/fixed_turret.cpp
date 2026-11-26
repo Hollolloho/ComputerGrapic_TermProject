@@ -12,6 +12,7 @@ namespace
 const float pivotHeight = 1.62f;
 const float barrelReach = 1.115f;
 const float twinBarrelOffset = 0.57f;
+const float TwinShotInterval = 0.15f;
 
 Collider TurnedBox(ObjectId id, HitKind kind, const glm::mat4& transform,
                    const glm::vec3& low, const glm::vec3& high, bool enabled)
@@ -80,7 +81,12 @@ float FixedTurret::BarrelOffset(int barrel) const
 
 glm::vec3 FixedTurret::Muzzle() const
 {
-    return glm::vec3(BarrelTransform() * glm::vec4(BarrelOffset(firingBarrel), 0, barrelReach, 1));
+    return Muzzle(firingBarrel);
+}
+
+glm::vec3 FixedTurret::Muzzle(int barrel) const
+{
+    return glm::vec3(BarrelTransform() * glm::vec4(BarrelOffset(barrel), 0, barrelReach, 1));
 }
 
 glm::mat4 FixedTurret::HeadTransform() const
@@ -142,11 +148,24 @@ bool FixedTurret::Update(float gameDeltaTime, const glm::vec3& eye, const std::v
         if (timer <= 0)
         {
             phase = TurretPhase::Idle;
-            firingBarrel = 1 - firingBarrel;
         }
         return false;
     }
-    const bool visible = glm::length(eye - position) < 18 && !IsBlocked(Muzzle(), eye, walls);
+    if (phase == TurretPhase::Firing)
+    {
+        timer -= gameDeltaTime;
+        if (timer > 0)
+            return false;
+
+        // 첫 탄의 조준점을 유지한 채 오른쪽 포신에서 이어 쏜다.
+        firingBarrel = 1;
+        phase = TurretPhase::Cooldown;
+        timer = 1.8f;
+        return !IsBlocked(Muzzle(), aimPoint, walls);
+    }
+    const bool visible = glm::length(eye - position) < 18 &&
+        (!IsBlocked(Muzzle(0), eye, walls) ||
+         (type == TurretType::Twin && !IsBlocked(Muzzle(1), eye, walls)));
     if (!visible)
     {
         phase = TurretPhase::Idle;
@@ -162,6 +181,7 @@ bool FixedTurret::Update(float gameDeltaTime, const glm::vec3& eye, const std::v
         }
         direction = glm::normalize(delta);
         aimPoint = eye;
+        firingBarrel = 0;
         phase = TurretPhase::Warning;
         timer = 1.2f;
         return false;
@@ -171,8 +191,16 @@ bool FixedTurret::Update(float gameDeltaTime, const glm::vec3& eye, const std::v
     {
         return false;
     }
-    phase = TurretPhase::Cooldown;
-    timer = 1.8f;
-    return true;
+    if (type == TurretType::Twin)
+    {
+        phase = TurretPhase::Firing;
+        timer = TwinShotInterval;
+    }
+    else
+    {
+        phase = TurretPhase::Cooldown;
+        timer = 1.8f;
+    }
+    return !IsBlocked(Muzzle(), aimPoint, walls);
 }
 } // namespace aegis::combat
