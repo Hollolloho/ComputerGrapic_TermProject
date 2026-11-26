@@ -45,12 +45,16 @@ bool SegmentHitsTriangle(const glm::vec3& from, const glm::vec3& to, const Trian
 
 BossPose MakeBossPose(float armorOpen, const glm::vec3& aim)
 {
+    return MakeBossPose(glm::translate(glm::mat4(1), boss_asset::mount), armorOpen, aim);
+}
+
+BossPose MakeBossPose(const glm::mat4& root, float armorOpen, const glm::vec3& aim)
+{
     BossPose pose;
     for (std::size_t i = 0; i < pose.nodes.size(); ++i)
     {
         const auto& node = boss_asset::nodes[i];
-        const auto parent =
-            node.parent < 0 ? glm::translate(glm::mat4(1), boss_asset::mount) : pose.nodes[node.parent];
+        const auto parent = node.parent < 0 ? root : pose.nodes[node.parent];
         auto offset = node.translation;
         if (i == boss_asset::lower_armor_L_slide)
         {
@@ -64,7 +68,8 @@ BossPose MakeBossPose(float armorOpen, const glm::vec3& aim)
         auto angles = node.rotation;
         if (i == boss_asset::turret_L_rotY || i == boss_asset::turret_R_rotY)
         {
-            const auto d = aim - glm::vec3(model[3]);
+            const auto local = glm::vec3(glm::inverse(parent) * glm::vec4(aim, 1));
+            const auto d = local - offset;
             angles.y = std::clamp(glm::degrees(std::atan2(d.x, d.z)), -25.0f, 25.0f);
         }
         if (i == boss_asset::turret_L_rotX || i == boss_asset::turret_R_rotX)
@@ -99,11 +104,14 @@ glm::vec3 BossMuzzle(const BossPose& pose, int side)
 bool FindBossHit(const glm::vec3& start, const glm::vec3& end, const BossPose& pose,
                  bool exposed, Hit& hit)
 {
-    const auto centre = BossCoreCenter(pose);
-    const Collider weak{21000, exposed ? HitKind::Body : HitKind::Armor, centre - boss_asset::weakHalf,
-                        centre + boss_asset::weakHalf};
+    const auto inverseCore = glm::inverse(pose.nodes[boss_asset::core_visual]);
+    const auto coreStart = glm::vec3(inverseCore * glm::vec4(start, 1));
+    const auto coreEnd = glm::vec3(inverseCore * glm::vec4(end, 1));
+    const Collider weak{21000, exposed ? HitKind::Body : HitKind::Armor,
+                        boss_asset::weakCenter - boss_asset::weakHalf,
+                        boss_asset::weakCenter + boss_asset::weakHalf};
     float fraction;
-    bool found = SegmentHitsBox(start, end, weak, fraction);
+    bool found = SegmentHitsBox(coreStart, coreEnd, weak, fraction);
     if (found)
     {
         hit = {weak.id, weak.kind, fraction, PointOnSegment(start, end, fraction)};

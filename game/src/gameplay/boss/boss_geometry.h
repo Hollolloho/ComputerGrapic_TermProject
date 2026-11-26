@@ -11,6 +11,7 @@ struct BossPose
 };
 
 BossPose MakeBossPose(float armorOpen, const glm::vec3& aim);
+BossPose MakeBossPose(const glm::mat4& root, float armorOpen, const glm::vec3& aim);
 glm::vec3 BossCoreCenter(const BossPose& pose);
 glm::vec3 BossMuzzle(const BossPose& pose, int side);
 bool FindBossHit(const glm::vec3& start, const glm::vec3& end, const BossPose& pose,

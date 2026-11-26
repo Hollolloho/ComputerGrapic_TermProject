@@ -25,6 +25,9 @@ private:
     bool showCredits{};
     bool mouseHeld{};
     bool enterHeld{};
+    bool upHeld{}, downHeld{}, tabHeld{};
+    int focusedButton{-1};
+    std::wstring focusedPage;
     float mouseX{};
     float mouseY{};
 };

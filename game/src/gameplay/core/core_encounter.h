@@ -14,7 +14,7 @@ struct MagneticConfig
     float warningSeconds{1.5f};
     float pulseSeconds{1.0f};
     float recoverySeconds{4.0f};
-    float radius{6.0f};
+    float radius{8.0f}; // 원형 코어실 전체를 덮는다.
     int damage{20};
 };
 
@@ -22,6 +22,7 @@ class CoreEncounter : public CombatEncounter
 {
 public:
     static constexpr ObjectId CoreId = 61000, PlayerId = 61900;
+    static constexpr std::size_t DroneCount = 6, TurretCount = 4;
     CoreEncounter();
     void Reset();
     void SetEnvironment(const std::vector<Collider>& walls, const std::vector<Collider>& playerWalls);
@@ -37,8 +38,8 @@ public:
     float PhaseTime() const { return phaseTime; } // 현재 단계에서 흐른 세계 시간
     float PhaseProgress() const;
     const MagneticConfig& Config() const { return magnetic; }
-    const std::array<DroneBehavior, 2>& Drones() const { return drones; }
-    const std::array<FixedTurret, 2>& Turrets() const { return turrets; }
+    const std::array<DroneBehavior, DroneCount>& Drones() const { return drones; }
+    const std::array<FixedTurret, TurretCount>& Turrets() const { return turrets; }
     std::vector<Collider> PlayerObstacles() const;
     static glm::vec3 CoreCenter() { return {7.8f, 3.15f, -56.0675f}; }
     static glm::vec3 PlayerRoot() { return {7.8f, 0, -48.2f}; }
@@ -51,16 +52,16 @@ private:
     void UpdatePlayerBullets(float dt);
     void UpdateEnemyBullets(float dt, const glm::vec3& eye, const glm::vec3& forward);
     void UpdateMagnetic(float dt, const glm::vec3& eye);
-    void ApplyPulse(const glm::vec3& eye);
+    void ApplyPulse(const glm::vec3& eye, float waveRadius);
     void SpawnEnemyBullet(const glm::vec3& muzzle, const glm::vec3& target, ObjectId source, BulletStyle bulletStyle);
     float PhaseDuration() const;
-    std::array<DroneBehavior, 2> drones;
-    std::array<FixedTurret, 2> turrets;
+    std::array<DroneBehavior, DroneCount> drones;
+    std::array<FixedTurret, TurretCount> turrets;
     std::vector<Collider> walls, movementWalls;
     MagneticConfig magnetic;
     MagneticPhase phase{MagneticPhase::Dormant};
     float phaseTime{};
-    bool pulseHit{};
+    bool pulseChecked{};
     int coreHealth{100}, coreHits{};
 };
 } // namespace aegis::combat

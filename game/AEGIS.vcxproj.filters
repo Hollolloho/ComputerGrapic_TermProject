@@ -128,6 +128,9 @@
     <ClCompile Include="src\gameplay\boss\boss_encounter.cpp"><Filter>Gameplay\Boss</Filter></ClCompile>
     <ClCompile Include="src\gameplay\boss\boss_geometry.cpp"><Filter>Gameplay\Boss</Filter></ClCompile>
     <ClCompile Include="src\gameplay\boss\boss_view.cpp"><Filter>Gameplay\Boss</Filter></ClCompile>
+    <ClCompile Include="src\gameplay\boss\midboss.cpp"><Filter>Gameplay\Boss</Filter></ClCompile>
+    <ClCompile Include="src\gameplay\boss\midboss_view.cpp"><Filter>Gameplay\Boss</Filter></ClCompile>
+    <ClCompile Include="src\combat_map\interlock_layout.cpp"><Filter>CombatMap</Filter></ClCompile>
     <ClCompile Include="src\gameplay\campaign\campaign_flow.cpp"><Filter>Gameplay\Campaign\Flow</Filter></ClCompile>
     <ClCompile Include="src\gameplay\combat\combat.cpp"><Filter>Gameplay\Combat</Filter></ClCompile>
     <ClCompile Include="src\gameplay\combat\combat_encounter.cpp"><Filter>Gameplay\Combat</Filter></ClCompile>
@@ -152,7 +155,6 @@
     <ClCompile Include="src\gameplay\player\player_motion.cpp"><Filter>Gameplay\Player</Filter></ClCompile>
     <ClCompile Include="src\gameplay\turret\turret.cpp"><Filter>Gameplay\Turret</Filter></ClCompile>
     <ClCompile Include="src\gameplay\turret\turret_encounter.cpp"><Filter>Gameplay\Turret</Filter></ClCompile>
-    <ClCompile Include="src\gameplay\turret\turret_view.cpp"><Filter>Gameplay\Turret</Filter></ClCompile>
     <ClCompile Include="src\gameplay\weapons\weapon_inventory.cpp"><Filter>Gameplay\Weapons</Filter></ClCompile>
     <ClCompile Include="src\gameplay\weapons\weapon_view.cpp"><Filter>Gameplay\Weapons</Filter></ClCompile>
     <ClCompile Include="src\gameplay\weapons\bullet.cpp"><Filter>Gameplay\Weapons</Filter></ClCompile>
@@ -162,12 +164,15 @@
     <ClInclude Include="src\gameplay\boss\boss_encounter.h"><Filter>Gameplay\Boss</Filter></ClInclude>
     <ClInclude Include="src\gameplay\boss\boss_geometry.h"><Filter>Gameplay\Boss</Filter></ClInclude>
     <ClInclude Include="src\gameplay\boss\boss_view.h"><Filter>Gameplay\Boss</Filter></ClInclude>
+    <ClInclude Include="src\gameplay\boss\midboss.h"><Filter>Gameplay\Boss</Filter></ClInclude>
+    <ClInclude Include="src\gameplay\boss\midboss_view.h"><Filter>Gameplay\Boss</Filter></ClInclude>
     <ClInclude Include="src\gameplay\boss\boss_layout.generated.h"><Filter>Gameplay\Boss</Filter></ClInclude>
     <ClInclude Include="src\gameplay\campaign\campaign_flow.h"><Filter>Gameplay\Campaign\Flow</Filter></ClInclude>
     <ClInclude Include="src\gameplay\campaign\campaign_layout.generated.h"><Filter>Gameplay\Campaign\Environment</Filter></ClInclude>
     <ClInclude Include="src\gameplay\combat\combat.h"><Filter>Gameplay\Combat</Filter></ClInclude>
     <ClInclude Include="src\gameplay\combat\combat_feedback.h"><Filter>Gameplay\Combat</Filter></ClInclude>
     <ClInclude Include="src\combat_map\combat_map_layout.generated.h"><Filter>CombatMap</Filter></ClInclude>
+    <ClInclude Include="src\combat_map\interlock_layout.h"><Filter>CombatMap</Filter></ClInclude>
     <ClInclude Include="src\gameplay\combat\combat_scene.h"><Filter>Gameplay\Combat</Filter></ClInclude>
     <ClInclude Include="src\gameplay\combat\combat_time.h"><Filter>Gameplay\Combat</Filter></ClInclude>
     <ClInclude Include="src\gameplay\core\core_encounter.h"><Filter>Gameplay\Core</Filter></ClInclude>
@@ -190,7 +195,6 @@
     <ClInclude Include="src\gameplay\turret\turret.h"><Filter>Gameplay\Turret</Filter></ClInclude>
     <ClInclude Include="src\combat_map\terminal_layout.generated.h"><Filter>CombatMap</Filter></ClInclude>
     <ClInclude Include="src\gameplay\turret\turret_encounter.h"><Filter>Gameplay\Turret</Filter></ClInclude>
-    <ClInclude Include="src\gameplay\turret\turret_view.h"><Filter>Gameplay\Turret</Filter></ClInclude>
     <ClInclude Include="src\gameplay\weapons\weapon_inventory.h"><Filter>Gameplay\Weapons</Filter></ClInclude>
     <ClInclude Include="src\gameplay\weapons\weapon_view.h"><Filter>Gameplay\Weapons</Filter></ClInclude>
     <ClInclude Include="src\gameplay\weapons\bullet.h"><Filter>Gameplay\Weapons</Filter></ClInclude>
@@ -200,6 +204,8 @@
     <None Include="shaders\ui.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\combat_box.vert"><Filter>Shaders</Filter></None>
     <None Include="shaders\combat_box.frag"><Filter>Shaders</Filter></None>
+    <None Include="shaders\midboss_laser.vert"><Filter>Shaders</Filter></None>
+    <None Include="shaders\midboss_laser.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\death_effect.vert"><Filter>Shaders</Filter></None>
     <None Include="shaders\death_effect.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\core.vert"><Filter>Shaders</Filter></None>
@@ -208,8 +214,6 @@
     <None Include="shaders\mesh.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\turret_model.vert"><Filter>Shaders</Filter></None>
     <None Include="shaders\turret_model.frag"><Filter>Shaders</Filter></None>
-    <None Include="shaders\turret.vert"><Filter>Shaders</Filter></None>
-    <None Include="shaders\turret.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\bullet.vert"><Filter>Shaders</Filter></None>
     <None Include="shaders\bullet.frag"><Filter>Shaders</Filter></None>
     <None Include="shaders\weapon.vert"><Filter>Shaders</Filter></None>

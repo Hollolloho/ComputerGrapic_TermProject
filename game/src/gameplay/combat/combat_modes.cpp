@@ -1,6 +1,7 @@
 // 전투 구역별 배치, 시점과 이동 충돌 범위를 설정한다.
 #include "combat_scene.h"
 #include "combat_map/corridor_layout.generated.h"
+#include "combat_map/interlock_layout.h"
 #include "combat_map/terminal_layout.generated.h"
 #include <limits>
 
@@ -15,7 +16,10 @@ void CombatScene::SetCorridorMode(bool enabled)
 {
     activeBattle = &encounter;
     combatMapMode = false;
-    maintenanceMode = approachMode = false;
+    interlockMode = false;
+    maintenanceMode = false;
+    encounter.ClearMidboss();
+    encounter.SetExtraDrones({});
     encounter.SetDroneScale(1);
     encounter.SetTurrets(combat::TurretType::SingleC, {});
     encounter.SetDroneSpawn({-0.65f, 1.8f, -10}, 0, -10.f);
@@ -39,6 +43,10 @@ void CombatScene::BeginCombatMap()
     activeBattle = &encounter;
     combatMapMode = true;
     corridorMode = true;
+    interlockMode = false;
+    maintenanceMode = false;
+    encounter.ClearMidboss();
+    encounter.SetExtraDrones({});
     encounter.SetExitDoors(0, 0, 0);
     encounter.SetDroneMode(true);
 }
@@ -51,7 +59,6 @@ void CombatScene::SetCombatMapMode(bool enabled)
         return;
     }
     BeginCombatMap();
-    maintenanceMode = approachMode = false;
     encounter.SetDroneScale(1);
     std::vector<combat::Collider> walls(combat_map_asset::walls.begin(), combat_map_asset::walls.end());
     walls.push_back(TerminalCollider());
@@ -65,16 +72,43 @@ void CombatScene::SetCombatMapMode(bool enabled)
     Reset();
 }
 
-// 정비 구간에는 드론과 단포신 두 대, 다음 복도에는 쌍포신 한 대를 배치한다.
-void CombatScene::SetMaintenanceMode(bool coreApproach)
+void CombatScene::SetInterlockMode()
+{
+    BeginCombatMap();
+    interlockMode = true;
+
+    std::vector<combat::Collider> walls;
+    for (auto wall : combat_map_asset::playerWalls)
+    {
+        interlock_asset::MoveCover(wall);
+        if (wall.minimum.z <= interlock_asset::entranceZ && wall.maximum.z >= interlock_asset::exitZ)
+            walls.push_back(wall);
+    }
+    walls.push_back(TerminalCollider());
+    encounter.SetEnvironment(walls);
+    const auto& positions = interlock_asset::drones;
+    const float scale = interlock_asset::droneScale, patrol = interlock_asset::dronePatrolOffset;
+    encounter.SetDroneSpawn(positions[0], 0, positions[0].z + patrol);
+    encounter.SetDroneScale(scale);
+    encounter.SetExtraDrones({{positions[1], 0, scale, patrol}, {positions[2], 0, scale, patrol},
+                              {positions[3], 0, scale, patrol}});
+    encounter.SetTurrets(combat::TurretType::SingleC,
+                         {{0, 0, -29.3f}, {-3.2f, 0, -27.2f}, {3.4f, 0, -27.2f}, {0, 0, -26.f}});
+    encounter.SetMidboss(interlock_asset::bossMount, interlock_asset::bossScale);
+    encounter.SetSupply(SupplyPosition());
+    Reset();
+}
+
+// 정비 복도 전체에서 드론 세 대와 단포신 두 대, 쌍포신 한 대를 함께 상대한다.
+void CombatScene::SetMaintenanceMode()
 {
     BeginCombatMap();
     maintenanceMode = true;
-    approachMode = coreApproach;
-    if (approachMode)
-        encounter.SetTurrets(combat::TurretType::Twin, {{8.6f, 0, -45.7f}}, false);
-    else
-        encounter.SetTurrets(combat::TurretType::SingleC, {{3.85f, 0, -36.8f}, {3.75f, 0, -40.8f}});
+    encounter.SetTurrets({
+        {combat::TurretType::SingleC, {6.55f, 0, -46.25f}},
+        {combat::TurretType::SingleC, {9.0f, 0, -46.25f}},
+        {combat::TurretType::Twin, {8.8f, 0, -38.7f}}
+    });
 
     std::vector<combat::Collider> walls(combat_map_asset::maintenanceWalls.begin(),
                                         combat_map_asset::maintenanceWalls.end());
@@ -84,32 +118,43 @@ void CombatScene::SetMaintenanceMode(bool coreApproach)
     const auto& placement = combat_map_asset::friendDrones[1];
     encounter.SetDroneSpawn(placement.position, glm::radians(placement.rotYDegrees), placement.position.z);
     encounter.SetDroneScale(placement.scale);
+    encounter.SetExtraDrones({
+        {{3.8f, 2.3f, -37.1f}, 0.f, 0.8f},
+        {{8.9f, 2.3f, -43.2f}, 0.f, 0.8f}
+    });
     encounter.SetSupply(SupplyPosition());
     Reset();
 }
 
 void CombatScene::SetDroneMode(bool enabled)
 {
+    if (!enabled) encounter.SetExtraDrones({});
     encounter.SetDroneMode(enabled);
     Reset();
 }
 
 void CombatScene::SetBossMode(bool enabled)
 {
+    encounter.ClearMidboss();
+    encounter.SetExtraDrones({});
     activeBattle = &encounter;
     if (enabled)
     {
         activeBattle = &boss;
         combatMapMode = false;
-        maintenanceMode = approachMode = false;
+        interlockMode = false;
+        maintenanceMode = false;
     }
     Reset();
 }
 
 void CombatScene::SetCoreMode()
 {
+    encounter.ClearMidboss();
+    encounter.SetExtraDrones({});
     activeBattle = &core;
-    maintenanceMode = approachMode = false;
+    interlockMode = false;
+    maintenanceMode = false;
     combatMapMode = corridorMode = true;
     Reset();
 }
@@ -125,7 +170,10 @@ glm::vec3 CombatScene::CameraRoot() const
         }
         return combat::BossEncounter::FiringRoot();
     }
-    if (approachMode) return {7.8f, 0, -40.6f};
+    if (interlockMode)
+    {
+        return interlock_asset::playerStart;
+    }
     if (maintenanceMode)
     {
         return combat_map_asset::maintenanceStart;
@@ -195,6 +243,8 @@ std::vector<combat::Collider> CombatScene::PlayerObstacles() const
     {
         std::vector<combat::Collider> walls(combat_map_asset::playerWalls.begin(),
                                             combat_map_asset::playerWalls.end());
+        for (auto& wall : walls)
+            interlock_asset::MoveCover(wall);
         walls.push_back(TerminalCollider());
         for (const auto& turret : encounter.Turrets())
         {
@@ -206,6 +256,15 @@ std::vector<combat::Collider> CombatScene::PlayerObstacles() const
         return walls;
     }
     return encounter.Colliders();
+}
+
+const wchar_t* CombatScene::NextAreaDirection() const
+{
+    if (maintenanceMode)
+        return L"코어실로";
+    if (interlockMode || !combatMapMode)
+        return L"정비 복도로";
+    return L"사각방으로";
 }
 
 } // namespace aegis

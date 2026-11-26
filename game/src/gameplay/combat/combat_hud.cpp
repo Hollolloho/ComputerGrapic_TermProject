@@ -122,8 +122,8 @@ void CombatScene::DrawHud(int width, int height) const
     {
         Label("CORE " + std::to_string(core.CoreHealth()) + "/100", 24, height - 40, scale, {0.2f, 1, 0.8f});
         Label("HP " + std::to_string(core.Health()) + "/100", 24, height - 75, scale, {1, 0.8f, 0.3f});
-        const char* magnetic = core.Phase() == combat::MagneticPhase::Warning ? "MAGNETIC WARNING / LEAVE RING"
-                               : core.Phase() == combat::MagneticPhase::Pulse ? "MAGNETIC PULSE"
+        const char* magnetic = core.Phase() == combat::MagneticPhase::Warning ? "MAGNETIC WARNING / TAKE COVER"
+                               : core.Phase() == combat::MagneticPhase::Pulse ? "MAGNETIC PULSE / STAY IN COVER"
                                : core.CoreAlive() ? "DESTROY THE AI CORE" : "CORE DESTROYED";
         Label(magnetic, 24, height - 110, 2, {1, 0.4f, 0.2f});
         Label("LMB FIRE  E SUPPLY  G DROP  R RETRY  ESC MENU", 24, 24, 2, {0.8f, 0.9f, 1});
@@ -280,13 +280,10 @@ std::wstring CombatScene::TimeStatus() const
 {
     if (DeathStarted())
     {
-        return L"전투 정지 · 재시작하면 시간과 효과가 초기화됩니다.";
+        return L"세계 시간 0%";
     }
     const auto current = std::to_wstring(static_cast<int>(time.Scale() * 100 + 0.5));
-    return std::wstring(L"시간: 실제 이동에 연동") +
-           L"  /  기본 " + std::to_wstring(static_cast<int>(PreviewTimeScale() * 100 + 0.5)) +
-           L"%  /  현재 " + current +
-           L"%  /  Shift: 정상 진행  /  사격 후 0.25초 정상 진행";
+    return L"세계 시간 " + current + L"%" + (time.ShotRemaining() > 0 ? L" · 사격 진행" : L"");
 }
 
 std::string CombatScene::TimeDebug() const
@@ -304,166 +301,186 @@ std::string CombatScene::TimeDebug() const
 
 void CombatScene::PopulateHud(UiPage& page) const
 {
-    page.timeStatus = TimeStatus();
+    page.timeStatus.clear();
     const auto& inventory = Inventory();
+    const auto result = BattleResult();
     page.health = PlayerHealth();
-    page.status = L"체력 " + std::to_wstring(page.health) + L" / 100  |  ";
-    page.status += inventory.Armed() ? L"무기: 장착 중" : L"무기: 빈손";
-    page.status += L"  |  누적 파손 " + std::to_wstring(inventory.Breaks());
+    page.status = L"무기 없음\n재무장 필요";
+    if (inventory.Armed())
+    {
+        page.status = L"CW-01C\n";
+        if (DeathStarted() || result != combat::EncounterResult::Running)
+            page.status += L"사격 중지";
+        else if (time.CanFire())
+            page.status += L"사격 가능";
+        else
+            page.status += L"사격 대기";
+    }
+    page.footer = inventory.Armed() ? L"G 내려놓기 · Esc 메뉴" : L"Esc 메뉴";
+    page.counters.clear();
+    page.prompt.clear();
+    page.warning.clear();
     if (IsCoreMode())
     {
-        page.status += L"  |  코어 " + std::to_wstring(core.CoreHealth()) +
-                       L" / 100  |  호위 " +
-                       std::to_wstring(core.RemainingEnemies() - (core.CoreAlive() ? 1 : 0)) + L" / 4";
+        page.counters = L"코어 " + std::to_wstring(core.CoreHealth()) +
+                       L" / 100\n호위 " +
+                       std::to_wstring(core.RemainingEnemies() - (core.CoreAlive() ? 1 : 0)) + L" / " +
+                       std::to_wstring(core.Drones().size() + core.Turrets().size());
     }
-    if (activeBattle == &encounter && !encounter.Turrets().empty())
+    else if (activeBattle == &encounter)
     {
-        page.status += L"  |  남은 적 " + std::to_wstring(encounter.RemainingEnemies()) + L" / " +
+        page.counters = L"남은 적 " + std::to_wstring(encounter.RemainingEnemies()) + L" / " +
                        std::to_wstring(encounter.EnemyCount());
     }
-    if (IsBossMode())
+    else if (IsBossMode())
     {
-        page.status += L"  |  코어 명중 " + std::to_wstring(boss.CoreHits()) + L" / 3";
+        page.counters = L"코어 유효타 " + std::to_wstring(boss.CoreHits()) + L" / 3";
     }
-    const auto result = BattleResult();
     page.danger = page.health <= 25;
     if (result == combat::EncounterResult::Securing)
     {
-        page.warning = L"적은 쓰러졌지만 날아오는 적탄이 남아 있습니다!";
+        page.warning = L"적탄 " + std::to_wstring(activeBattle->EnemyFlights().size()) + L"발 잔류 · 엄폐 유지";
         page.body = L"남은 적탄 " +
                     std::to_wstring(activeBattle->EnemyFlights().size()) +
-                    L"발 · 탄환이 사라지기 전에는 분석과 구역 이동이 잠깁니다.";
+                    L"발 · 정리 후 진행 가능";
         page.danger = true;
     }
     else if (result == combat::EncounterResult::Cleared)
     {
-        page.warning = L"구역 안전 확보 완료";
         if (IsCoreMode())
-            page.body = L"중앙 AI 코어를 파괴했습니다. 임무를 완료했습니다.";
+            page.warning = L"중앙 AI 코어 파괴";
         else if (!combatMapMode && DoorProgress() < 1)
-            page.body = L"출구 문이 열리고 있습니다. 잠시 기다리세요.";
-        else if (approachMode)
-            page.body = L"Enter: 코어실로 진행  /  가까운 단말 조준 + E: 분석";
-        else if (maintenanceMode)
-            page.body = L"Enter: 코어실 앞 복도로 진행  /  가까운 단말 조준 + E: 분석";
+            page.warning = L"출구 문 개방 중";
         else
-            page.body = L"Enter: 정비 복도로 진행  /  가까운 단말 조준 + E: 분석";
+            page.warning = L"구역 안전 확보";
     }
     else if (IsCoreMode())
     {
         const auto phase = core.Phase();
         page.warning = phase == combat::MagneticPhase::Warning
-                           ? L"자기장 예고! 주황색 원 밖으로 피하세요."
+                           ? L"자기장 예고 · 엄폐물 뒤로"
                        : phase == combat::MagneticPhase::Pulse
-                           ? L"자기장 방출 중! 붉은 원 안은 위험합니다."
-                           : L"중앙 AI 코어를 파괴하세요. 호위 드론과 포탑을 조심하세요.";
-        page.danger = phase == combat::MagneticPhase::Warning || phase == combat::MagneticPhase::Pulse;
-        page.body = L"WASD 이동 · 마우스 조준 · 왼쪽 클릭 사격 · 빈손으로 입구 보급대 조준 + E";
+                           ? L"자기장 방출 · 엄폐 유지"
+                           : L"";
+        page.danger = page.danger || phase == combat::MagneticPhase::Warning ||
+                      phase == combat::MagneticPhase::Pulse;
     }
     else if (IsBossMode())
     {
         switch (boss.Phase())
         {
         case combat::BossPhase::Warning:
-            page.warning = bossCovered ? L"보스 사격 준비! 엄폐 상태를 유지하세요."
-                                       : L"보스 사격 준비!  B로 엄폐하세요.";
+            page.warning = bossCovered ? L"보스 조준 · 엄폐 유지" : L"보스 조준 · B 엄폐";
             page.danger = true;
             break;
         case combat::BossPhase::Attack:
-            page.warning = L"보스 사격 중! 엄폐 상태를 유지하세요.";
+            page.warning = L"보스 사격 · 엄폐 유지";
             page.danger = true;
             break;
         case combat::BossPhase::Opening:
-            page.warning = L"장갑 개방 중 · 완전히 열릴 때까지 기다리세요.";
+            page.warning = L"장갑 개방 중";
             break;
         case combat::BossPhase::Exposed:
-            page.warning = bossCovered ? L"약점 노출!  B로 사격 위치 전환 후 코어를 맞히세요."
-                                       : L"약점 노출! 지금 코어를 조준해 사격하세요.";
+            page.warning = bossCovered ? L"코어 노출 · B 사격 위치" : L"코어 노출 · 사격 가능";
             break;
         case combat::BossPhase::Closing:
-            page.warning = L"장갑 폐쇄 중 · 코어를 공격해도 피해를 주지 못합니다.";
+            page.warning = L"장갑 폐쇄 중 · 피해 차단";
             break;
         default:
-            page.warning = L"장갑 닫힘 · 다음 공격에 대비하세요.";
+            page.warning = L"장갑 닫힘";
             break;
         }
-        page.body = bossCovered ? L"현재: 엄폐 위치  /  B: 사격 위치로  /  Esc: 메뉴"
-                                : L"현재: 사격 위치  /  B: 엄폐 위치로  /  Esc: 메뉴";
+        if (!HasExternalPlayerView())
+            page.footer = bossCovered ? L"B 사격 위치 · Esc 메뉴" : L"B 엄폐 · Esc 메뉴";
     }
     else
     {
         switch (encounter.Phase())
         {
         case combat::TurretPhase::Warning:
-            page.warning = L"드론이 조준 중! 곧 사격합니다.";
+            page.warning = L"드론 조준 · 사선 이탈";
             page.danger = true;
             break;
         case combat::TurretPhase::Cooldown:
-            page.warning = L"드론 사격 후 대기 중 · 본체를 조준하세요.";
             break;
         case combat::TurretPhase::Disarmed:
-            page.warning = L"드론 무기 파괴 · 본체를 맞혀 마무리하세요.";
+            page.warning = L"드론 무장 해제 · 본체 조준";
             break;
         default:
-            page.warning = L"드론 순찰 중 · 본체를 조준해 파괴하세요.";
             break;
         }
-        page.body = L"왼쪽 클릭: 사격  /  오른쪽 드래그: 조준  /  G: 무기 내려놓기  /  Esc: 메뉴";
     }
     if (activeBattle == &encounter && !encounter.Turrets().empty() && result == combat::EncounterResult::Running)
     {
-        page.warning = encounter.EnemyAlive() ? L"드론과 포탑을 제거하세요."
-                                              : L"남은 포탑의 본체를 조준하세요.";
+        bool droneWarning = encounter.EnemyAlive() && encounter.Phase() == combat::TurretPhase::Warning;
+        for (const auto& droneState : encounter.ExtraDrones())
+        {
+            droneWarning = droneWarning || droneState.Phase() == combat::DronePhase::Warning;
+        }
+        page.warning.clear();
+        if (droneWarning)
+        {
+            page.warning = L"드론 조준 · 사선 이탈";
+            page.danger = true;
+        }
         for (const auto& turret : encounter.Turrets())
         {
             if (turret.Phase() == combat::TurretPhase::Warning)
             {
-                page.warning = L"고정 포탑이 조준 중! 엄폐하거나 사선을 벗어나세요.";
+                page.warning = L"포탑 조준 · 엄폐 또는 사선 이탈";
                 page.danger = true;
                 break;
             }
         }
     }
-    if (activeBattle == &encounter && HasExternalPlayerView() && result == combat::EncounterResult::Running)
+    const auto& midboss = encounter.MidbossState();
+    if (interlockMode && midboss.Alive() && result == combat::EncounterResult::Running)
     {
-        page.body = L"WASD: 이동  /  마우스: 조준  /  왼쪽 클릭: 사격  /  G: 내려놓기  /  Esc: 메뉴";
+        page.counters += L"\nE형 코어 " +
+                       std::to_wstring(combat::Midboss::CoreHitLimit - midboss.CoreHits()) + L" / 3";
+        if (midboss.Phase() == combat::LaserPhase::Charging)
+        {
+            page.warning = L"E형 충전 · 엄폐";
+            page.danger = true;
+        }
+        else if (midboss.Phase() == combat::LaserPhase::Firing)
+        {
+            page.warning = L"E형 레이저 · 사선 이탈";
+            page.danger = true;
+        }
+        else if (midboss.CoreExposed() && page.warning.empty())
+        {
+            page.warning = L"E형 냉각 · 코어 사격 가능";
+            page.danger = false;
+        }
     }
     if (IsBossMode() && HasExternalPlayerView() && result == combat::EncounterResult::Running)
     {
         page.warning =
-            boss.Phase() == combat::BossPhase::Exposed ? L"약점 노출! 열린 코어를 조준해 사격하세요."
+            boss.Phase() == combat::BossPhase::Exposed ? L"코어 노출 · 사격 가능"
             : boss.Phase() == combat::BossPhase::Warning || boss.Phase() == combat::BossPhase::Attack
-                ? L"보스 사격 위험! 엄폐물 뒤로 피하세요."
-                : L"장갑이 닫혀 있습니다. 다음 약점 노출을 기다리세요.";
-        page.body = L"엄폐물을 이용하고, 장갑이 완전히 열리면 코어를 공격하세요.  /  Esc: 메뉴";
+                ? L"보스 사격 · 엄폐"
+                : L"장갑 닫힘";
     }
     if (DeathPlaying())
     {
         page.warning = L"치명상 · 전투 불능";
-        page.body = L"잠시 후 재시작 메뉴가 열립니다.";
+        page.prompt.clear();
+        page.body = L"재시작 메뉴 대기";
         page.danger = true;
+        return;
     }
-    if (result == combat::EncounterResult::Running && !inventory.Armed())
+    if (result != combat::EncounterResult::Failed && TerminalTarget())
+    {
+        page.prompt = CanAnalyze() ? L"E · 드론 분석" : L"적과 적탄 정리 후 분석 가능";
+    }
+    else if (result != combat::EncounterResult::Failed && !inventory.Armed())
     {
         const auto hint = InteractionHint();
         if (hint == combat::WeaponInteraction::Supply)
-            page.body = L"E: 보급대에서 무기 획득";
+            page.prompt = L"E · 무기 보급";
         else if (hint == combat::WeaponInteraction::Pickup)
-            page.body = L"E: 떨어진 무기 회수";
-        else if (!IsBossMode())
-            page.body = L"명중하면 내 총이 부서집니다. 보급대·떨어진 총에 접근해 조준 + E로 재무장하세요.";
-        else if (HasExternalPlayerView())
-            page.body = L"빈손입니다. 보급대에 접근해 무기를 조준하고 E를 누르세요.";
-        else if (bossCovered)
-            page.body = L"보급대의 무기를 조준하고 E를 눌러 재무장하세요.";
-        else
-            page.body = L"빈손입니다. B로 엄폐한 뒤 보급대의 무기를 조준하고 E를 누르세요.";
-    }
-    else if (result == combat::EncounterResult::Cleared && TerminalTarget())
-    {
-        page.body = approachMode ? L"E: 분석  /  Enter: 코어실로 진행"
-                     : maintenanceMode ? L"E: 드론 분석 열기  /  Enter: 코어실 앞 복도로 진행"
-                                    : L"E: 드론 분석 열기  /  Enter: 정비 복도로 진행";
+            page.prompt = L"E · 무기 회수";
     }
 }
 

@@ -1,4 +1,5 @@
 #include "CombatMap.h"
+#include "interlock_layout.h"
 #include "loader/Shader.h"
 #include "loader/model_loader.h"
 
@@ -114,6 +115,13 @@ bool CombatMap::Init(const std::filesystem::path& runtimeRoot)
 	{
 		std::cerr << error << '\n';
 		return false;
+	}
+	for (auto& mesh : model.meshes)
+	{
+		const auto offset = aegis::interlock_asset::CoverOffset(mesh.name);
+		if (offset != glm::vec3(0))
+			for (auto& vertex : mesh.vertices)
+				vertex.position += offset;
 	}
 
 	shaderProgram = LoadShaderProgram(runtimeRoot / "shaders/combat_map.vert", runtimeRoot / "shaders/combat_map.frag");

@@ -1,12 +1,27 @@
 #pragma once
 
 #include "gameplay/combat/combat_encounter.h"
+#include "gameplay/boss/midboss.h"
 #include "drone/drone_behavior.h"
 #include "fixed_turret.h"
 #include <initializer_list>
 
 namespace aegis::combat
 {
+
+struct ExtraDronePlacement
+{
+    glm::vec3 position;
+    float rotationYRadians;
+    float scale;
+    float patrolOffsetZ{};
+};
+
+struct TurretPlacement
+{
+    TurretType type;
+    glm::vec3 position;
+};
 
 // A fixed-turret encounter. Input, camera, drawing and global time are external.
 class TurretEncounter : public CombatEncounter
@@ -28,12 +43,23 @@ public:
     }
 
     bool SetDroneSpawn(const glm::vec3& point, float rotYRadians, float endZ);
+    void SetExtraDrones(std::initializer_list<ExtraDronePlacement> placements);
+    void SetMidboss(const glm::vec3& mount, float scale) { midboss.SetMount(mount, scale); }
+    void ClearMidboss() { midboss.Clear(); }
+    const Midboss& MidbossState() const { return midboss; }
+    const std::vector<DroneBehavior>& ExtraDrones() const { return extraDrones; }
+    bool IsExtraDroneCollider(ObjectId id) const;
     bool SetSupply(const glm::vec3& point);
     void SetExitDoors(ObjectId left, ObjectId right, float distance);
     void SetTurrets(TurretType type, std::initializer_list<glm::vec3> positions, bool primary = true);
+    void SetTurrets(std::initializer_list<TurretPlacement> placements, bool primary = true);
     const std::vector<FixedTurret>& Turrets() const { return turrets; }
     int RemainingEnemies() const;
-    int EnemyCount() const { return static_cast<int>(turrets.size()) + (primaryEnabled ? 1 : 0); }
+    int EnemyCount() const
+    {
+        return static_cast<int>(turrets.size() + extraDrones.size()) + (primaryEnabled ? 1 : 0) +
+               (midboss.Enabled() ? 1 : 0);
+    }
 
     bool CanAnalyze() const
     {
@@ -94,6 +120,8 @@ private:
     // 한 프레임의 전투를 아래 함수들로 나누어 처리한다.
     bool UpdateDrone(float gameDeltaTime, const glm::vec3& eye);
     void SyncTurret(std::size_t index);
+    std::size_t ExtraDroneColliderIndex(std::size_t index) const;
+    void SyncExtraDrone(std::size_t index);
     void UpdatePlayerBullets(float gameDeltaTime);
     void UpdateEnemyBullets(float gameDeltaTime, const glm::vec3& eye, const glm::vec3& forward);
     void UpdatePrimaryTurret(float gameDeltaTime, const glm::vec3& eye);
@@ -119,6 +147,8 @@ private:
     std::vector<FixedTurret> turrets;
     bool primaryEnabled{true};
     DroneBehavior drone;
+    std::vector<DroneBehavior> extraDrones;
+    Midboss midboss;
     bool droneMode{};
     std::vector<Collider> colliders;
     std::vector<Collider> environment;

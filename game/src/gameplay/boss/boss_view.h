@@ -11,6 +11,8 @@ public:
     bool Init(const std::filesystem::path& root);
     void Draw(const glm::mat4& projection, const glm::mat4& view, const glm::vec3& eye,
               const combat::BossEncounter& boss) const;
+    void DrawModel(const glm::mat4& projection, const glm::mat4& view, const combat::BossPose& pose,
+                   const std::array<float, boss_asset::partCount>& glow) const;
     void Clear();
 
 private:

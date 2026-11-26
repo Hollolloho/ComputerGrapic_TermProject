@@ -7,9 +7,9 @@
 #include "gameplay/weapons/weapon_view.h"
 #include "gameplay/weapons/bullet.h"
 #include "drone/drone.h"
-#include "gameplay/turret/turret_view.h"
 #include "gameplay/ui/analysis_session.h"
 #include "gameplay/boss/boss_view.h"
+#include "gameplay/boss/midboss_view.h"
 #include "gameplay/core/core_encounter.h"
 #include "gameplay/core/core_view.h"
 #include "gameplay/turret/turret.h"
@@ -70,7 +70,8 @@ public:
     void SetDroneMode(bool enabled);
     void SetCombatMapMode(bool enabled);
 
-    void SetMaintenanceMode(bool coreApproach = false);
+    void SetInterlockMode();
+    void SetMaintenanceMode();
 
     bool IsCombatMapMode() const
     {
@@ -214,6 +215,7 @@ private:
     glm::vec3 TerminalPosition() const;
     combat::Collider TerminalCollider() const;
     glm::vec3 SupplyPosition() const;
+    const wchar_t* NextAreaDirection() const;
     bool TerminalTarget() const;
     bool TerminalTarget(const glm::vec3& direction) const;
     void DrawAnalysis(int width, int height) const;
@@ -234,11 +236,12 @@ private:
     void ObserveDestruction();
     combat::BossEncounter boss;
     BossView bossView;
+    MidbossView midbossView;
     combat::CoreEncounter core;
     CoreView coreView;
     Turret singleModel, twinModel;
+    bool interlockMode{};
     bool maintenanceMode{};
-    bool approachMode{};
     bool combatMapMode{};
     bool bossCovered{};
     combat::AnalysisSession analysis;
@@ -251,7 +254,6 @@ private:
     WeaponView weapon;
     BulletView bulletView;
     Drone drone;
-    TurretView turretView;
     MeshRenderer terminalRenderer;
     GLuint program{};
     GLuint vao{};

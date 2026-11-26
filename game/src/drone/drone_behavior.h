@@ -27,6 +27,7 @@ public:
     }
 
     void Reset();
+    void StartTracking();
     bool SetSpawn(const glm::vec3& point, float rotYRadians, float endZ);
     bool Update(float gameDeltaTime, const glm::vec3& eye, const std::vector<Collider>& walls);
     void Disarm();

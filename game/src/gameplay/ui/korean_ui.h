@@ -47,6 +47,8 @@ struct UiPage
     bool panel{true};
     bool sign{};
     std::vector<UiButton> buttons;
+    std::wstring counters, prompt;
+    int focus{-1};
 };
 
 class KoreanUi

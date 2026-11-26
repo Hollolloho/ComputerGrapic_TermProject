@@ -6,8 +6,8 @@ enum class CampaignStage
 {
     Entry,
     Corridor,
+    Interlock,
     Maintenance,
-    CoreApproach,
     Boss
 };
 enum class CampaignScreen

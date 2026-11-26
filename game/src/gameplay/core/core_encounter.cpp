@@ -1,6 +1,7 @@
 #include "core_encounter.h"
 #include "main/GameMath.h"
 #include "combat_map/combat_map_layout.generated.h"
+#include "combat_map/interlock_layout.h"
 #include <algorithm>
 #include <cmath>
 #include <glm/geometric.hpp>
@@ -28,6 +29,8 @@ Collider GuardCollider(Collider collider, ObjectId id)
 CoreEncounter::CoreEncounter()
 {
     walls.assign(combat_map_asset::playerWalls.begin(), combat_map_asset::playerWalls.end());
+    for (auto& wall : walls)
+        interlock_asset::MoveCover(wall);
     movementWalls = walls;
     Reset();
 }
@@ -43,18 +46,33 @@ void CoreEncounter::SetEnvironment(const std::vector<Collider>& shotWalls,
 void CoreEncounter::Reset()
 {
     ResetCombat(SupplyPosition());
-    const float patrolEndZ[] = {-56.8f, -55.8f};
+    const glm::vec3 dronePositions[DroneCount] = {
+        {2.4f, 3.2f, -52.8f}, {1.9f, 4.f, -57.25f}, {3.85f, 4.7f, -60.4f},
+        {13.2f, 3.2f, -52.8f}, {13.7f, 4.f, -56.7f}, {11.6f, 4.7f, -60.6f}};
     for (std::size_t i = 0; i < drones.size(); ++i)
     {
-        const auto& placement = combat_map_asset::friendDrones[i + 2];
-        drones[i].SetSpawn(placement.position, glm::radians(placement.rotYDegrees), patrolEndZ[i]);
-        drones[i].SetScale(placement.scale);
+        const auto& point = dronePositions[i];
+        const auto direction = PlayerRoot() - point;
+        const float rotY = std::atan2(direction.x, direction.z);
+        // 코어실 드론은 제자리에서 입장 직후부터 플레이어를 조준한다.
+        drones[i].SetSpawn(point, rotY, point.z);
+        drones[i].SetScale(.65f);
+        drones[i].StartTracking();
     }
-    turrets[0].Configure(TurretType::Twin, {4.4f, 0, -60.9f}, 0, 3.28f);
-    turrets[1].Configure(TurretType::Twin, {11.6f, 0, -61.2f}, 1, -3.81f);
+    const glm::vec3 turretPositions[TurretCount] = {
+        {4.4f, 0, -59.1f}, {11.7f, 0, -57.1f},
+        {3.4f, 0, -55.75f}, {12.7f, 0, -54.25f}};
+    for (std::size_t i = 0; i < turrets.size(); ++i)
+    {
+        const auto& point = turretPositions[i];
+        const auto direction = PlayerRoot() - point;
+        const float rotY = glm::degrees(std::atan2(direction.x, direction.z));
+        turrets[i].Configure(i < 2 ? TurretType::Twin : TurretType::SingleC,
+                             point, static_cast<ObjectId>(i), rotY);
+    }
     phase = MagneticPhase::Dormant;
     phaseTime = 0;
-    pulseHit = false;
+    pulseChecked = false;
     coreHealth = 100;
     coreHits = 0;
 }
@@ -76,9 +94,11 @@ std::vector<Collider> CoreEncounter::Targets() const
     }
     for (std::size_t i = 0; i < turrets.size(); ++i)
     {
-        targets.push_back(GuardCollider(turrets[i].Body(), BodyId(i + 2)));
-        targets.push_back(GuardCollider(turrets[i].Weapon(), WeaponId(i + 2)));
-        targets.push_back(GuardCollider(turrets[i].Weapon(1), WeaponId(i + 2)));
+        for (auto target : turrets[i].Targets())
+        {
+            target.id = target.kind == HitKind::Weapon ? WeaponId(i + drones.size()) : BodyId(i + drones.size());
+            targets.push_back(target);
+        }
     }
     return targets;
 }
@@ -97,7 +117,7 @@ std::vector<Collider> CoreEncounter::PlayerObstacles() const
     }
     for (std::size_t i = 0; i < turrets.size(); ++i)
     {
-        auto body = GuardCollider(turrets[i].Body(), BodyId(i + 2));
+        auto body = GuardCollider(turrets[i].Body(), BodyId(i + drones.size()));
         body.kind = HitKind::Armor;
         obstacles.push_back(body);
     }
@@ -138,7 +158,7 @@ bool CoreEncounter::DamageCore(int damage)
     {
         phase = MagneticPhase::Warning;
         phaseTime = 0;
-        pulseHit = false;
+        pulseChecked = false;
     }
     return true;
 }
@@ -169,11 +189,11 @@ void CoreEncounter::UpdatePlayerBullets(float dt)
             }
             for (std::size_t i = 0; i < turrets.size(); ++i)
             {
-                if (hit.objectId == WeaponId(i + 2)) turrets[i].Disarm();
-                if (hit.objectId == BodyId(i + 2))
+                const bool bodyHit = hit.objectId == BodyId(i + drones.size());
+                if (bodyHit || hit.objectId == WeaponId(i + drones.size()))
                 {
                     inventory.Break(flight.bullet.sourceWeaponId);
-                    if (turrets[i].Armed())
+                    if (bodyHit && turrets[i].Armed())
                         inventory.SpawnDrop(turrets[i].Position() + glm::vec3(0, 0.12f, 0.9f));
                     turrets[i].Destroy();
                 }
@@ -239,15 +259,19 @@ float CoreEncounter::PhaseProgress() const
     return duration > 0 ? std::clamp(phaseTime / duration, 0.0f, 1.0f) : 0;
 }
 
-void CoreEncounter::ApplyPulse(const glm::vec3& eye)
+void CoreEncounter::ApplyPulse(const glm::vec3& eye, float waveRadius)
 {
     const auto delta = eye - CoreCenter();
     const float horizontalDistanceSquared = delta.x * delta.x + delta.z * delta.z;
-    if (pulseHit || horizontalDistanceSquared > magnetic.radius * magnetic.radius ||
-        IsBlocked(CoreCenter(), eye - glm::vec3(0, 0.6f, 0), walls)) return;
+    if (pulseChecked || horizontalDistanceSquared > waveRadius * waveRadius) return;
+    pulseChecked = true;
+
+    // 코어 하단에서 가슴 높이로 검사해 낮은 엄폐물도 자기장을 막게 한다.
+    glm::vec3 origin = CoreCenter();
+    origin.y = .9f;
+    if (IsBlocked(origin, eye - glm::vec3(0, .6f, 0), walls)) return;
     health = std::max(0, health - magnetic.damage);
     damageFlash = 0.3f;
-    pulseHit = true;
 }
 
 void CoreEncounter::UpdateMagnetic(float dt, const glm::vec3& eye)
@@ -263,25 +287,26 @@ void CoreEncounter::UpdateMagnetic(float dt, const glm::vec3& eye)
             const int pulses = static_cast<int>(std::min(std::floor(remaining / cycle), 5.0));
             for (int i = 0; i < pulses && health > 0; ++i)
             {
-                pulseHit = false;
-                ApplyPulse(eye);
+                pulseChecked = false;
+                ApplyPulse(eye, magnetic.radius);
             }
             remaining = std::fmod(remaining, cycle);
-            pulseHit = false;
+            pulseChecked = false;
             continue;
         }
-        if (phase == MagneticPhase::Pulse) ApplyPulse(eye);
         const double step = std::min(remaining, static_cast<double>(PhaseDuration() - phaseTime));
         phaseTime += static_cast<float>(step);
         remaining -= step;
+        // 화면의 파동과 같은 반경까지 도달했을 때 한 번만 엄폐·피해를 판정한다.
+        if (phase == MagneticPhase::Pulse)
+            ApplyPulse(eye, magnetic.radius * PhaseProgress());
         if (phaseTime >= PhaseDuration())
         {
             phaseTime = 0;
             if (phase == MagneticPhase::Warning)
             {
                 phase = MagneticPhase::Pulse;
-                pulseHit = false;
-                ApplyPulse(eye);
+                pulseChecked = false;
             }
             else if (phase == MagneticPhase::Pulse) phase = MagneticPhase::Recovery;
             else phase = MagneticPhase::Warning;
@@ -300,7 +325,8 @@ void CoreEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm::
     damageFlash = std::max(0.0f, damageFlash - gameDeltaTime);
     if (gameDeltaTime == 0) return;
 
-    std::array<bool, 2> droneShots{}, turretShots{};
+    std::array<bool, DroneCount> droneShots{};
+    std::array<bool, TurretCount> turretShots{};
     if (result == EncounterResult::Running)
     {
         auto blockers = walls;
@@ -308,10 +334,9 @@ void CoreEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm::
         core.kind = HitKind::Armor;
         blockers.push_back(core);
         for (std::size_t i = 0; i < drones.size(); ++i)
-        {
             droneShots[i] = drones[i].Update(gameDeltaTime, eye, blockers);
+        for (std::size_t i = 0; i < turrets.size(); ++i)
             turretShots[i] = turrets[i].Update(gameDeltaTime, eye, blockers);
-        }
     }
     // 플레이어 명중을 먼저 적용해 방금 파괴된 수호기가 발사하지 않게 한다.
     UpdatePlayerBullets(gameDeltaTime);
@@ -331,9 +356,12 @@ void CoreEncounter::Update(float realDeltaTime, float gameDeltaTime, const glm::
             if (droneShots[i] && drones[i].Armed())
                 SpawnEnemyBullet(drones[i].Muzzle(), drones[i].AimPoint(),
                                  GuardShotBase + static_cast<ObjectId>(i), BulletStyle::Drone);
+        }
+        for (std::size_t i = 0; i < turrets.size(); ++i)
+        {
             if (turretShots[i] && turrets[i].Armed())
                 SpawnEnemyBullet(turrets[i].Muzzle(), turrets[i].AimPoint(),
-                                 GuardShotBase + static_cast<ObjectId>(i + 2), BulletStyle::Turret);
+                                 GuardShotBase + static_cast<ObjectId>(i + drones.size()), BulletStyle::Turret);
         }
     }
     if (result == EncounterResult::Securing && enemyFlights.empty())

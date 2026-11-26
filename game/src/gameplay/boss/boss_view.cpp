@@ -51,7 +51,13 @@ void BossView::Draw(const glm::mat4& projection, const glm::mat4& view, const gl
     glow[boss_asset::part_core_crystal] = boss.CoreHits() >= 3                         ? 0
                                           : boss.Phase() == combat::BossPhase::Exposed ? 3.0f
                                                                                        : 1.0f;
-    model.Draw(projection, view, boss.Pose().parts, 0, glow);
+    DrawModel(projection, view, boss.Pose(), glow);
+}
+
+void BossView::DrawModel(const glm::mat4& projection, const glm::mat4& view, const combat::BossPose& pose,
+                         const std::array<float, boss_asset::partCount>& glow) const
+{
+    model.Draw(projection, view, pose.parts, 0, glow);
 }
 
 void BossView::Clear()

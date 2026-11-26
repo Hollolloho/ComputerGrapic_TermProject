@@ -36,15 +36,15 @@ bool CampaignFlow::Advance(bool corridorSafe)
     }
     if (stage == CampaignStage::Corridor && corridorSafe)
     {
+        stage = CampaignStage::Interlock;
+        return true;
+    }
+    if (stage == CampaignStage::Interlock && corridorSafe)
+    {
         stage = CampaignStage::Maintenance;
         return true;
     }
     if (stage == CampaignStage::Maintenance && corridorSafe)
-    {
-        stage = CampaignStage::CoreApproach;
-        return true;
-    }
-    if (stage == CampaignStage::CoreApproach && corridorSafe)
     {
         stage = CampaignStage::Boss;
         return true;

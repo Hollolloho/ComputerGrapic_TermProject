@@ -11,7 +11,6 @@ namespace
 {
 	const double MaxSimulationStep = 0.05;
 	const float MouseSensitivity = 0.167f;
-	constexpr double TitleUpdateInterval = 0.2;
 	bool moveForward = false;
 	bool moveBackward = false;
 	bool moveLeft = false;
@@ -33,7 +32,6 @@ int GameFrameWork::Run()
 	}
 
 	double previousTime = glfwGetTime();
-	double nextTitleUpdate = 0.0;
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
@@ -47,11 +45,6 @@ int GameFrameWork::Run()
 		if (glfwWindowShouldClose(window))
 			break;
 		Draw();
-		if (drawable && currentTime >= nextTitleUpdate)
-		{
-			UpdateWindowTitle();
-			nextTitleUpdate = glfwGetTime() + TitleUpdateInterval;
-		}
 	}
 	Clear();
 	return 0;
@@ -65,7 +58,7 @@ bool GameFrameWork::Init()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	window = glfwCreateWindow(1920, 1080, "AEGIS - OpenGL", nullptr, nullptr);
+	window = glfwCreateWindow(1920, 1080, "AEGIS", nullptr, nullptr);
 	if (!window)
 		return false;
 	glfwMakeContextCurrent(window);
@@ -227,16 +220,6 @@ void GameFrameWork::Draw()
 	}
 	scene.Draw(width, height, playerCamera);
 	glfwSwapBuffers(window);
-}
-
-void GameFrameWork::UpdateWindowTitle()
-{
-	std::string title = scene.StatusTitle();
-	title += " | Player: " + std::to_string(camera.camPos.x) + "," + std::to_string(camera.camPos.y) +
-		"," + std::to_string(camera.camPos.z) + " | Look: " + std::to_string(camera.rotX) + "," +
-		std::to_string(camera.rotY) + " | Travel: " + std::to_string(actualTravel) +
-		" | MoveScale: " + std::to_string(movementTimeScale);
-	glfwSetWindowTitle(window, title.c_str());
 }
 
 void GameFrameWork::Clear()

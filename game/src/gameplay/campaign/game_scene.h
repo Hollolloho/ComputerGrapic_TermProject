@@ -60,5 +60,6 @@ private:
     std::uint64_t playerSpawnRevision{};
 
     bool quitRequested{};
+    bool inputActive{true};
 };
 } // namespace aegis

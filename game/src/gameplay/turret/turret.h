@@ -11,7 +11,7 @@ class Turret
 public:
     bool Init(const std::filesystem::path& root, combat::TurretType type);
     void Draw(const glm::mat4& viewProjection, const glm::vec3& eye,
-              const combat::FixedTurret& turret) const;
+              const combat::FixedTurret& turret, float debrisAge = -1.f) const;
     void Clear();
 
 private:
@@ -19,6 +19,7 @@ private:
     {
         DrawMesh mesh;
         int group{};
+        int piece{};
         bool weapon{};
     };
     std::vector<TurretMesh> meshes;

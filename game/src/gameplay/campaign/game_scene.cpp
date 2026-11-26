@@ -55,12 +55,13 @@ void GameScene::LoadStage()
     case CampaignStage::Corridor:
         combatScene.SetCombatMapMode(true);
         break;
+    case CampaignStage::Interlock:
+        combatScene.SetInterlockMode();
+        break;
     case CampaignStage::Maintenance:
         combatScene.SetMaintenanceMode();
         break;
-    case CampaignStage::CoreApproach:
-        combatScene.SetMaintenanceMode(true);
-        break;
+
     case CampaignStage::Boss:
         combatScene.SetCoreMode();
         break;
@@ -78,8 +79,7 @@ bool GameScene::ReadyToAdvance() const
     {
         return true;
     }
-    if (flow.Stage() != CampaignStage::Corridor && flow.Stage() != CampaignStage::Maintenance &&
-        flow.Stage() != CampaignStage::CoreApproach)
+    if (flow.Stage() == CampaignStage::Boss)
     {
         return false;
     }

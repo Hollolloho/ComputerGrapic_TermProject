@@ -4,7 +4,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 #include <cmath>
-#include <limits>
 
 namespace aegis::combat
 {
@@ -13,6 +12,18 @@ namespace
 const float pivotHeight = 1.62f;
 const float barrelReach = 1.115f;
 const float twinBarrelOffset = 0.57f;
+const float TwinShotInterval = 0.15f;
+
+Collider TurnedBox(ObjectId id, HitKind kind, const glm::mat4& transform,
+                   const glm::vec3& low, const glm::vec3& high, bool enabled)
+{
+    const glm::vec3 halfSize = (high - low) * .5f;
+    const glm::vec3 right(transform[0]), up(transform[1]), forward(transform[2]);
+    const auto center = glm::vec3(transform * glm::vec4((low + high) * .5f, 1));
+    const auto extent = glm::abs(right) * halfSize.x + glm::abs(up) * halfSize.y +
+                        glm::abs(forward) * halfSize.z;
+    return {id, kind, center - extent, center + extent, enabled, halfSize, right, up};
+}
 } // namespace
 
 bool FixedTurret::SetPosition(const glm::vec3& point)
@@ -40,6 +51,7 @@ void FixedTurret::Reset()
     timer = 0;
     direction = RotateY({0, 0, 1}, spawnRotY);
     firingBarrel = 0;
+    destroyedArmed = false;
     aimPoint = position + glm::vec3(0, pivotHeight, 0) + direction * 5.0f;
 }
 
@@ -54,6 +66,9 @@ void FixedTurret::Disarm()
 
 void FixedTurret::Destroy()
 {
+    if (!Alive())
+        return;
+    destroyedArmed = Armed();
     phase = TurretPhase::Destroyed;
     timer = 0;
 }
@@ -66,17 +81,25 @@ float FixedTurret::BarrelOffset(int barrel) const
 
 glm::vec3 FixedTurret::Muzzle() const
 {
-    return glm::vec3(BarrelTransform() * glm::vec4(BarrelOffset(firingBarrel), 0, barrelReach, 1));
+    return Muzzle(firingBarrel);
+}
+
+glm::vec3 FixedTurret::Muzzle(int barrel) const
+{
+    return glm::vec3(BarrelTransform() * glm::vec4(BarrelOffset(barrel), 0, barrelReach, 1));
+}
+
+glm::mat4 FixedTurret::HeadTransform() const
+{
+    const float rotY = std::atan2(direction.x, direction.z);
+    return glm::rotate(glm::translate(glm::mat4(1), position), rotY, glm::vec3(0, 1, 0));
 }
 
 glm::mat4 FixedTurret::BarrelTransform() const
 {
-    const float rotY = std::atan2(direction.x, direction.z);
     const float rotX = -std::asin(std::clamp(direction.y, -1.0f, 1.0f));
-    glm::mat4 transform = glm::translate(glm::mat4(1), position + glm::vec3(0, pivotHeight, 0));
-    transform = glm::rotate(transform, rotY, glm::vec3(0, 1, 0));
-    transform = glm::rotate(transform, rotX, glm::vec3(1, 0, 0));
-    return transform;
+    const auto pivot = glm::translate(HeadTransform(), {0, pivotHeight, 0});
+    return glm::rotate(pivot, rotX, glm::vec3(1, 0, 0));
 }
 
 Collider FixedTurret::Body() const
@@ -89,22 +112,28 @@ Collider FixedTurret::Body() const
 
 Collider FixedTurret::Weapon(int barrel) const
 {
-    // 총신의 여덟 꼭짓점을 변환하고, 월드 좌표의 충돌 상자를 구한다.
-    const float front = barrelReach - 0.05f;
-    const glm::vec4 corners[8] = {{-0.14f, -0.14f, -0.1f, 1}, {0.14f, -0.14f, -0.1f, 1},
-                                  {-0.14f, 0.14f, -0.1f, 1},  {0.14f, 0.14f, -0.1f, 1},
-                                  {-0.14f, -0.14f, front, 1},  {0.14f, -0.14f, front, 1},
-                                  {-0.14f, 0.14f, front, 1},   {0.14f, 0.14f, front, 1}};
-    glm::vec3 low(std::numeric_limits<float>::max());
-    glm::vec3 high(std::numeric_limits<float>::lowest());
-    const glm::mat4 transform = glm::translate(BarrelTransform(), glm::vec3(BarrelOffset(barrel), 0, 0));
-    for (const glm::vec4& corner : corners)
-    {
-        glm::vec3 worldCorner = glm::vec3(transform * corner);
-        low = glm::min(low, worldCorner);
-        high = glm::max(high, worldCorner);
-    }
-    return {WeaponTarget(), HitKind::Weapon, low, high, Armed() && (barrel == 0 || type == TurretType::Twin)};
+    // 두 OBJ에서 돌출된 포신은 피벗 기준 Z 0.605~1.115, 반 폭과 높이 약 0.20이다.
+    const float x = BarrelOffset(barrel);
+    return TurnedBox(WeaponTarget(), HitKind::Weapon, BarrelTransform(),
+                     {x - .202f, -.202f, .605f}, {x + .202f, .202f, barrelReach},
+                     Armed() && (barrel == 0 || type == TurretType::Twin));
+}
+
+std::array<Collider, FixedTurret::TargetCount> FixedTurret::Targets() const
+{
+    // 받침은 제자리에 있고 머리는 Y 회전, Single_C의 노출 몸체는 포신과 함께 X 회전한다.
+    auto base = Body();
+    base.minimum.z = position.z - .82f;
+    base.maximum.z = position.z + .82f;
+    base.maximum.y = position.y + .86f;
+    const bool twin = type == TurretType::Twin;
+    const auto head = TurnedBox(BodyTarget(), HitKind::Body, HeadTransform(),
+                               twin ? glm::vec3(-1.025f, .82f, -.725f) : glm::vec3(-.77f, .82f, -.69f),
+                               twin ? glm::vec3(1.025f, 2.118f, .78f) : glm::vec3(.77f, 2.18f, .605f),
+                               Alive());
+    const auto core = TurnedBox(BodyTarget(), HitKind::Body, BarrelTransform(),
+                               {-.395f, -.38f, -.53f}, {.395f, .38f, .45f}, Alive() && !twin);
+    return {base, head, core, Weapon(), Weapon(1)};
 }
 
 bool FixedTurret::Update(float gameDeltaTime, const glm::vec3& eye, const std::vector<Collider>& walls)
@@ -119,11 +148,24 @@ bool FixedTurret::Update(float gameDeltaTime, const glm::vec3& eye, const std::v
         if (timer <= 0)
         {
             phase = TurretPhase::Idle;
-            firingBarrel = 1 - firingBarrel;
         }
         return false;
     }
-    const bool visible = glm::length(eye - position) < 18 && !IsBlocked(Muzzle(), eye, walls);
+    if (phase == TurretPhase::Firing)
+    {
+        timer -= gameDeltaTime;
+        if (timer > 0)
+            return false;
+
+        // 첫 탄의 조준점을 유지한 채 오른쪽 포신에서 이어 쏜다.
+        firingBarrel = 1;
+        phase = TurretPhase::Cooldown;
+        timer = 1.8f;
+        return !IsBlocked(Muzzle(), aimPoint, walls);
+    }
+    const bool visible = glm::length(eye - position) < 18 &&
+        (!IsBlocked(Muzzle(0), eye, walls) ||
+         (type == TurretType::Twin && !IsBlocked(Muzzle(1), eye, walls)));
     if (!visible)
     {
         phase = TurretPhase::Idle;
@@ -139,6 +181,7 @@ bool FixedTurret::Update(float gameDeltaTime, const glm::vec3& eye, const std::v
         }
         direction = glm::normalize(delta);
         aimPoint = eye;
+        firingBarrel = 0;
         phase = TurretPhase::Warning;
         timer = 1.2f;
         return false;
@@ -148,8 +191,16 @@ bool FixedTurret::Update(float gameDeltaTime, const glm::vec3& eye, const std::v
     {
         return false;
     }
-    phase = TurretPhase::Cooldown;
-    timer = 1.8f;
-    return true;
+    if (type == TurretType::Twin)
+    {
+        phase = TurretPhase::Firing;
+        timer = TwinShotInterval;
+    }
+    else
+    {
+        phase = TurretPhase::Cooldown;
+        timer = 1.8f;
+    }
+    return !IsBlocked(Muzzle(), aimPoint, walls);
 }
 } // namespace aegis::combat

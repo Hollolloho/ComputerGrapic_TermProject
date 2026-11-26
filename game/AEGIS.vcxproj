@@ -62,6 +62,7 @@
   <ItemGroup>
     <ClCompile Include="src\camera\Camera.cpp" />
     <ClCompile Include="src\combat_map\CombatMap.cpp" />
+    <ClCompile Include="src\combat_map\interlock_layout.cpp" />
     <ClCompile Include="src\drone\drone.cpp" />
     <ClCompile Include="src\framework\Game_FrameWork.cpp" />
     <ClCompile Include="src\main\main.cpp" />
@@ -101,6 +102,8 @@
     <ClCompile Include="src\gameplay\boss\boss_encounter.cpp" />
     <ClCompile Include="src\gameplay\boss\boss_geometry.cpp" />
     <ClCompile Include="src\gameplay\boss\boss_view.cpp" />
+    <ClCompile Include="src\gameplay\boss\midboss.cpp" />
+    <ClCompile Include="src\gameplay\boss\midboss_view.cpp" />
     <ClCompile Include="src\gameplay\campaign\campaign_flow.cpp" />
     <ClCompile Include="src\gameplay\core\core_encounter.cpp" />
     <ClCompile Include="src\gameplay\core\core_view.cpp" />
@@ -125,7 +128,6 @@
     <ClCompile Include="src\gameplay\player\player_camera.cpp" />
     <ClCompile Include="src\gameplay\player\player_motion.cpp" />
     <ClCompile Include="src\gameplay\turret\turret_encounter.cpp" />
-    <ClCompile Include="src\gameplay\turret\turret_view.cpp" />
     <ClCompile Include="src\gameplay\weapons\weapon_inventory.cpp" />
     <ClCompile Include="src\gameplay\weapons\weapon_view.cpp" />
     <ClCompile Include="src\gameplay\weapons\bullet.cpp" />
@@ -135,6 +137,8 @@
     <ClInclude Include="src\gameplay\boss\boss_encounter.h" />
     <ClInclude Include="src\gameplay\boss\boss_geometry.h" />
     <ClInclude Include="src\gameplay\boss\boss_view.h" />
+    <ClInclude Include="src\gameplay\boss\midboss.h" />
+    <ClInclude Include="src\gameplay\boss\midboss_view.h" />
     <ClInclude Include="src\gameplay\boss\boss_layout.generated.h" />
     <ClInclude Include="src\gameplay\campaign\campaign_flow.h" />
     <ClInclude Include="src\gameplay\campaign\campaign_layout.generated.h" />
@@ -144,6 +148,7 @@
     <ClInclude Include="src\gameplay\combat\combat.h" />
     <ClInclude Include="src\gameplay\combat\combat_feedback.h" />
     <ClInclude Include="src\combat_map\combat_map_layout.generated.h" />
+    <ClInclude Include="src\combat_map\interlock_layout.h" />
     <ClInclude Include="src\gameplay\combat\combat_scene.h" />
     <ClInclude Include="src\gameplay\combat\combat_time.h" />
     <ClInclude Include="src\combat_map\corridor_layout.generated.h" />
@@ -163,7 +168,6 @@
     <ClInclude Include="src\gameplay\player\player_view.h" />
     <ClInclude Include="src\combat_map\terminal_layout.generated.h" />
     <ClInclude Include="src\gameplay\turret\turret_encounter.h" />
-    <ClInclude Include="src\gameplay\turret\turret_view.h" />
     <ClInclude Include="src\gameplay\weapons\weapon_inventory.h" />
     <ClInclude Include="src\gameplay\weapons\weapon_view.h" />
     <ClInclude Include="src\gameplay\weapons\bullet.h" />
@@ -173,12 +177,12 @@
     <None Include="shaders\ui.frag" />
     <None Include="shaders\combat_box.vert" />
     <None Include="shaders\combat_box.frag" />
+    <None Include="shaders\midboss_laser.vert" />
+    <None Include="shaders\midboss_laser.frag" />
     <None Include="shaders\death_effect.vert" />
     <None Include="shaders\death_effect.frag" />
     <None Include="shaders\mesh.vert" />
     <None Include="shaders\mesh.frag" />
-    <None Include="shaders\turret.vert" />
-    <None Include="shaders\turret.frag" />
     <None Include="shaders\bullet.vert" />
     <None Include="shaders\bullet.frag" />
     <None Include="shaders\weapon.vert" />

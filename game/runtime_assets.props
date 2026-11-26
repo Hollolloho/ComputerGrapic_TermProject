@@ -61,13 +61,13 @@
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\ui.frag" TargetPath="shaders\ui.frag" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\combat_box.vert" TargetPath="shaders\combat_box.vert" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\combat_box.frag" TargetPath="shaders\combat_box.frag" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\midboss_laser.vert" TargetPath="shaders\midboss_laser.vert" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\midboss_laser.frag" TargetPath="shaders\midboss_laser.frag" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\death_effect.vert" TargetPath="shaders\death_effect.vert" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\drone.frag" TargetPath="shaders\drone.frag" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\drone.vert" TargetPath="shaders\drone.vert" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\mesh.frag" TargetPath="shaders\mesh.frag" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\mesh.vert" TargetPath="shaders\mesh.vert" />
-    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\turret.frag" TargetPath="shaders\turret.frag" />
-    <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\turret.vert" TargetPath="shaders\turret.vert" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\bullet.vert" TargetPath="shaders\bullet.vert" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\bullet.frag" TargetPath="shaders\bullet.frag" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)shaders\weapon.frag" TargetPath="shaders\weapon.frag" />

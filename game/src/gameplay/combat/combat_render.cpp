@@ -1,6 +1,7 @@
 // 적·탄환·무기·파편을 그린다. 충돌과 피해 판정은 여기서 처리하지 않는다.
 #include "combat_scene.h"
 #include "gameplay/campaign/campaign_environment.h"
+#include "combat_map/interlock_layout.h"
 #include "camera/Camera.h"
 #include "combat_map/corridor_layout.generated.h"
 #include "combat_map/terminal_layout.generated.h"
@@ -28,8 +29,13 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
     {
         for (const auto& state : core.Drones())
             drawDrone(state);
-        for (const auto& turret : core.Turrets())
-            twinModel.Draw(viewProjection, PlayerEye(), turret);
+        for (std::size_t i = 0; i < core.Turrets().size(); ++i)
+        {
+            const auto& debris = destruction.Debris(i);
+            const auto& turret = core.Turrets()[i];
+            const auto& model = turret.Type() == combat::TurretType::Twin ? twinModel : singleModel;
+            model.Draw(viewProjection, PlayerEye(), turret, debris.active ? debris.age : -1.f);
+        }
         const int magneticStage = core.Phase() == combat::MagneticPhase::Warning ? 1
                                   : core.Phase() == combat::MagneticPhase::Pulse ? 2 : 0;
         coreView.Draw(viewProjection, PlayerEye(), core.CoreAlive(), magneticStage,
@@ -38,24 +44,22 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
     }
     if (IsDroneMode() && encounter.EnemyAlive())
         drawDrone(encounter.DroneState());
-    if (!IsBossMode())
+    if (IsBossMode()) return;
+    for (const auto& state : encounter.ExtraDrones())
+        drawDrone(state);
+    const std::size_t firstTurretSlot = 1 + encounter.ExtraDrones().size();
+    for (std::size_t slot = 0; slot < firstTurretSlot; ++slot)
     {
-        for (const auto& turret : encounter.Turrets())
-        {
-            const auto& model = turret.Type() == combat::TurretType::Twin ? twinModel : singleModel;
-            model.Draw(viewProjection, PlayerEye(), turret);
-        }
-    }
-    const auto& droneDebris = destruction.Debris(0);
-    if (droneDebris.active)
-    {
-        drone.Draw(viewProjection, droneDebris.world, false, false, false, droneDebris.age);
+        const auto& debris = destruction.Debris(slot);
+        if (debris.active)
+            drone.Draw(viewProjection, debris.world, false, false, false, debris.age);
     }
     for (std::size_t i = 0; i < encounter.Turrets().size(); ++i)
     {
-        const auto& debris = destruction.Debris(static_cast<int>(i + 1));
-        if (debris.active)
-            turretView.DrawDebris(viewProjection, debris.world, debris.age);
+        const auto& turret = encounter.Turrets()[i];
+        const auto& model = turret.Type() == combat::TurretType::Twin ? twinModel : singleModel;
+        const auto& debris = destruction.Debris(firstTurretSlot + i);
+        model.Draw(viewProjection, PlayerEye(), turret, debris.active ? debris.age : -1.f);
     }
 }
 
@@ -74,9 +78,12 @@ void CombatScene::DrawDroneAimLines(const glm::mat4& viewProjection) const
         for (const auto& state : core.Drones())
             drawAimLine(state);
     }
-    else if (IsDroneMode() && encounter.EnemyAlive())
+    else if (!IsBossMode())
     {
-        drawAimLine(encounter.DroneState());
+        if (IsDroneMode() && encounter.EnemyAlive())
+            drawAimLine(encounter.DroneState());
+        for (const auto& state : encounter.ExtraDrones())
+            drawAimLine(state);
     }
 }
 
@@ -88,7 +95,8 @@ void CombatScene::DrawCollisionBoxes(const glm::mat4& viewProjection) const
         if ((box.id >= combat::FixedTurret::BodyId &&
              box.id < combat::FixedTurret::BodyId + 2 * encounter.Turrets().size()) ||
             (corridorMode && box.id == 12000) || (IsDroneMode() && (box.id == 500 || box.id == 501)) ||
-            !box.enabled || (corridorMode && box.kind == combat::HitKind::Wall))
+            encounter.IsExtraDroneCollider(box.id) || !box.enabled ||
+            (corridorMode && box.kind == combat::HitKind::Wall))
         {
             continue;
         }
@@ -214,11 +222,28 @@ void CombatScene::Draw(int width, int height,
         terminalRenderer.Begin(PlayerEye(), {0.45f, 0.9f, 0.7f}, {1, 1, 1}, 3, 0.3f);
         terminalRenderer.Draw(terminalMeshes, scene, glm::translate(glm::mat4(1), TerminalPosition()));
     }
-    if (combatMapMode && !IsCoreMode())
+    if (showHud && combatMapMode && !IsCoreMode())
     {
-        signs.Draw(scene, SupplyPosition(), TerminalPosition(), CanAnalyze(), maintenanceMode, approachMode);
+        glm::vec3 exitSign(0.f, 2.55f, -17.5f);
+        if (interlockMode)
+            exitSign = interlock_asset::exitSign;
+        else if (maintenanceMode)
+            exitSign = glm::vec3(7.8f, 2.55f, -47.3f);
+        signs.Draw(scene, SupplyPosition(), TerminalPosition(), CanAnalyze(), NextAreaDirection(), exitSign);
     }
     DrawEnemies(scene);
+    const auto& midboss = encounter.MidbossState();
+    if (interlockMode && midboss.Alive())
+    {
+        std::array<float, boss_asset::partCount> glow;
+        glow.fill(1);
+        glow[boss_asset::part_core_crystal] = midboss.Phase() == combat::LaserPhase::Firing ? 4.f
+            : midboss.Phase() == combat::LaserPhase::Charging ? 1.f + 2.5f * midboss.ChargeProgress()
+            : midboss.CoreExposed() ? 2.f : .45f;
+        glow[boss_asset::part_turret_warning_L] = .2f;
+        glow[boss_asset::part_turret_warning_R] = .2f;
+        bossView.DrawModel(projection, view, midboss.Pose(), glow);
+    }
     DrawBullets(projection, view);
     glUseProgram(program);
     glUniform1f(opacityLocation, 1);
@@ -240,6 +265,8 @@ void CombatScene::Draw(int width, int height,
     }
     // 벽과 월드 물체의 깊이를 사용하고 1인칭 무기를 그리기 전에 조준선을 합성한다.
     DrawDroneAimLines(scene);
+    if (interlockMode && !DeathStarted())
+        midbossView.DrawBeam(scene, PlayerEye(), midboss);
     bulletView.DrawTrails(projection, view, PlayerEye(), *activeBattle);
     if (Inventory().Armed())
     {
@@ -311,16 +338,13 @@ void CombatScene::DrawAnalysis(int width, int height) const
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
     glDisable(GL_CULL_FACE);
-    glClearColor(0.025f, 0.055f, 0.09f, 1);
+    glClearColor(0.025f, 0.027f, 0.03f, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     const glm::vec3 eye = analysis.EyePosition();
     const auto viewProjection =
         glm::perspective(glm::radians(analysis.FieldOfView()), static_cast<float>(width) / height, 0.05f, 30.0f) *
         glm::lookAt(eye, glm::vec3(0), glm::vec3(0, 1, 0));
     drone.Draw(viewProjection, glm::mat4(1), false, true, true);
-    glEnable(GL_SCISSOR_TEST);
-    DrawHud(width, height);
-    glDisable(GL_SCISSOR_TEST);
 }
 
 } // namespace aegis

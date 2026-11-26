@@ -23,6 +23,9 @@ void CombatEncounter::ResetCombat(const glm::vec3& supplyPosition)
 void CombatEncounter::UpdateShotCooldown(float realDeltaTime)
 {
     playerCooldown = std::max(0.0f, playerCooldown - realDeltaTime);
+    // float 계산에서 남는 미세한 오차로 발사가 한 프레임 늦어지지 않게 한다.
+    if (playerCooldown < 0.000001f)
+        playerCooldown = 0;
 }
 
 void CombatEncounter::UpdateBulletEffects(float gameDeltaTime)
@@ -51,12 +54,12 @@ void CombatEncounter::UpdateBulletEffects(float gameDeltaTime)
 }
 
 bool CombatEncounter::AdvanceFlight(Flight& flight, float gameDeltaTime,
-                                    const std::vector<Collider>& walls, Hit& hit)
+                                    const std::vector<Collider>& walls, Hit& hit, const Hit* modelHit)
 {
     if (!flight.bullet.active)
         return false;
     const auto start = flight.bullet.position;
-    const bool collided = AdvanceBullet(flight.bullet, gameDeltaTime, walls, hit);
+    const bool collided = AdvanceBullet(flight.bullet, gameDeltaTime, walls, hit, modelHit);
     const float travelTime = collided ? gameDeltaTime * hit.fraction : gameDeltaTime;
     RecordFlightTravel(flight, start, gameDeltaTime, travelTime);
     return collided;

@@ -1,4 +1,5 @@
 #include "turret.h"
+#include "gameplay/effects/destruction_effects.h"
 #include "loader/Shader.h"
 #include "loader/Texture.h"
 #include <glm/gtc/matrix_transform.hpp>
@@ -60,6 +61,12 @@ bool Turret::Init(const std::filesystem::path& root, combat::TurretType type)
                           name.find("Anchor") != std::string::npos || name.find("Slope") != std::string::npos ||
                           name.find("Upper_base") != std::string::npos || name.find("Bearing") != std::string::npos;
         draw.group = base ? 0 : (rotatesOnX ? 2 : 1);
+        draw.piece = base ? 0 : 1;
+        if (draw.weapon)
+        {
+            // Twin의 두 포신은 OBJ X축의 서로 다른 쪽에 있다. 게임 X축은 반대다.
+            draw.piece = type == combat::TurretType::Twin && source.vertices.front().position.x < 0 ? 3 : 2;
+        }
     }
 
     glUseProgram(program);
@@ -91,9 +98,9 @@ bool Turret::Init(const std::filesystem::path& root, combat::TurretType type)
 }
 
 void Turret::Draw(const glm::mat4& viewProjection, const glm::vec3& eye,
-                  const combat::FixedTurret& turret) const
+                  const combat::FixedTurret& turret, float debrisAge) const
 {
-    if (!program || !turret.Alive())
+    if (!program || (!turret.Alive() && debrisAge < 0))
     {
         return;
     }
@@ -103,18 +110,32 @@ void Turret::Draw(const glm::mat4& viewProjection, const glm::vec3& eye,
     const auto position = glm::translate(glm::mat4(1), turret.Position());
     const auto base = position;
     const auto barrel = turret.BarrelTransform();
-    const auto forward = glm::vec3(barrel[2]);
-    const float rotY = std::atan2(forward.x, forward.z);
-    const auto head = glm::rotate(position, rotY, glm::vec3(0, 1, 0));
+    const auto head = turret.HeadTransform();
     const std::array<glm::mat4, 3> transforms{
         base * axes, head * axes, glm::translate(barrel, glm::vec3(0, -1.62f, 0)) * axes};
+
+    std::array<glm::mat4, 4> pieces;
+    if (debrisAge >= 0)
+    {
+        const glm::vec3 centers[] = {
+            turret.Position() + glm::vec3(0, .38f, 0),
+            turret.Position() + glm::vec3(0, 1.6f, 0),
+            glm::vec3(barrel * glm::vec4(turret.BarrelOffset(0), 0, .86f, 1)),
+            glm::vec3(barrel * glm::vec4(turret.BarrelOffset(1), 0, .86f, 1))};
+        for (int i = 0; i < static_cast<int>(pieces.size()); ++i)
+        {
+            const auto pivot = glm::translate(glm::mat4(1), centers[i]);
+            pieces[i] = glm::translate(combat::DestructionEffects::PieceTransform(pivot, i, debrisAge), -centers[i]);
+        }
+    }
 
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
     glDisable(GL_CULL_FACE);
     glUseProgram(program);
     glUniform3fv(eyeLocation, 1, glm::value_ptr(eye));
-    glUniform1f(warningLocation, turret.Phase() == combat::TurretPhase::Warning ? 1.0f : 0.0f);
+    glUniform1f(warningLocation, (turret.Phase() == combat::TurretPhase::Warning ||
+        turret.Phase() == combat::TurretPhase::Firing) ? 1.0f : 0.0f);
     for (std::size_t i = 0; i < textures.size(); ++i)
     {
         glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(i));
@@ -122,12 +143,14 @@ void Turret::Draw(const glm::mat4& viewProjection, const glm::vec3& eye,
     }
     for (const auto& draw : meshes)
     {
-        if (draw.weapon && !turret.Armed())
+        if (draw.weapon && !turret.HasBarrels())
         {
             continue;
         }
         glUniform3fv(colorLocation, 1, glm::value_ptr(draw.mesh.baseColor));
-        const auto& model = transforms[draw.group];
+        auto model = transforms[draw.group];
+        if (debrisAge >= 0)
+            model = pieces[draw.piece] * model;
         const auto transform = viewProjection * model;
         glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(transform));
