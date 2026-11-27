@@ -4,6 +4,7 @@
 #include <string>
 #include <glm/glm.hpp>
 #include <vector>
+#include <utility>
 
 namespace aegis
 {
@@ -63,11 +64,21 @@ public:
 
 private:
     void DrawTexture(const glm::mat4& transform) const;
-    bool Rasterize(const UiPage& page, int width, int height, int hover, bool timeOnly);
+    void ClearCanvas();
+    enum class UiRegion { Full, Time, Equipment, Warning, Prompt };
+    bool Rasterize(const UiPage& page, int width, int height, int hover, UiRegion part);
     GLuint program{};
     GLuint texture{};
     GLuint vao{};
     std::wstring cacheKey;
     std::wstring cachedTimeStatus;
+    UiPage cachedPage;
+    int textureWidth{}, textureHeight{};
+    void* canvasDc{};
+    void* canvasBitmap{};
+    void* canvasOldBitmap{};
+    void* canvasPixels{};
+    int canvasWidth{}, canvasHeight{};
+    std::vector<std::pair<std::wstring, void*>> fonts;
 };
 } // namespace aegis

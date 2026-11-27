@@ -45,6 +45,7 @@ struct MenuCanvas
     float sx, sy;
     LONG originX = 0, originY = 0;
     bool shadowText{};
+    std::vector<std::pair<std::wstring, void*>>* fonts{};
 
     RECT Rectangle(float x, float y, float w, float h) const
     {
@@ -67,9 +68,15 @@ struct MenuCanvas
     }
     HFONT Font(int size, bool bold, const wchar_t* face) const
     {
-        return CreateFontW(-std::max(1, static_cast<int>(std::round(size * std::min(sx, sy)))), 0, 0, 0,
-                           bold ? FW_BOLD : FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
-                           CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH, face);
+        const int height = std::max(1, static_cast<int>(std::round(size * std::min(sx, sy))));
+        const auto key = std::to_wstring(height) + (bold ? L"B/" : L"N/") + face;
+        for (const auto& cached : *fonts)
+            if (cached.first == key) return static_cast<HFONT>(cached.second);
+        const auto font = CreateFontW(-height, 0, 0, 0, bold ? FW_BOLD : FW_NORMAL,
+                                     FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                                     CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH, face);
+        if (font) fonts->push_back({key, font});
+        return font;
     }
     float TextWidth(const std::wstring& value, int size, bool bold, const wchar_t* face = KoreanFace) const
     {
@@ -88,7 +95,6 @@ struct MenuCanvas
             start = end + 1;
         }
         SelectObject(dc, oldFont);
-        DeleteObject(font);
         return width / sx;
     }
     void Text(const std::wstring& value, float x, float y, float w, float h, int size, bool bold,
@@ -118,7 +124,6 @@ struct MenuCanvas
         DrawTextW(dc, value.c_str(), static_cast<int>(value.size()), &r,
                   format | DT_NOPREFIX);
         SelectObject(dc, oldFont);
-        DeleteObject(font);
     }
     void TextAtBaseline(const std::wstring& value, float x, float y, float w, int size, bool bold,
                         COLORREF color, const wchar_t* face = KoreanFace) const
@@ -290,41 +295,58 @@ UiAction KoreanUi::Hit(const UiPage& page, float x, float y, bool& consumed)
     return UiAction::None;
 }
 
-bool KoreanUi::Rasterize(const UiPage& page, int width, int height, int hover, bool timeOnly)
+bool KoreanUi::Rasterize(const UiPage& page, int width, int height, int hover, UiRegion part)
 {
+    const bool timeOnly = part == UiRegion::Time;
     MenuCanvas canvas{nullptr, static_cast<float>(width) / 1024, static_cast<float>(height) / 768};
-    const RECT region = timeOnly ? canvas.Rectangle(TimeBarX, TimeBarY, TimeBarWidth, TimeBarHeight)
-                                 : RECT{0, 0, width, height};
+    RECT region{0, 0, width, height};
+    // 그림자 여백까지 포함한다. 장비 영역과 겹치는 시간 표시는 함께 다시 그린다.
+    switch (part)
+    {
+    case UiRegion::Time: region = canvas.Rectangle(TimeBarX, TimeBarY, TimeBarWidth, TimeBarHeight); break;
+    case UiRegion::Equipment: region = canvas.Rectangle(28, 660, 968, 82); break;
+    case UiRegion::Warning: region = canvas.Rectangle(148, 116, 728, 52); break;
+    case UiRegion::Prompt: region = canvas.Rectangle(150, 414, 728, 64); break;
+    default: break;
+    }
     const int rasterWidth = region.right - region.left, rasterHeight = region.bottom - region.top;
     if (rasterWidth <= 0 || rasterHeight <= 0)
     {
         return true;
     }
-    const auto pixelCount = static_cast<std::size_t>(rasterWidth) * rasterHeight;
-    BITMAPINFO info{};
-    info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    info.bmiHeader.biWidth = rasterWidth;
-    info.bmiHeader.biHeight = -rasterHeight;
-    info.bmiHeader.biPlanes = 1;
-    info.bmiHeader.biBitCount = 32;
-    info.bmiHeader.biCompression = BI_RGB;
-    void* pixels{};
-    const auto dc = CreateCompatibleDC(nullptr);
-    const auto bitmap = CreateDIBSection(dc, &info, DIB_RGB_COLORS, &pixels, nullptr, 0);
-    if (!dc || !bitmap || !pixels)
+    // 화면 크기만 바뀔 때 작업 비트맵을 만든다. HUD 변경에는 같은 DC·픽셀 버퍼를 쓴다.
+    if (!canvasDc || canvasWidth != width || canvasHeight != height)
     {
-        if (bitmap)
+        ClearCanvas();
+        BITMAPINFO info{};
+        info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        info.bmiHeader.biWidth = width;
+        info.bmiHeader.biHeight = -height;
+        info.bmiHeader.biPlanes = 1;
+        info.bmiHeader.biBitCount = 32;
+        info.bmiHeader.biCompression = BI_RGB;
+        const auto dc = CreateCompatibleDC(nullptr);
+        const auto bitmap = CreateDIBSection(dc, &info, DIB_RGB_COLORS, &canvasPixels, nullptr, 0);
+        if (!dc || !bitmap || !canvasPixels)
         {
-            DeleteObject(bitmap);
+            if (bitmap) DeleteObject(bitmap);
+            if (dc) DeleteDC(dc);
+            canvasPixels = nullptr;
+            return false;
         }
-        if (dc)
-        {
-            DeleteDC(dc);
-        }
-        return false;
+        canvasOldBitmap = SelectObject(dc, bitmap);
+        canvasDc = dc;
+        canvasBitmap = bitmap;
+        canvasWidth = width;
+        canvasHeight = height;
     }
-    const auto oldBitmap = SelectObject(dc, bitmap);
-    std::fill_n(static_cast<std::uint32_t*>(pixels), pixelCount, 0u);
+    const auto dc = static_cast<HDC>(canvasDc);
+    const auto pixels = canvasPixels;
+    const int savedDc = SaveDC(dc);
+    IntersectClipRect(dc, 0, 0, rasterWidth, rasterHeight);
+    for (int y = 0; y < rasterHeight; ++y)
+        std::fill_n(static_cast<std::uint32_t*>(pixels) + y * canvasWidth, rasterWidth, 0u);
+    canvas.fonts = &fonts;
     canvas.dc = dc;
     canvas.originX = region.left;
     canvas.originY = region.top;
@@ -332,6 +354,20 @@ bool KoreanUi::Rasterize(const UiPage& page, int width, int height, int hover, b
     if (timeOnly)
     {
         DrawTimeStatus(canvas, page.timeStatus);
+    }
+    else if (part == UiRegion::Equipment)
+    {
+        if (!page.status.empty()) DrawEquipment(canvas, page);
+        DrawTimeStatus(canvas, page.timeStatus);
+    }
+    else if (part == UiRegion::Warning)
+    {
+        DrawNotice(canvas, page.warning, 122, 38, 700, page.danger ? 22 : 19,
+                   page.danger ? MainText : SoftText, page.danger);
+    }
+    else if (part == UiRegion::Prompt)
+    {
+        DrawPrompt(canvas, page.prompt);
     }
     else if (page.sign)
     {
@@ -352,19 +388,25 @@ bool KoreanUi::Rasterize(const UiPage& page, int width, int height, int hover, b
     {
         DrawHud(canvas, page);
     }
-    if (!timeOnly)
+    if (part == UiRegion::Full)
         DrawButtons(canvas, page, hover);
     GdiFlush();
     auto* rgba = static_cast<std::uint32_t*>(pixels);
-    const bool shadeMenu = page.panel && !page.sign && !timeOnly;
-    for (std::size_t i = 0; i < pixelCount; ++i)
+    const bool shadeMenu = page.panel && !page.sign && part == UiRegion::Full;
+    for (int y = 0; y < rasterHeight; ++y)
     {
-        // 글자와 표식 외에는 메뉴에서만 월드 전체를 옅게 어둡게 한다.
-        const auto rgb = rgba[i] & 0x00ffffffu;
-        rgba[i] = rgb != 0 ? (rgb | 0xff000000u) : shadeMenu ? MenuShade : 0u;
+        for (int x = 0; x < rasterWidth; ++x)
+        {
+            auto& pixel = rgba[y * canvasWidth + x];
+            const auto rgb = pixel & 0x00ffffffu;
+            pixel = rgb != 0 ? (rgb | 0xff000000u) : shadeMenu ? MenuShade : 0u;
+        }
     }
+    GLint oldRowLength{};
+    glGetIntegerv(GL_UNPACK_ROW_LENGTH, &oldRowLength);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, canvasWidth);
     glBindTexture(GL_TEXTURE_2D, texture);
-    if (timeOnly)
+    if (textureWidth == width && textureHeight == height)
     {
         glTexSubImage2D(GL_TEXTURE_2D, 0, region.left, region.top, rasterWidth, rasterHeight,
                         GL_BGRA, GL_UNSIGNED_BYTE, pixels);
@@ -372,11 +414,12 @@ bool KoreanUi::Rasterize(const UiPage& page, int width, int height, int hover, b
     else
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
+        textureWidth = width;
+        textureHeight = height;
     }
     glBindTexture(GL_TEXTURE_2D, 0);
-    SelectObject(dc, oldBitmap);
-    DeleteObject(bitmap);
-    DeleteDC(dc);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, oldRowLength);
+    RestoreDC(dc, savedDc);
     return true;
 }
 
@@ -413,12 +456,29 @@ void KoreanUi::Draw(const UiPage& page, int width, int height, float mouseX, flo
     const bool fullUpdate = key != cacheKey || (timeChanged && ButtonOverTimeBar(page));
     if (fullUpdate || timeChanged)
     {
-        if (!Rasterize(page, width, height, hover, !fullUpdate))
+        const auto simpleHud = [](const UiPage& value)
+        {
+            return !value.panel && !value.sign && value.buttons.empty() && value.title.empty() &&
+                   value.body.empty() && value.counters.empty() && value.footer.empty();
+        };
+        const bool partialHud = cacheKey.find(L"SCREEN/") == 0 && textureWidth == width && textureHeight == height &&
+                                simpleHud(page) && simpleHud(cachedPage);
+        if (partialHud)
+        {
+            const bool equipment = page.health != cachedPage.health || page.status != cachedPage.status;
+            if (equipment && !Rasterize(page, width, height, hover, UiRegion::Equipment)) return;
+            if ((page.warning != cachedPage.warning || page.danger != cachedPage.danger) &&
+                !Rasterize(page, width, height, hover, UiRegion::Warning)) return;
+            if (page.prompt != cachedPage.prompt && !Rasterize(page, width, height, hover, UiRegion::Prompt)) return;
+            if (timeChanged && !equipment && !Rasterize(page, width, height, hover, UiRegion::Time)) return;
+        }
+        else if (!Rasterize(page, width, height, hover, fullUpdate ? UiRegion::Full : UiRegion::Time))
         {
             return;
         }
         cacheKey = key;
         cachedTimeStatus = page.timeStatus;
+        cachedPage = page;
     }
     glDisable(GL_SCISSOR_TEST);
     glDisable(GL_DEPTH_TEST);
@@ -447,7 +507,7 @@ void KoreanUi::DrawWorld(const std::wstring& title, const std::wstring& body, co
     AddCacheField(key, body);
     if (key != cacheKey)
     {
-        if (!Rasterize(page, 512, 256, -1, false))
+        if (!Rasterize(page, 512, 256, -1, UiRegion::Full))
         {
             return;
         }
@@ -477,8 +537,24 @@ void KoreanUi::DrawTexture(const glm::mat4& transform) const
     glUseProgram(0);
 }
 
+void KoreanUi::ClearCanvas()
+{
+    if (canvasDc)
+    {
+        const auto dc = static_cast<HDC>(canvasDc);
+        SelectObject(dc, static_cast<HGDIOBJ>(canvasOldBitmap));
+        DeleteObject(static_cast<HBITMAP>(canvasBitmap));
+        DeleteDC(dc);
+    }
+    for (const auto& font : fonts) DeleteObject(static_cast<HFONT>(font.second));
+    fonts.clear();
+    canvasDc = canvasBitmap = canvasOldBitmap = canvasPixels = nullptr;
+    canvasWidth = canvasHeight = 0;
+}
+
 void KoreanUi::Clear()
 {
+    ClearCanvas();
     if (program)
     {
         glDeleteProgram(program);
@@ -494,5 +570,7 @@ void KoreanUi::Clear()
     program = texture = vao = 0;
     cacheKey.clear();
     cachedTimeStatus.clear();
+    cachedPage = {};
+    textureWidth = textureHeight = 0;
 }
 } // namespace aegis
