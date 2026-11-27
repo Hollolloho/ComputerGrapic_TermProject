@@ -205,6 +205,7 @@ private:
 
     void ToggleBossCover();
     void DrawEnemies(const glm::mat4& viewProjection) const;
+    void DrawDroneDebris(const glm::mat4& viewProjection) const;
     void DrawDroneAimLines(const glm::mat4& viewProjection) const;
     void DrawCollisionBoxes(const glm::mat4& viewProjection) const;
     void DrawBullets(const glm::mat4& projection, const glm::mat4& view) const;

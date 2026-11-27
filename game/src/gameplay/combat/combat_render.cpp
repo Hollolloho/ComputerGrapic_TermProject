@@ -27,11 +27,8 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
     };
     if (IsCoreMode())
     {
-        for (std::size_t i = 0; i < core.Drones().size(); ++i)
-        {
-            drawDrone(core.Drones()[i]);
-            drone.DrawDebris(viewProjection, destruction.Debris(i));
-        }
+        for (const auto& state : core.Drones())
+            drawDrone(state);
         for (std::size_t i = 0; i < core.Turrets().size(); ++i)
         {
             const auto& debris = destruction.Debris(core.Drones().size() + i);
@@ -51,12 +48,6 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
     for (const auto& state : encounter.ExtraDrones())
         drawDrone(state);
     const std::size_t firstTurretSlot = 1 + encounter.ExtraDrones().size();
-    for (std::size_t slot = 0; slot < firstTurretSlot; ++slot)
-    {
-        const auto& debris = destruction.Debris(slot);
-        if (debris.active)
-            drone.DrawDebris(viewProjection, debris);
-    }
     for (std::size_t i = 0; i < encounter.Turrets().size(); ++i)
     {
         const auto& turret = encounter.Turrets()[i];
@@ -64,6 +55,29 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
         const auto& debris = destruction.Debris(firstTurretSlot + i);
         model.Draw(viewProjection, PlayerEye(), turret, debris.active ? debris.age : -1.f);
     }
+}
+
+void CombatScene::DrawDroneDebris(const glm::mat4& viewProjection) const
+{
+    if (IsBossMode()) return;
+    struct DrawPiece { const combat::EnemyDebris* debris; std::size_t piece; float depth; };
+    std::vector<DrawPiece> order;
+    const std::size_t count = IsCoreMode() ? core.Drones().size() : 1 + encounter.ExtraDrones().size();
+    for (std::size_t slot = 0; slot < count; ++slot)
+    {
+        const auto& debris = destruction.Debris(slot);
+        if (!debris.active || !debris.drone) continue;
+        for (std::size_t i = 0; i < debris.pieces.size(); ++i)
+        {
+            const auto& piece = debris.pieces[i];
+            if (piece.alpha > 0.f)
+                order.push_back({&debris, i, (viewProjection * glm::vec4(piece.position, 1)).w});
+        }
+    }
+    // 원근 투영의 w는 시선 방향 깊이다. 모든 드론의 파편을 함께 먼 순서로 합성한다.
+    std::sort(order.begin(), order.end(), [](const auto& a, const auto& b) { return a.depth > b.depth; });
+    for (const auto& item : order)
+        drone.DrawDebris(viewProjection, *item.debris, item.piece);
 }
 
 void CombatScene::DrawDroneAimLines(const glm::mat4& viewProjection) const
@@ -266,7 +280,8 @@ void CombatScene::Draw(int width, int height,
     {
         weapon.DrawWorld(projection, view, drop.position);
     }
-    // 벽과 월드 물체의 깊이를 사용하고 1인칭 무기를 그리기 전에 조준선을 합성한다.
+    // 불투명 월드 물체를 먼저 그린 뒤, 알파 파편과 조준선을 합성한다.
+    DrawDroneDebris(scene);
     DrawDroneAimLines(scene);
     if (interlockMode && !DeathStarted())
         midbossView.DrawBeam(scene, PlayerEye(), midboss);

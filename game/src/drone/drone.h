@@ -50,7 +50,7 @@ public:
 	bool Init(const std::filesystem::path& runtimeRoot);
 	void Draw(const glm::mat4& scene, const glm::mat4& model, bool targetAcquired = false,
 		bool armed = true, bool staticPose = false) const;
-	void DrawDebris(const glm::mat4& scene, const aegis::combat::EnemyDebris& debris) const;
+	void DrawDebris(const glm::mat4& scene, const aegis::combat::EnemyDebris& debris, std::size_t piece) const;
 	void DrawAimLine(const glm::mat4& scene, const glm::vec3& origin, const glm::vec3& target,
 		const glm::vec3& viewer, float reach) const;
 	void UpdateRotor(double gameDeltaTime);

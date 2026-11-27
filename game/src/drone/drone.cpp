@@ -189,25 +189,30 @@ void Drone::Draw(const glm::mat4& scene, const glm::mat4& model, bool targetAcqu
 	glUseProgram(0);
 }
 
-void Drone::DrawDebris(const glm::mat4& scene, const aegis::combat::EnemyDebris& debris) const
+void Drone::DrawDebris(const glm::mat4& scene, const aegis::combat::EnemyDebris& debris, std::size_t piece) const
 {
-	if (!shaderProgram || !debris.active || !debris.drone) return;
+	if (!shaderProgram || !debris.active || !debris.drone || piece >= debrisMeshes.size()) return;
+	const float alpha = debris.pieces[piece].alpha;
+	if (alpha <= 0.f) return;
+	const AimBlend blend;
+	// 닫힌 파편의 뒷면을 빼서 앞·뒷면의 알파가 두 번 겹치지 않게 한다.
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 	glUseProgram(shaderProgram);
 	glUniform1i(beamLocation, GL_FALSE);
-	glUniform1f(opacityLocation, 1.f);
-	for (std::size_t i = 0; i < debrisMeshes.size(); ++i)
+	glUniform1f(opacityLocation, alpha);
+	const glm::mat4 model = aegis::combat::DestructionEffects::DronePieceTransform(debris, piece);
+	const glm::mat4 transform = scene * model;
+	glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(transform));
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+	for (const auto& mesh : debrisMeshes[piece])
 	{
-		const glm::mat4 model = aegis::combat::DestructionEffects::DronePieceTransform(debris, i);
-		const glm::mat4 transform = scene * model;
-		glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(transform));
-		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
-		for (const auto& mesh : debrisMeshes[i])
-		{
-			glUniform3fv(colorLocation, 1, glm::value_ptr(mesh.color));
-			glUniform3fv(emissionLocation, 1, glm::value_ptr(mesh.emission));
-			mesh.Draw();
-		}
+		glUniform3fv(colorLocation, 1, glm::value_ptr(mesh.color));
+		glUniform3fv(emissionLocation, 1, glm::value_ptr(mesh.emission));
+		mesh.Draw();
 	}
+	glUniform1f(opacityLocation, 1.f);
+	glDisable(GL_CULL_FACE);
 	glBindVertexArray(0);
 	glUseProgram(0);
 }

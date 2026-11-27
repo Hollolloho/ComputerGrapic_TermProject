@@ -98,6 +98,10 @@ void DestructionEffects::UpdateWorld(float gameDeltaTime)
                 for (std::size_t i = 0; i < item.pieces.size(); ++i)
                 {
                     auto& piece = item.pieces[i];
+                    if (piece.alpha <= 0.f) continue;
+                    // 첫 착지 뒤에는 다시 튀어도 페이드를 이어 간다. 느린 세계 시간을 쓴다.
+                    if (piece.grounded)
+                        piece.alpha = std::max(0.f, piece.alpha - step / DroneFadeDuration);
                     const glm::vec3 axis = glm::normalize(glm::vec3(1, .4f + static_cast<float>(i), .7f));
                     piece.rotation = glm::rotate(piece.rotation, piece.spin * step, axis);
                     const auto half = drone_debris_asset::pieces[i].halfSize * piece.scale;
@@ -107,6 +111,7 @@ void DestructionEffects::UpdateWorld(float gameDeltaTime)
                     piece.velocity.y -= 9.8f * step;
                     if (piece.position.y <= height)
                     {
+                        piece.grounded = true;
                         piece.position.y = height;
                         piece.velocity.y = piece.velocity.y < -1.f ? -piece.velocity.y * .18f : 0.f;
                         piece.velocity.x *= std::exp(-6.f * step);
@@ -117,16 +122,16 @@ void DestructionEffects::UpdateWorld(float gameDeltaTime)
             }
         }
         item.age = std::min(lifetime, item.age + gameDeltaTime);
-        item.active = item.age < lifetime;
+        item.active = item.age < lifetime && (!item.drone ||
+            std::any_of(item.pieces.begin(), item.pieces.end(), [](const auto& piece) { return piece.alpha > 0.f; }));
     }
 }
 
 glm::mat4 DestructionEffects::DronePieceTransform(const EnemyDebris& debris, std::size_t piece)
 {
     const auto& fragment = debris.pieces.at(piece);
-    const float fade = std::clamp((DroneDebrisLifetime - debris.age) / .6f, 0.f, 1.f);
     return glm::scale(glm::translate(glm::mat4(1), fragment.position) * fragment.rotation,
-                      glm::vec3(fragment.scale * fade));
+                      glm::vec3(fragment.scale));
 }
 
 void DestructionEffects::ObserveHealth(int health)

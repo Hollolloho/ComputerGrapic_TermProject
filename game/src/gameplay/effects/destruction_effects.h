@@ -22,6 +22,8 @@ struct DroneFragment
     glm::vec3 position{}, velocity{};
     glm::mat4 rotation{1};
     float spin{}, scale{1};
+    float alpha{1};
+    bool grounded{};
 };
 
 struct EnemyDebris
@@ -39,6 +41,7 @@ class DestructionEffects
 public:
     static constexpr float DebrisLifetime = 1.4f, DeathDuration = .8f;
     static constexpr float DroneDebrisLifetime = 6.f;
+    static constexpr float DroneFadeDuration = 1.2f;
     static constexpr int DronePieceCount = static_cast<int>(drone_debris_asset::pieceCount);
     void Reset(std::size_t enemyCount = 3);
     void ObserveEnemy(std::size_t slot, bool alive, const glm::mat4& world);
