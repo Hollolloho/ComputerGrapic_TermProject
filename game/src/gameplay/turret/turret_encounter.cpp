@@ -426,7 +426,7 @@ void TurretEncounter::UpdatePlayerBullets(float gameDeltaTime)
                         const auto drop = extra.Muzzle();
                         inventory.SpawnDrop({drop.x, 0.12f, drop.z});
                     }
-                    extra.Destroy();
+                    extra.Destroy(flight.bullet.velocity);
                 }
                 else continue;
                 SyncExtraDrone(i);
@@ -451,7 +451,7 @@ void TurretEncounter::UpdatePlayerBullets(float gameDeltaTime)
                 }
                 if (droneMode)
                 {
-                    drone.Destroy();
+                    drone.Destroy(flight.bullet.velocity);
                 }
                 colliders[PrimaryWeaponIndex].enabled = false;
                 colliders[PrimaryBodyIndex].enabled = false;

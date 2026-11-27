@@ -51,21 +51,82 @@ void DestructionEffects::ObserveEnemy(std::size_t slot, bool alive, const glm::m
     enemy.wasAlive = alive;
 }
 
+void DestructionEffects::ObserveDrone(std::size_t slot, bool alive, const glm::mat4& world,
+                                       const glm::vec3& direction)
+{
+    if (slot >= enemies.size()) return;
+    const bool destroyed = enemies[slot].known && enemies[slot].wasAlive && !alive;
+    ObserveEnemy(slot, alive, world);
+    if (!destroyed) return;
+    auto& debris = enemies[slot].debris;
+    debris.drone = true;
+    const float scale = glm::length(glm::vec3(world[0]));
+    const glm::mat4 rotation(glm::vec4(glm::vec3(world[0]) / scale, 0),
+                             glm::vec4(glm::vec3(world[1]) / scale, 0),
+                             glm::vec4(glm::vec3(world[2]) / scale, 0), glm::vec4(0, 0, 0, 1));
+    for (std::size_t i = 0; i < debris.pieces.size(); ++i)
+    {
+        const float angle = static_cast<float>(i) * 2.39996323f;
+        auto& piece = debris.pieces[i];
+        piece.position = glm::vec3(world * glm::vec4(drone_debris_asset::pieces[i].origin, 1));
+        // 실제 피격 방향에 흩어지는 힘을 더한다. 코어 정지 명령은 방향 없이 흩어진다.
+        piece.velocity = direction * 2.8f + glm::vec3(std::cos(angle) * 1.6f,
+            1.1f + .2f * static_cast<float>(i % 3), std::sin(angle) * 1.6f);
+        piece.rotation = rotation;
+        piece.spin = 2.5f + .35f * static_cast<float>(i);
+        piece.scale = scale;
+    }
+}
+
 void DestructionEffects::UpdateWorld(float gameDeltaTime)
 {
-    if (!std::isfinite(gameDeltaTime) || gameDeltaTime <= 0)
-    {
-        return;
-    }
+    if (!std::isfinite(gameDeltaTime) || gameDeltaTime <= 0) return;
     for (auto& enemy : enemies)
     {
         auto& item = enemy.debris;
-        if (item.active)
+        if (!item.active) continue;
+        const float lifetime = item.drone ? DroneDebrisLifetime : DebrisLifetime;
+        const float dt = std::min(gameDeltaTime, lifetime - item.age);
+        if (item.drone)
         {
-            item.age = std::min(DebrisLifetime, item.age + gameDeltaTime);
-            item.active = item.age < DebrisLifetime;
+            // 바닥 Y=0만 처리한다. 벽·개체·탄환용 Collider에는 파편을 등록하지 않는다.
+            // ponytail: 회전 상자 높이로 바닥을 근사한다. 정밀 접촉이 필요하면 메시 지지점으로 교체한다.
+            const int steps = std::max(1, static_cast<int>(std::ceil(dt * 120.f)));
+            const float step = dt / steps;
+            for (int j = 0; j < steps; ++j)
+            {
+                for (std::size_t i = 0; i < item.pieces.size(); ++i)
+                {
+                    auto& piece = item.pieces[i];
+                    const glm::vec3 axis = glm::normalize(glm::vec3(1, .4f + static_cast<float>(i), .7f));
+                    piece.rotation = glm::rotate(piece.rotation, piece.spin * step, axis);
+                    const auto half = drone_debris_asset::pieces[i].halfSize * piece.scale;
+                    const float height = std::abs(piece.rotation[0].y) * half.x +
+                        std::abs(piece.rotation[1].y) * half.y + std::abs(piece.rotation[2].y) * half.z;
+                    piece.position += piece.velocity * step + glm::vec3(0, -4.9f * step * step, 0);
+                    piece.velocity.y -= 9.8f * step;
+                    if (piece.position.y <= height)
+                    {
+                        piece.position.y = height;
+                        piece.velocity.y = piece.velocity.y < -1.f ? -piece.velocity.y * .18f : 0.f;
+                        piece.velocity.x *= std::exp(-6.f * step);
+                        piece.velocity.z *= std::exp(-6.f * step);
+                        piece.spin *= std::exp(-8.f * step);
+                    }
+                }
+            }
         }
+        item.age = std::min(lifetime, item.age + gameDeltaTime);
+        item.active = item.age < lifetime;
     }
+}
+
+glm::mat4 DestructionEffects::DronePieceTransform(const EnemyDebris& debris, std::size_t piece)
+{
+    const auto& fragment = debris.pieces.at(piece);
+    const float fade = std::clamp((DroneDebrisLifetime - debris.age) / .6f, 0.f, 1.f);
+    return glm::scale(glm::translate(glm::mat4(1), fragment.position) * fragment.rotation,
+                      glm::vec3(fragment.scale * fade));
 }
 
 void DestructionEffects::ObserveHealth(int health)

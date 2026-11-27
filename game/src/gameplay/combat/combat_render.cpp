@@ -27,11 +27,14 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
     };
     if (IsCoreMode())
     {
-        for (const auto& state : core.Drones())
-            drawDrone(state);
+        for (std::size_t i = 0; i < core.Drones().size(); ++i)
+        {
+            drawDrone(core.Drones()[i]);
+            drone.DrawDebris(viewProjection, destruction.Debris(i));
+        }
         for (std::size_t i = 0; i < core.Turrets().size(); ++i)
         {
-            const auto& debris = destruction.Debris(i);
+            const auto& debris = destruction.Debris(core.Drones().size() + i);
             const auto& turret = core.Turrets()[i];
             const auto& model = turret.Type() == combat::TurretType::Twin ? twinModel : singleModel;
             model.Draw(viewProjection, PlayerEye(), turret, debris.active ? debris.age : -1.f);
@@ -52,7 +55,7 @@ void CombatScene::DrawEnemies(const glm::mat4& viewProjection) const
     {
         const auto& debris = destruction.Debris(slot);
         if (debris.active)
-            drone.Draw(viewProjection, debris.world, false, false, false, debris.age);
+            drone.DrawDebris(viewProjection, debris);
     }
     for (std::size_t i = 0; i < encounter.Turrets().size(); ++i)
     {

@@ -186,7 +186,7 @@ void CoreEncounter::UpdatePlayerBullets(float dt)
                     inventory.Break(flight.bullet.sourceWeaponId);
                     if (drones[i].Armed())
                         inventory.SpawnDrop({drones[i].Muzzle().x, 0.12f, drones[i].Muzzle().z});
-                    drones[i].Destroy();
+                    drones[i].Destroy(flight.bullet.velocity);
                 }
             }
             for (std::size_t i = 0; i < turrets.size(); ++i)

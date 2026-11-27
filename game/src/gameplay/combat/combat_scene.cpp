@@ -77,7 +77,7 @@ void CombatScene::Reset()
     analysis.Reset();
     ClearPlayerView();
     feedback.Reset();
-    destruction.Reset(IsCoreMode() ? core.Turrets().size()
+    destruction.Reset(IsCoreMode() ? core.Drones().size() + core.Turrets().size()
                                   : 1 + encounter.ExtraDrones().size() + encounter.Turrets().size());
     time.Reset();
     forceNormal = false;
@@ -160,19 +160,22 @@ void CombatScene::ObserveDestruction()
     if (IsCoreMode())
     {
         std::size_t slot = 0;
+        for (const auto& state : core.Drones())
+            destruction.ObserveDrone(slot++, state.Phase() != combat::DronePhase::Destroyed,
+                                     state.WorldTransform(), state.DestructionDirection());
         for (const auto& turret : core.Turrets())
             destruction.ObserveEnemy(slot++, turret.Alive(), turret.BarrelTransform());
         return;
     }
     const auto& state = encounter.DroneState();
-    destruction.ObserveEnemy(0, IsDroneMode() && encounter.EnemyAlive(), state.WorldTransform());
+    destruction.ObserveDrone(0, IsDroneMode() && encounter.EnemyAlive(), state.WorldTransform(), state.DestructionDirection());
     if (IsBossMode()) return;
 
     // 기본 드론, 추가 드론, 포탑 순서로 파괴 효과 자리를 공유한다.
     std::size_t slot = 1;
     for (const auto& extra : encounter.ExtraDrones())
     {
-        destruction.ObserveEnemy(slot++, extra.Phase() != combat::DronePhase::Destroyed, extra.WorldTransform());
+        destruction.ObserveDrone(slot++, extra.Phase() != combat::DronePhase::Destroyed, extra.WorldTransform(), extra.DestructionDirection());
     }
     for (const auto& turret : encounter.Turrets())
     {

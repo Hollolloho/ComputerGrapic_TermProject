@@ -115,12 +115,23 @@ bool Drone::Init(const std::filesystem::path& runtimeRoot)
 			rotors[i] = RotorSide::Right;
 	}
 
+	// 파괴 순간에는 로딩·업로드하지 않고, 드론 한 대의 파편을 모든 인스턴스가 공유한다.
+	for (std::size_t i = 0; i < debrisMeshes.size(); ++i)
+	{
+		const auto debrisPath = runtimeRoot / "asset/drone/obj/debris" / aegis::drone_debris_asset::pieces[i].file;
+		if (!aegis::LoadModel(debrisPath, model, error) || !UploadMeshes(model, debrisMeshes[i]))
+		{
+			std::cerr << "Could not load drone fragment: " << debrisPath << ' ' << error << '\n';
+			Clear();
+			return false;
+		}
+	}
 	Reset();
 	return true;
 }
 
 void Drone::Draw(const glm::mat4& scene, const glm::mat4& model, bool targetAcquired,
-	bool armed, bool staticPose, float debrisAge) const
+	bool armed, bool staticPose) const
 {
 	if (!shaderProgram)
 		return;
@@ -131,13 +142,11 @@ void Drone::Draw(const glm::mat4& scene, const glm::mat4& model, bool targetAcqu
 	for (std::size_t i = 0; i < meshes.size(); ++i)
 	{
 		const Part part = parts[i];
-		if (part == Weapon && (!armed || debrisAge >= 0.f))
+		if (part == Weapon && !armed)
 			continue;
 
 		const RenderMesh& mesh = meshes[i];
 		glm::mat4 partModel = model;
-		if (debrisAge >= 0.f)
-			partModel = aegis::combat::DestructionEffects::PieceTransform(model, part, debrisAge);
 
 		if (!staticPose && rotors[i] != RotorSide::None)
 		{
@@ -158,7 +167,7 @@ void Drone::Draw(const glm::mat4& scene, const glm::mat4& model, bool targetAcqu
 		mesh.Draw();
 	}
 
-	if (targetAcquired && armed && !staticPose && debrisAge < 0.f && !eyeMeshes.empty())
+	if (targetAcquired && armed && !staticPose && !eyeMeshes.empty())
 	{
 		const AimBlend blend;
 		glDepthFunc(GL_LEQUAL);
@@ -176,6 +185,29 @@ void Drone::Draw(const glm::mat4& scene, const glm::mat4& model, bool targetAcqu
 		glDepthFunc(GL_LESS);
 	}
 
+	glBindVertexArray(0);
+	glUseProgram(0);
+}
+
+void Drone::DrawDebris(const glm::mat4& scene, const aegis::combat::EnemyDebris& debris) const
+{
+	if (!shaderProgram || !debris.active || !debris.drone) return;
+	glUseProgram(shaderProgram);
+	glUniform1i(beamLocation, GL_FALSE);
+	glUniform1f(opacityLocation, 1.f);
+	for (std::size_t i = 0; i < debrisMeshes.size(); ++i)
+	{
+		const glm::mat4 model = aegis::combat::DestructionEffects::DronePieceTransform(debris, i);
+		const glm::mat4 transform = scene * model;
+		glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(transform));
+		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+		for (const auto& mesh : debrisMeshes[i])
+		{
+			glUniform3fv(colorLocation, 1, glm::value_ptr(mesh.color));
+			glUniform3fv(emissionLocation, 1, glm::value_ptr(mesh.emission));
+			mesh.Draw();
+		}
+	}
 	glBindVertexArray(0);
 	glUseProgram(0);
 }
@@ -229,6 +261,7 @@ void Drone::Reset()
 void Drone::Clear()
 {
 	ClearMeshes(meshes);
+	for (auto& piece : debrisMeshes) ClearMeshes(piece);
 	parts.clear();
 	eyeMeshes.clear();
 	if (aimBeam.vao)

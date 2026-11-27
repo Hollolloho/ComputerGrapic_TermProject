@@ -51,6 +51,7 @@ void DroneBehavior::Reset()
 {
     position = spawn;
     aimPoint = {0, 0, 0};
+    destructionDirection = {0, 0, 0};
     phase = DronePhase::Patrol;
     patrolRotY = spawnRotY;
     if (patrolEndZ < spawn.z)
@@ -308,8 +309,12 @@ void DroneBehavior::Disarm()
     }
 }
 
-void DroneBehavior::Destroy()
+void DroneBehavior::Destroy(const glm::vec3& direction)
 {
+    if (phase == DronePhase::Destroyed) return;
+    const float length = glm::length(direction);
+    destructionDirection = IsFinite(direction) && std::isfinite(length) && length > .0001f
+        ? direction / length : glm::vec3(0);
     phase = DronePhase::Destroyed;
     timer = 0;
 }

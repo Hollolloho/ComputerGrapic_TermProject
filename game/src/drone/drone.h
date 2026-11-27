@@ -2,6 +2,7 @@
 
 #include "main/Common.h"
 #include "loader/RenderMesh.h"
+#include <array>
 
 enum RotorSide
 {
@@ -9,6 +10,8 @@ enum RotorSide
 	Left,
 	Right
 };
+
+namespace aegis::combat { struct EnemyDebris; }
 
 class Drone
 {
@@ -24,6 +27,7 @@ private:
 
 	std::vector<RenderMesh> meshes;
 	std::vector<Part> parts;
+	std::array<std::vector<RenderMesh>, 8> debrisMeshes;
 	std::vector<std::size_t> eyeMeshes;
 	MeshBuffer aimBeam;
 
@@ -45,7 +49,8 @@ public:
 	bool Init();
 	bool Init(const std::filesystem::path& runtimeRoot);
 	void Draw(const glm::mat4& scene, const glm::mat4& model, bool targetAcquired = false,
-		bool armed = true, bool staticPose = false, float debrisAge = -1.f) const;
+		bool armed = true, bool staticPose = false) const;
+	void DrawDebris(const glm::mat4& scene, const aegis::combat::EnemyDebris& debris) const;
 	void DrawAimLine(const glm::mat4& scene, const glm::vec3& origin, const glm::vec3& target,
 		const glm::vec3& viewer, float reach) const;
 	void UpdateRotor(double gameDeltaTime);

@@ -31,7 +31,8 @@ public:
     bool SetSpawn(const glm::vec3& point, float rotYRadians, float endZ);
     bool Update(float gameDeltaTime, const glm::vec3& eye, const std::vector<Collider>& walls);
     void Disarm();
-    void Destroy();
+    void Destroy(const glm::vec3& direction = glm::vec3(0));
+    const glm::vec3& DestructionDirection() const { return destructionDirection; }
 
     DronePhase Phase() const
     {
@@ -81,6 +82,7 @@ private:
     float scale{1};
     glm::vec3 position{-0.65f, 1.8f, -10};
     glm::vec3 aimPoint{0};
+    glm::vec3 destructionDirection{0};
     DronePhase phase{DronePhase::Patrol};
     float rotY{};
     double timer{1.5};
