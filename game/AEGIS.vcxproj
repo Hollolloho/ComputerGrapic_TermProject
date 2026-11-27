@@ -156,6 +156,7 @@
     <ClInclude Include="src\gameplay\effects\death_view.h" />
     <ClInclude Include="src\gameplay\effects\destruction_effects.h" />
     <ClInclude Include="src\drone\drone_behavior.h" />
+    <ClInclude Include="src\drone\drone_debris.generated.h" />
     <ClInclude Include="src\gameplay\turret\fixed_turret.h" />
     <ClInclude Include="src\gameplay\campaign\game_scene.h" />
     <ClInclude Include="src\gameplay\ui\korean_ui.h" />

@@ -182,6 +182,7 @@
     <ClInclude Include="src\gameplay\effects\death_view.h"><Filter>Gameplay\Effects</Filter></ClInclude>
     <ClInclude Include="src\gameplay\effects\destruction_effects.h"><Filter>Gameplay\Effects</Filter></ClInclude>
     <ClInclude Include="src\drone\drone_behavior.h"><Filter>Drone</Filter></ClInclude>
+    <ClInclude Include="src\drone\drone_debris.generated.h"><Filter>Drone</Filter></ClInclude>
     <ClInclude Include="src\gameplay\turret\fixed_turret.h"><Filter>Gameplay\Turret</Filter></ClInclude>
     <ClInclude Include="src\gameplay\campaign\game_scene.h"><Filter>Gameplay\Campaign\Scene</Filter></ClInclude>
     <ClInclude Include="src\gameplay\ui\korean_ui.h"><Filter>Gameplay\UI</Filter></ClInclude>

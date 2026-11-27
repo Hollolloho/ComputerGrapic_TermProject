@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\drone\obj\debris\00_chassis.obj" TargetPath="asset\drone\obj\debris\00_chassis.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\drone\obj\debris\01_top_shell.obj" TargetPath="asset\drone\obj\debris\01_top_shell.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\drone\obj\debris\02_bottom_shell.obj" TargetPath="asset\drone\obj\debris\02_bottom_shell.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\drone\obj\debris\03_left_housing.obj" TargetPath="asset\drone\obj\debris\03_left_housing.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\drone\obj\debris\04_left_rotor.obj" TargetPath="asset\drone\obj\debris\04_left_rotor.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\drone\obj\debris\05_right_housing.obj" TargetPath="asset\drone\obj\debris\05_right_housing.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\drone\obj\debris\06_right_rotor.obj" TargetPath="asset\drone\obj\debris\06_right_rotor.obj" />
+    <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\drone\obj\debris\07_sensor.obj" TargetPath="asset\drone\obj\debris\07_sensor.obj" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\armor_guides.obj" TargetPath="asset\boss_e\runtime\obj\armor_guides.obj" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\body_frame.obj" TargetPath="asset\boss_e\runtime\obj\body_frame.obj" />
     <RuntimeAsset Include="$(MSBuildThisFileDirectory)..\asset\boss_e\runtime\obj\boss_e.mtl" TargetPath="asset\boss_e\runtime\obj\boss_e.mtl" />
